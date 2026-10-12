@@ -53,6 +53,8 @@ _Note on Reminders:_ The in-process cron scheduler checks every 15 minutes to tr
 
 _Note on Host RSVP Alerts:_ When a guest RSVPs, the host and every co-host receive a **"New RSVP" alert** email summarizing the response (guest name, status, plus-ones, note) plus the current Going/Maybe/Can't-Go tallies. This is controlled per event by the **Email me when a guest RSVPs** toggle under **Event Settings → RSVP Options → Notification Settings** — new events default it **on** (a matching **Text me when a guest RSVPs** toggle defaults **off** and appears only when SMS is enabled, backed by the `Event.hostAlertEmail` / `Event.hostAlertSms` columns). Host alerts are **not** affected by the site-wide guest-email channel toggle — an operator who turns off guest email notifications will still receive their own new-RSVP alerts (the SMS alert does respect the site-wide SMS toggle).
 
+Personalized guest invitations keep the recipient’s RSVP context in the **View event details** link, just like the response buttons. This applies to newly sent and resent invitations; previously delivered emails are unchanged.
+
 _Note on Themed Templates:_ Every event email (invite, RSVP confirmation, approval, update/reminder) is styled from that event's theme — see [Themed Email Templates](#themed-email-templates) below.
 
 ---
