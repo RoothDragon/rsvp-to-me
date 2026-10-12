@@ -12,6 +12,12 @@ Keep guests informed without leaving the app — send your own updates and let R
 
 ---
 
+## Invitation Links
+
+The **View event details** link in a personalized invitation keeps the guest’s RSVP context, so they can open the event and respond using their invitation. Newly sent and resent invitations include this context; previously delivered emails are unchanged.
+
+---
+
 ## Update Blasts
 
 Send a message to your guests at any time from the event's host controls:

@@ -465,7 +465,9 @@ export async function sendEventInviteEmail(
   } & EventEmailContext
 ) {
   if (!(await isChannelEnabled("email"))) return;
-  const eventUrl = `${APP_URL}/e/${opts.eventSlug}`;
+  const eventUrl = new URL(`${APP_URL}/e/${opts.eventSlug}`);
+  const token = new URL(opts.rsvpBaseUrl).searchParams.get("token");
+  if (token) eventUrl.searchParams.set("token", token);
   const event = eventDetails(opts);
   const { subject, body, toggles } = await templateCopy("invite", {
     guestName: opts.guestName,
@@ -483,7 +485,7 @@ export async function sendEventInviteEmail(
       hostName: opts.hostName,
       rsvpBaseUrl: opts.rsvpBaseUrl,
       maybeEnabled: opts.maybeEnabled,
-      eventUrl,
+      eventUrl: eventUrl.toString(),
     })
   );
   return send({ to, subject, html, text, replyTo: opts.replyTo });
