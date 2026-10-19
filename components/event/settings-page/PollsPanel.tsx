@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import React, { useState } from "react";
 import { Plus, X } from "lucide-react";
 import type { ResolvedTheme } from "@/lib/theme";
@@ -61,10 +63,12 @@ export function PollsPanel({
   t: ResolvedTheme;
   S: SettingsPageStyles;
 }) {
+  const translate = useTranslations("Ui.Event.PollsPanel");
+
   const [addingPoll, setAddingPoll] = useState(false);
 
   return (
-    <Section title="Manage Polls" t={t}>
+    <Section title={translate("managePolls")} t={t}>
       {/* Create Poll Form */}
       {addingPoll ? (
         <div
@@ -84,12 +88,12 @@ export function PollsPanel({
               marginBottom: "12px",
             }}
           >
-            Create a New Poll
+            {translate("createNewPoll")}
           </div>
           <div style={{ marginBottom: "12px" }}>
             <input
               style={S.inp}
-              placeholder="Ask a question... (e.g. What day works best?)"
+              placeholder={translate("askQuestionEGWhatDay")}
               value={newPollQuestion}
               onChange={(e) => setNewPollQuestion(e.target.value)}
             />
@@ -103,12 +107,14 @@ export function PollsPanel({
               marginBottom: "12px",
             }}
           >
-            <div style={{ fontSize: "12px", fontWeight: 700, color: t.textMuted }}>Options:</div>
+            <div style={{ fontSize: "12px", fontWeight: 700, color: t.textMuted }}>
+              {translate("options")}
+            </div>
             {newPollOptions.map((opt, idx) => (
               <div key={idx} style={{ display: "flex", gap: "6px" }}>
                 <input
                   style={{ ...S.inp, padding: "8px 12px" }}
-                  placeholder={`Option ${idx + 1}`}
+                  placeholder={translate("optionPlaceholder", { number: idx + 1 })}
                   value={opt}
                   onChange={(e) => {
                     const updated = [...newPollOptions];
@@ -152,7 +158,7 @@ export function PollsPanel({
                 padding: "4px 0",
               }}
             >
-              <Plus size={14} /> Add option
+              <Plus size={14} /> {translate("addOption")}
             </button>
           </div>
 
@@ -180,7 +186,7 @@ export function PollsPanel({
                 onChange={(e) => setNewPollMultiChoice(e.target.checked)}
                 style={{ cursor: "pointer" }}
               />
-              <span>Allow voting for multiple options</span>
+              <span>{translate("allowVotingMultipleOptions")}</span>
             </label>
             <label
               style={{
@@ -198,7 +204,7 @@ export function PollsPanel({
                 onChange={(e) => setNewPollAllowGuestsToAdd(e.target.checked)}
                 style={{ cursor: "pointer" }}
               />
-              <span>Allow guests to suggest options</span>
+              <span>{translate("allowGuestsSuggestOptions")}</span>
             </label>
             <label
               style={{
@@ -216,7 +222,7 @@ export function PollsPanel({
                 onChange={(e) => setNewPollHideVoters(e.target.checked)}
                 style={{ cursor: "pointer" }}
               />
-              <span>Hide voter names from other guests</span>
+              <span>{translate("hideVoterNamesOtherGuests")}</span>
             </label>
           </div>
 
@@ -240,7 +246,7 @@ export function PollsPanel({
                 fontSize: "13px",
               }}
             >
-              Create Poll
+              {translate("createPoll")}
             </button>
             <button
               type="button"
@@ -260,7 +266,7 @@ export function PollsPanel({
                 border: `1px solid ${t.inputBorder}`,
               }}
             >
-              Cancel
+              {translate("cancel")}
             </button>
           </div>
         </div>
@@ -283,7 +289,7 @@ export function PollsPanel({
             width: "100%",
           }}
         >
-          <Plus size={14} /> Add Poll
+          <Plus size={14} /> {translate("addPoll")}
         </button>
       )}
 
@@ -297,11 +303,12 @@ export function PollsPanel({
             marginBottom: "12px",
           }}
         >
-          Active Polls ({polls.length})
+          {translate("activePolls")}
+          {polls.length})
         </div>
         {polls.length === 0 ? (
           <div style={{ fontSize: "13px", color: t.textMuted, fontStyle: "italic" }}>
-            No polls created yet. Use the form above to create one.
+            {translate("noPollsCreatedYetUseForm")}
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -338,7 +345,7 @@ export function PollsPanel({
                       fontWeight: 600,
                     }}
                   >
-                    Delete
+                    {translate("delete")}
                   </button>
                 </div>
 
@@ -365,7 +372,7 @@ export function PollsPanel({
                       }}
                     >
                       <span style={{ color: t.textSecondary }}>
-                        {opt.text} ({opt.votes.length} votes)
+                        {opt.text} {translate("voteCount", { count: opt.votes.length })}
                       </span>
                       {poll.options.length > 2 && (
                         <button
@@ -390,7 +397,7 @@ export function PollsPanel({
                   <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
                     <input
                       style={{ ...S.inp, padding: "6px 10px", fontSize: "12px" }}
-                      placeholder="Add option..."
+                      placeholder={translate("addOption2")}
                       value={newPollOptionTexts[poll.id] ?? ""}
                       onChange={(e) =>
                         setNewPollOptionTexts({
@@ -407,7 +414,7 @@ export function PollsPanel({
                       onClick={() => handleAddPollOption(poll.id)}
                       style={{ ...S.smallBtn, padding: "6px 12px", fontSize: "12px" }}
                     >
-                      Add
+                      {translate("add")}
                     </button>
                   </div>
                 </div>
@@ -423,25 +430,25 @@ export function PollsPanel({
                   }}
                 >
                   <Toggle
-                    label="Locked (closed for voting)"
+                    label={translate("lockedClosedVoting")}
                     value={poll.locked}
                     onChange={(val) => handleUpdatePollSettings(poll.id, { locked: val })}
                     t={t}
                   />
                   <Toggle
-                    label="Multi-choice voting"
+                    label={translate("multiChoiceVoting")}
                     value={poll.multiChoice}
                     onChange={(val) => handleUpdatePollSettings(poll.id, { multiChoice: val })}
                     t={t}
                   />
                   <Toggle
-                    label="Allow guests to add options"
+                    label={translate("allowGuestsAddOptions")}
                     value={poll.allowGuestsToAdd}
                     onChange={(val) => handleUpdatePollSettings(poll.id, { allowGuestsToAdd: val })}
                     t={t}
                   />
                   <Toggle
-                    label="Hide voter names"
+                    label={translate("hideVoterNames")}
                     value={poll.hideVoters}
                     onChange={(val) => handleUpdatePollSettings(poll.id, { hideVoters: val })}
                     t={t}

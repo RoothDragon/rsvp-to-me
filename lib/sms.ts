@@ -1,3 +1,5 @@
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/config";
+import { getTranslator } from "@/i18n/server";
 import { decryptConfig } from "./crypto";
 import { isChannelEnabled, getSystemConfigMap } from "./config";
 
@@ -93,12 +95,14 @@ async function send(to: string, body: string) {
 
 export async function testSmsConfig(
   toPhone: string,
-  config: { sid: string; token: string; phone: string }
+  config: { sid: string; token: string; phone: string },
+  locale: Locale = DEFAULT_LOCALE
 ) {
+  const t = await getTranslator(locale);
   if (!config.sid || !config.token || !config.phone) {
     return {
       success: false,
-      error: "Twilio Account SID, Auth Token, and Phone Number are required.",
+      error: t("Sms.configRequired"),
     };
   }
   try {
@@ -107,14 +111,14 @@ export async function testSmsConfig(
       token: config.token,
       from: config.phone,
       to: toPhone,
-      body: "Test SMS from RSVP to Me. Your SMS configuration is correct!",
+      body: t("Sms.test"),
     });
     return { success: true };
   } catch (err: unknown) {
     console.error("[sms:config-test] Twilio test SMS failed:", err);
     return {
       success: false,
-      error: "Twilio request failed. Verify your Account SID, Auth Token, and Phone number.",
+      error: t("Sms.configFailed"),
     };
   }
 }
@@ -122,6 +126,7 @@ export async function testSmsConfig(
 export async function sendRsvpConfirmationSms(
   to: string,
   opts: {
+    locale: Locale;
     guestName: string;
     eventTitle: string;
     eventSlug: string;
@@ -130,56 +135,85 @@ export async function sendRsvpConfirmationSms(
   }
 ) {
   if (!(await isChannelEnabled("sms"))) return;
+  const t = await getTranslator(opts.locale);
   const editUrl = `${APP_URL}/e/${opts.eventSlug}/rsvp?token=${opts.editToken}`;
-  const statusLabel =
-    opts.status === "GOING" ? "Going ✓" : opts.status === "MAYBE" ? "Maybe" : "Can't Go";
+  const statusLabel = t(`Sms.status.${opts.status}`) + (opts.status === "GOING" ? " ✓" : "");
   return send(
     to,
-    `${opts.guestName}, you're ${statusLabel} for ${opts.eventTitle}! Update your RSVP: ${editUrl}`
+    t("Sms.confirmation", {
+      guestName: opts.guestName,
+      status: statusLabel,
+      eventTitle: opts.eventTitle,
+      editUrl,
+    })
   );
 }
 
-export async function sendMagicLinkSms(to: string, link: string) {
+export async function sendMagicLinkSms(to: string, link: string, locale: Locale) {
   if (!(await isChannelEnabled("sms"))) return;
-  return send(to, `Your sign-in link for RSVP to Me: ${link}\n(expires in 15 minutes)`);
+  const t = await getTranslator(locale);
+  return send(to, t("Sms.magicLink", { link }));
 }
 
 export async function sendEventInviteSms(
   to: string,
-  opts: { hostName: string; eventTitle: string; rsvpBaseUrl: string; maybeEnabled: boolean }
+  opts: {
+    locale: Locale;
+    hostName: string;
+    eventTitle: string;
+    rsvpBaseUrl: string;
+    maybeEnabled: boolean;
+  }
 ) {
   if (!(await isChannelEnabled("sms"))) return;
-  const maybeClause = opts.maybeEnabled ? ", MAYBE to say maybe" : "";
+  const t = await getTranslator(opts.locale);
+  const maybeClause = opts.maybeEnabled ? t("Sms.maybeClause") : "";
   return send(
     to,
-    `${opts.hostName} invited you to ${opts.eventTitle}! Reply YES to confirm, NO to decline${maybeClause}. Or RSVP at: ${opts.rsvpBaseUrl}&status=GOING`
+    t("Sms.invite", {
+      hostName: opts.hostName,
+      eventTitle: opts.eventTitle,
+      maybeClause,
+      rsvpUrl: `${opts.rsvpBaseUrl}&status=GOING`,
+    })
   );
 }
 
 export async function sendSmsBlast(
   phones: string[],
-  opts: { eventTitle: string; eventSlug: string; message: string; hostName: string }
+  opts: { locale: Locale; eventTitle: string; eventSlug: string; message: string; hostName: string }
 ) {
   if (!(await isChannelEnabled("sms"))) return 0;
+  const t = await getTranslator(opts.locale);
   const eventUrl = `${APP_URL}/e/${opts.eventSlug}`;
-  const body = `${opts.hostName} (${opts.eventTitle}): ${opts.message} ${eventUrl}`;
+  const body = t("Sms.blast", {
+    hostName: opts.hostName,
+    eventTitle: opts.eventTitle,
+    message: opts.message,
+    eventUrl,
+  });
   await Promise.allSettled(phones.map((p) => send(p, body)));
   return phones.length;
 }
 
 export async function sendApprovalSms(
   to: string,
-  opts: { eventTitle: string; approved: boolean; message?: string }
+  opts: { locale: Locale; eventTitle: string; approved: boolean; message?: string }
 ) {
   if (!(await isChannelEnabled("sms"))) return;
-  const statusStr = opts.approved ? "approved ✓" : "declined";
-  const msgStr = opts.message ? ` Message from host: "${opts.message}"` : "";
-  return send(to, `Your RSVP for ${opts.eventTitle} was ${statusStr}.${msgStr}`);
+  const t = await getTranslator(opts.locale);
+  const statusStr = t(opts.approved ? "Sms.approved" : "Sms.declined");
+  const msgStr = opts.message ? t("Sms.hostMessage", { message: opts.message }) : "";
+  return send(
+    to,
+    t("Sms.approval", { eventTitle: opts.eventTitle, decision: statusStr, message: msgStr })
+  );
 }
 
 export async function sendHostRsvpAlertSms(
   to: string,
   opts: {
+    locale: Locale;
     guestName: string;
     status: "GOING" | "MAYBE" | "NO";
     plusOneCount: number;
@@ -189,8 +223,8 @@ export async function sendHostRsvpAlertSms(
   }
 ) {
   if (!(await isChannelEnabled("sms"))) return;
-  const statusLabel =
-    opts.status === "GOING" ? "Going" : opts.status === "MAYBE" ? "Maybe" : "Can't Go";
+  const t = await getTranslator(opts.locale);
+  const statusLabel = t(`Sms.status.${opts.status}`);
   const plusStr = opts.plusOneCount > 0 ? ` +${opts.plusOneCount}` : "";
   const noteStr = opts.note?.trim()
     ? ` "${opts.note.trim().slice(0, 60)}${opts.note.trim().length > 60 ? "…" : ""}"`
@@ -198,6 +232,13 @@ export async function sendHostRsvpAlertSms(
   const guestListUrl = `${APP_URL}/e/${opts.eventSlug}#guests`;
   return send(
     to,
-    `${opts.guestName}${plusStr} RSVP'd ${statusLabel} to ${opts.eventTitle}.${noteStr} View guests: ${guestListUrl}`
+    t("Sms.hostAlert", {
+      guestName: opts.guestName,
+      plusStr,
+      status: statusLabel,
+      eventTitle: opts.eventTitle,
+      note: noteStr,
+      guestListUrl,
+    })
   );
 }

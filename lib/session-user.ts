@@ -7,6 +7,7 @@ export type SessionUser = {
   email: string;
   name: string | null;
   avatarUrl: string | null;
+  preferredLocale: string | null;
   role: "GUEST" | "HOST" | "ADMIN";
 };
 
@@ -20,7 +21,14 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   if (!session) return null;
   const dbUser = await db.user.findUnique({
     where: { id: session.userId },
-    select: { id: true, email: true, name: true, avatarUrl: true, role: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      avatarUrl: true,
+      role: true,
+      preferredLocale: true,
+    },
   });
   if (!dbUser) return null;
   return {
@@ -28,6 +36,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     email: dbUser.email ?? session.email,
     name: dbUser.name,
     avatarUrl: dbUser.avatarUrl,
+    preferredLocale: dbUser.preferredLocale,
     role: dbUser.role as "GUEST" | "HOST" | "ADMIN",
   };
 });

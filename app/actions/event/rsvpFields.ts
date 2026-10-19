@@ -1,5 +1,7 @@
 "use server";
 
+import { eventActionMessage } from "./localization";
+
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertHostOrCohost } from "./shared";
@@ -44,7 +46,7 @@ export async function updateRsvpField(
     where: { id: fieldId },
     include: { event: { select: { slug: true } } },
   });
-  if (!field) throw new Error("Forbidden");
+  if (!field) throw new Error(await eventActionMessage("forbidden"));
   await assertHostOrCohost(field.eventId);
   await assertCaptcha("rsvp_field", captchaToken);
   await db.rSVPField.update({
@@ -68,7 +70,7 @@ export async function deleteRsvpField(fieldId: string) {
     where: { id: fieldId },
     include: { event: { select: { slug: true } } },
   });
-  if (!field) throw new Error("Forbidden");
+  if (!field) throw new Error(await eventActionMessage("forbidden"));
   await assertHostOrCohost(field.eventId);
   await db.rSVPField.delete({ where: { id: fieldId } });
   revalidatePath(`/e/${field.event.slug}/settings`);
@@ -86,7 +88,7 @@ export async function reorderRsvpFields(eventId: string, orderedIds: string[]) {
     });
     const ownedSet = new Set(ownedFields.map((f) => f.id));
     if (!orderedIds.every((id) => ownedSet.has(id))) {
-      throw new Error("Forbidden: one or more field IDs do not belong to this event");
+      throw new Error(await eventActionMessage("fieldOwnership"));
     }
   }
 
@@ -104,7 +106,7 @@ export async function getRsvpFieldAnswers(fieldId: string) {
       answers: { include: { rsvp: { select: { guestName: true } } }, orderBy: { id: "asc" } },
     },
   });
-  if (!field) throw new Error("Forbidden");
+  if (!field) throw new Error(await eventActionMessage("forbidden"));
   await assertHostOrCohost(field.eventId);
   return field.answers.map((a: { value: string; rsvp: { guestName: string } }) => ({
     guestName: a.rsvp.guestName,

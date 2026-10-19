@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { ResolvedTheme } from "@/lib/theme";
 
 export const RSVP_RESPONSE_STATUSES = ["GOING", "MAYBE", "NO"] as const;
@@ -34,6 +35,7 @@ export function RsvpStatusChoice({
   disabled?: boolean;
   compact?: boolean;
 }) {
+  const translate = useTranslations("Ui.Rsvp.status");
   const style: React.CSSProperties = {
     flex: 1,
     minHeight: compact ? "44px" : undefined,
@@ -60,7 +62,7 @@ export function RsvpStatusChoice({
       <span aria-hidden="true" style={{ fontSize: compact ? "17px" : "22px" }}>
         {RSVP_STATUS_EMOJIS[status]}
       </span>
-      {RSVP_STATUS_LABELS[status]}
+      {translate(status)}
     </>
   );
 

@@ -132,6 +132,7 @@ describe("host new-RSVP alert wiring in addRSVP", () => {
 
     await vi.waitFor(() => expect(mockAlertEmail).toHaveBeenCalledTimes(2));
     expect(mockAlertEmail).toHaveBeenCalledWith("host@example.com", {
+      locale: "en-US",
       guestName: "Alice",
       status: "GOING",
       plusOneCount: 1,
@@ -159,6 +160,7 @@ describe("host new-RSVP alert wiring in addRSVP", () => {
     // Only the host has a phone; the co-host must be skipped, not crash the send.
     await vi.waitFor(() => expect(mockAlertSms).toHaveBeenCalledTimes(1));
     expect(mockAlertSms).toHaveBeenCalledWith("+15551230000", {
+      locale: "en-US",
       guestName: "Alice",
       status: "GOING",
       plusOneCount: 1,

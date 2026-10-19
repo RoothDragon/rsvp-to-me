@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Settings, UtensilsCrossed } from "lucide-react";
 import type { EventData } from "./types";
 import type { ResolvedTheme } from "@/lib/theme";
@@ -41,6 +43,8 @@ export function PotluckSection({
   claimItem: (itemId: string, name: string) => Promise<void>;
   unclaimItem: (itemId: string, name: string) => Promise<void>;
 }) {
+  const translate = useTranslations("Ui.Event.PotluckSection");
+
   return (
     <>
       {/* ── Potluck ── */}
@@ -59,7 +63,7 @@ export function PotluckSection({
             >
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <UtensilsCrossed size={16} style={{ color: t.accent }} />
-                <span style={{ fontWeight: 700 }}>What to Bring</span>
+                <span style={{ fontWeight: 700 }}>{translate("whatBring")}</span>
               </div>
               {isHost && (
                 <a
@@ -71,9 +75,7 @@ export function PotluckSection({
               )}
             </div>
             {isPendingGuest && (
-              <div style={pendingNoticeStyle}>
-                You must be an approved guest to claim items. Your RSVP is awaiting host approval.
-              </div>
+              <div style={pendingNoticeStyle}>{translate("mustApprovedGuestClaimItemsRsvp")}</div>
             )}
             <div
               style={{
@@ -108,8 +110,9 @@ export function PotluckSection({
                           {item.label}
                         </span>
                         <span style={{ fontSize: "12px", color: t.textMuted, marginLeft: "6px" }}>
-                          (need {item.quantity}
-                          {totalClaimed > 0 && `, ${remaining} remaining`})
+                          {translate("need")} {item.quantity}
+                          {totalClaimed > 0 && translate("remainingQuantity", { count: remaining })}
+                          )
                         </span>
                       </div>
                       {remaining > 0 &&
@@ -132,7 +135,7 @@ export function PotluckSection({
                               color: t.accent,
                             }}
                           >
-                            I&apos;ll bring it
+                            {translate("iLlBring")}
                           </button>
                         )}
                     </div>
@@ -165,7 +168,7 @@ export function PotluckSection({
                               <span>
                                 {claim.guestName}{" "}
                                 <span style={{ color: t.textMuted }}>
-                                  (bringing {claim.quantity})
+                                  {translate("bringingQuantity", { count: claim.quantity })}
                                 </span>
                               </span>
                               {canUnclaim && (
@@ -183,7 +186,7 @@ export function PotluckSection({
                                     justifyContent: "center",
                                     opacity: 0.8,
                                   }}
-                                  title="Remove this claim"
+                                  title={translate("removeClaim")}
                                   onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
                                   onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.8")}
                                 >
@@ -207,7 +210,7 @@ export function PotluckSection({
                       >
                         <input
                           style={{ ...S.inp, flex: 1 }}
-                          placeholder="Your name"
+                          placeholder={translate("name")}
                           value={claimName}
                           onChange={(e) => setClaimName(e.target.value)}
                           onKeyDown={(e) => {
@@ -227,7 +230,7 @@ export function PotluckSection({
                               Math.min(remaining, Math.max(1, parseInt(e.target.value) || 1))
                             )
                           }
-                          placeholder="Qty"
+                          placeholder={translate("qty")}
                         />
                         <button
                           onClick={() => claimName.trim() && claimItem(item.id, claimName.trim())}
@@ -242,10 +245,10 @@ export function PotluckSection({
                             color: t.accent,
                           }}
                         >
-                          Claim
+                          {translate("claim")}
                         </button>
                         <button onClick={() => setClaimingItemId(null)} style={S.mutedBtn}>
-                          Cancel
+                          {translate("cancel")}
                         </button>
                       </div>
                     )}

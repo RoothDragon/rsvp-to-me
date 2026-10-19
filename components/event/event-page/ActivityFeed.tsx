@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations, useLocale } from "next-intl";
+
 import {
   Plus,
   Users,
@@ -86,6 +88,9 @@ export function ActivityFeed({
   removeUpdate: (id: string) => void;
   removeActivityEvent: (id: string) => void;
 }) {
+  const translate = useTranslations("Ui.Event.ActivityFeed");
+  const locale = useLocale();
+
   return (
     <>
       {/* ── Activity (updates + comments unified) ── */}
@@ -93,7 +98,7 @@ export function ActivityFeed({
         <EventCard theme={t}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px" }}>
             <MessageSquare size={16} style={{ color: t.accent }} />
-            <span style={{ fontWeight: 700 }}>Activity</span>
+            <span style={{ fontWeight: 700 }}>{translate("activity")}</span>
           </div>
 
           {/* Compose area — top of card */}
@@ -117,12 +122,12 @@ export function ActivityFeed({
                   marginBottom: "8px",
                 }}
               >
-                Post an Update
+                {translate("postUpdate")}
               </div>
               <textarea
                 style={{ ...S.inp, resize: "none", marginBottom: "8px" } as React.CSSProperties}
                 rows={3}
-                placeholder="Changed start time, new location, what to bring…"
+                placeholder={translate("changedStartTimeNewLocationWhat")}
                 value={updateDraft}
                 onChange={(e) => setUpdateDraft(e.target.value)}
               />
@@ -150,7 +155,7 @@ export function ActivityFeed({
                     onChange={(e) => setNotifyOnUpdate(e.target.checked)}
                     style={{ accentColor: t.accent }}
                   />
-                  Notify guests of update
+                  {translate("notifyGuestsUpdate")}
                 </label>
                 <button
                   onClick={postUpdate}
@@ -162,7 +167,7 @@ export function ActivityFeed({
                     opacity: !updateDraft.trim() || isPostingUpdate ? 0.5 : 1,
                   }}
                 >
-                  {isPostingUpdate ? "Posting…" : "Post"}
+                  {isPostingUpdate ? translate("posting") : translate("post")}
                 </button>
               </div>
             </div>
@@ -181,17 +186,18 @@ export function ActivityFeed({
                   }}
                 >
                   <ShieldAlert size={13} />
-                  Commenting as admin — you are not RSVP&apos;d to this event.
+                  {translate("commentingAsAdminNotRsvpD")}
                 </div>
               ) : (
                 <div style={{ fontSize: "12px", color: t.textMuted, marginBottom: "6px" }}>
-                  Commenting as <strong style={{ color: t.textSecondary }}>{selfAuthorName}</strong>
+                  {translate("commentingAs")}{" "}
+                  <strong style={{ color: t.textSecondary }}>{selfAuthorName}</strong>
                 </div>
               )}
               <div style={{ display: "flex", gap: "8px" }}>
                 <input
                   style={{ ...S.inp, flex: 1 }}
-                  placeholder="Leave a comment…"
+                  placeholder={translate("leaveComment")}
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   onKeyDown={(e) => {
@@ -221,7 +227,7 @@ export function ActivityFeed({
           )}
           {event.commentsEnabled && !isHost && isPendingGuest && (
             <div style={pendingNoticeStyle}>
-              You must be an approved guest to comment. Your RSVP is awaiting host approval.
+              {translate("mustApprovedGuestCommentRsvpAwaiting")}
             </div>
           )}
 
@@ -306,7 +312,7 @@ export function ActivityFeed({
                       padding: "12px 0",
                     }}
                   >
-                    No activity yet — be the first!
+                    {translate("noActivityYetFirst")}
                   </p>
                 ) : (
                   <>
@@ -340,7 +346,7 @@ export function ActivityFeed({
                                 <span
                                   style={{ fontWeight: 700, fontSize: "13px", color: t.accent }}
                                 >
-                                  Update from {event.host.name ?? event.host.email}
+                                  {translate("update")} {event.host.name ?? event.host.email}
                                 </span>
                                 {isHost && (
                                   <button
@@ -360,7 +366,7 @@ export function ActivityFeed({
                               </div>
                               {event.showTimestamps && (
                                 <span style={{ color: t.textMuted, fontSize: "11px" }}>
-                                  {timeAgo(item.createdAt)}
+                                  {timeAgo(item.createdAt, locale)}
                                 </span>
                               )}
                               <p
@@ -441,7 +447,7 @@ export function ActivityFeed({
                                       marginLeft: "8px",
                                     }}
                                   >
-                                    {timeAgo(item.createdAt)}
+                                    {timeAgo(item.createdAt, locale)}
                                   </span>
                                 )}
                               </div>
@@ -464,7 +470,7 @@ export function ActivityFeed({
                             {isHost && (
                               <button
                                 onClick={() => removeActivityEvent(item.id)}
-                                title="Hide from activity"
+                                title={translate("hideActivity")}
                                 style={{
                                   background: "none",
                                   border: "none",
@@ -507,7 +513,7 @@ export function ActivityFeed({
                                   marginLeft: "8px",
                                 }}
                               >
-                                {timeAgo(item.createdAt)}
+                                {timeAgo(item.createdAt, locale)}
                               </span>
                             )}
                             <p
@@ -537,7 +543,7 @@ export function ActivityFeed({
                                   marginTop: "6px",
                                 }}
                               >
-                                Reply
+                                {translate("reply")}
                               </button>
                             )}
                             {item.replies.length > 0 && (
@@ -576,7 +582,7 @@ export function ActivityFeed({
                                             marginLeft: "6px",
                                           }}
                                         >
-                                          {timeAgo(r.createdAt)}
+                                          {timeAgo(r.createdAt, locale)}
                                         </span>
                                       )}
                                       <p
@@ -597,7 +603,7 @@ export function ActivityFeed({
                               <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
                                 <input
                                   type="text"
-                                  placeholder="Write a reply..."
+                                  placeholder={translate("writeReply")}
                                   value={replyText}
                                   onChange={(e) => setReplyText(e.target.value)}
                                   style={{
@@ -671,10 +677,10 @@ export function ActivityFeed({
                             transition: "all 0.2s",
                           }}
                         >
-                          Prev
+                          {translate("prev")}
                         </button>
                         <span style={{ color: t.textSecondary, fontSize: "12px" }}>
-                          Page {currentPage} of {totalPages}
+                          {translate("pagination", { page: currentPage, total: totalPages })}
                         </span>
                         <button
                           onClick={() => setFeedPage((prev) => Math.min(prev + 1, totalPages))}
@@ -694,7 +700,7 @@ export function ActivityFeed({
                             transition: "all 0.2s",
                           }}
                         >
-                          Next
+                          {translate("next")}
                         </button>
                       </div>
                     )}

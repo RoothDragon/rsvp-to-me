@@ -1,13 +1,20 @@
+import { requireEmailI18n } from "../i18n";
 import { EmailLayout } from "../components/EmailLayout";
 import { Hero } from "../components/Hero";
 import { EmailButton } from "../components/EmailButton";
 import { splitParagraphs } from "../render";
 import type { WelcomeEmailProps } from "../types";
 
-export function WelcomeEmail({ theme, body, magicLink }: WelcomeEmailProps) {
+export function WelcomeEmail({ i18n, theme, body, magicLink }: WelcomeEmailProps) {
+  const { t } = requireEmailI18n(i18n);
   return (
-    <EmailLayout theme={theme} preview="Welcome to RSVP to Me">
-      <Hero theme={theme} kicker="RSVP to Me" title="Welcome!" showCoverImage={false} />
+    <EmailLayout i18n={i18n} theme={theme} preview={t("Email.welcome.preview")}>
+      <Hero
+        theme={theme}
+        kicker="RSVP to Me"
+        title={t("Email.welcome.title")}
+        showCoverImage={false}
+      />
       <table
         align="center"
         width="100%"
@@ -48,7 +55,7 @@ export function WelcomeEmail({ theme, body, magicLink }: WelcomeEmailProps) {
                   <tr>
                     <td>
                       <EmailButton theme={theme} href={magicLink} variant="primary">
-                        Sign in
+                        {t("Email.magicLink.title")}
                       </EmailButton>
                     </td>
                   </tr>
@@ -58,7 +65,7 @@ export function WelcomeEmail({ theme, body, magicLink }: WelcomeEmailProps) {
                 className="dm-text-muted"
                 style={{ margin: "24px 0 0", fontSize: "12px", color: theme.textMuted }}
               >
-                {"If you weren't expecting this, you can safely ignore this email."}
+                {t("Email.welcome.ignore")}
               </p>
             </td>
           </tr>

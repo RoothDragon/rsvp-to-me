@@ -1,3 +1,4 @@
+import { requireEmailI18n } from "../i18n";
 import { EmailLayout } from "../components/EmailLayout";
 import { Hero } from "../components/Hero";
 import { HostFlourish } from "../components/HostFlourish";
@@ -6,6 +7,7 @@ import type { BlastEmailProps } from "../types";
 
 /** Host update blast — also used for event updates and all cron reminders. */
 export function BlastEmail({
+  i18n,
   theme,
   toggles,
   eventTitle,
@@ -13,11 +15,16 @@ export function BlastEmail({
   message,
   eventUrl,
 }: BlastEmailProps) {
+  const { t } = requireEmailI18n(i18n);
   return (
-    <EmailLayout theme={theme} preview={`Update from ${hostName} about ${eventTitle}`}>
+    <EmailLayout
+      i18n={i18n}
+      theme={theme}
+      preview={t("Email.blast.preview", { hostName, eventTitle })}
+    >
       <Hero
         theme={theme}
-        kicker={`Update from ${hostName}`}
+        kicker={t("Email.blast.kicker", { hostName })}
         title={eventTitle}
         showCoverImage={toggles.showCoverImage}
       />
@@ -49,7 +56,9 @@ export function BlastEmail({
                 </p>
               ))}
 
-              {toggles.showHostFlourish ? <HostFlourish theme={theme} hostName={hostName} /> : null}
+              {toggles.showHostFlourish ? (
+                <HostFlourish i18n={i18n} theme={theme} hostName={hostName} />
+              ) : null}
 
               <p style={{ margin: "24px 0 0" }}>
                 <a
@@ -58,7 +67,7 @@ export function BlastEmail({
                   rel="noopener noreferrer"
                   style={{ color: theme.accent, fontSize: "14px" }}
                 >
-                  View event →
+                  {t("Email.blast.view")}
                 </a>
               </p>
             </td>

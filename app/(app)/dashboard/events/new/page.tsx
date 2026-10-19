@@ -1,3 +1,4 @@
+import { getRequestTranslator } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createEvent } from "@/app/actions/createEvent";
@@ -13,7 +14,10 @@ import {
 } from "@/components/ui/AppPrimitives";
 import { CaptchaForm } from "@/components/ui/CaptchaForm";
 
-export const metadata: Metadata = { title: "New Event" };
+export async function generateMetadata(): Promise<Metadata> {
+  const tr = await getRequestTranslator();
+  return { title: tr("Ui.Dashboard.newEventMetadataTitle") };
+}
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -41,62 +45,64 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 }
 
 export default async function NewEventPage() {
+  const tr = await getRequestTranslator();
+
   const sessionUser = await getSessionUser();
   if (!sessionUser || sessionUser.role === "GUEST") redirect("/auth/sign-in");
 
   return (
     <div style={{ maxWidth: "480px", margin: "0 auto", padding: "32px 16px 80px" }}>
       <CaptchaForm action={createEvent} captchaAction="event_create">
-        <Card title="Event Details">
-          <FormField label="Event name *" style={{ marginBottom: "14px" }}>
-            <AppInput name="title" required placeholder="Wine Night at Jane's" />
+        <Card title={tr("Ui.Dashboard.eventDetails")}>
+          <FormField label={tr("Ui.Dashboard.eventName")} style={{ marginBottom: "14px" }}>
+            <AppInput name="title" required placeholder={tr("Ui.Dashboard.wineNightAtJaneS")} />
           </FormField>
-          <FormField label="Description" style={{ marginBottom: "14px" }}>
+          <FormField label={tr("Ui.Dashboard.description")} style={{ marginBottom: "14px" }}>
             <textarea
               name="description"
-              placeholder="Come hang out! Bring a bottle to share."
+              placeholder={tr("Ui.Dashboard.comeHangOutBringABottleToShare")}
               rows={3}
               style={{ ...appInputStyle, resize: "vertical" }}
             />
           </FormField>
         </Card>
 
-        <Card title="Date & Time">
+        <Card title={tr("Ui.Dashboard.dateTime")}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <FormField label="Date *" style={{ marginBottom: "14px" }}>
+            <FormField label={tr("Ui.Dashboard.date")} style={{ marginBottom: "14px" }}>
               <AppInput name="startDate" type="date" required />
             </FormField>
-            <FormField label="Time *" style={{ marginBottom: "14px" }}>
+            <FormField label={tr("Ui.Dashboard.time")} style={{ marginBottom: "14px" }}>
               <AppInput name="startTime" type="time" required />
             </FormField>
           </div>
-          <FormField label="Timezone" style={{ marginBottom: "14px" }}>
+          <FormField label={tr("Ui.Dashboard.timezone")} style={{ marginBottom: "14px" }}>
             <select name="timezone" style={appInputStyle}>
-              <option value="America/New_York">Eastern (ET)</option>
-              <option value="America/Chicago">Central (CT)</option>
-              <option value="America/Denver">Mountain (MT)</option>
-              <option value="America/Los_Angeles">Pacific (PT)</option>
-              <option value="America/Anchorage">Alaska (AKT)</option>
-              <option value="Pacific/Honolulu">Hawaii (HST)</option>
-              <option value="Europe/London">London (GMT/BST)</option>
-              <option value="Europe/Paris">Paris (CET)</option>
-              <option value="Asia/Tokyo">Tokyo (JST)</option>
-              <option value="Australia/Sydney">Sydney (AEST)</option>
+              <option value="America/New_York">{tr("Ui.Dashboard.easternEt")}</option>
+              <option value="America/Chicago">{tr("Ui.Dashboard.centralCt")}</option>
+              <option value="America/Denver">{tr("Ui.Dashboard.mountainMt")}</option>
+              <option value="America/Los_Angeles">{tr("Ui.Dashboard.pacificPt")}</option>
+              <option value="America/Anchorage">{tr("Ui.Dashboard.alaskaAkt")}</option>
+              <option value="Pacific/Honolulu">{tr("Ui.Dashboard.hawaiiHst")}</option>
+              <option value="Europe/London">{tr("Ui.Dashboard.londonGmtBst")}</option>
+              <option value="Europe/Paris">{tr("Ui.Dashboard.parisCet")}</option>
+              <option value="Asia/Tokyo">{tr("Ui.Dashboard.tokyoJst")}</option>
+              <option value="Australia/Sydney">{tr("Ui.Dashboard.sydneyAest")}</option>
             </select>
           </FormField>
         </Card>
 
-        <Card title="Location">
+        <Card title={tr("Ui.Dashboard.location")}>
           <LocationSelector />
         </Card>
 
-        <Card title="Visibility">
+        <Card title={tr("Ui.Dashboard.visibility")}>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {(
               [
-                ["UNLISTED", "Unlisted", "Only people with the link can see this"],
-                ["PUBLIC", "Public", "Anyone can find and view this event"],
-                ["PRIVATE", "Private", "Invite only — host must approve each RSVP"],
+                ["UNLISTED", tr("Ui.Dashboard.unlisted"), tr("Ui.Dashboard.unlistedDescription")],
+                ["PUBLIC", tr("Ui.Dashboard.public"), tr("Ui.Dashboard.publicDescription")],
+                ["PRIVATE", tr("Ui.Dashboard.private"), tr("Ui.Dashboard.privateDescription")],
               ] as const
             ).map(([val, label, desc]) => (
               <label
@@ -140,7 +146,7 @@ export default async function NewEventPage() {
             fontSize: "16px",
           }}
         >
-          Create Event →
+          {tr("Ui.Dashboard.createEvent")}
         </AppButton>
       </CaptchaForm>
     </div>

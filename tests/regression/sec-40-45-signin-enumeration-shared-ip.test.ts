@@ -20,6 +20,13 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
+vi.mock("@/i18n/server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/i18n/server")>();
+  return { ...actual, getRequestTranslator: () => actual.getTranslator("en-US") };
+});
+vi.mock("@/lib/db", () => ({
+  db: { user: { findUnique: vi.fn(async () => ({ preferredLocale: null })) } },
+}));
 const mocks = vi.hoisted(() => ({
   mockCreateMagicLink: vi.fn(),
   mockSendMagicLinkEmail: vi.fn().mockResolvedValue(undefined),
@@ -37,6 +44,7 @@ vi.mock("@/lib/email", () => ({ sendMagicLinkEmail: mocks.mockSendMagicLinkEmail
 vi.mock("@/lib/sms", () => ({ sendMagicLinkSms: mocks.mockSendMagicLinkSms }));
 vi.mock("@/lib/rateLimit", () => ({ rateLimit: mocks.mockRateLimit }));
 vi.mock("next/headers", () => ({
+  cookies: vi.fn(async () => ({ get: vi.fn() })),
   headers: vi.fn().mockResolvedValue({ get: mocks.mockHeadersGet }),
 }));
 

@@ -1,3 +1,5 @@
+import { resolveLocale } from "@/i18n/config";
+import { getTranslator } from "@/i18n/server";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { resolveTwilioAuthToken } from "@/lib/sms";
@@ -82,12 +84,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const from = params.get("From") ?? "";
   const rawBody = (params.get("Body") ?? "").trim().toUpperCase();
 
+  const phone = normalizePhone(from);
+  const user = await db.user.findUnique({ where: { phone }, select: { preferredLocale: true } });
+  const t = await getTranslator(resolveLocale(user?.preferredLocale));
   const newStatus = STATUS_MAP[rawBody];
   if (!newStatus) {
-    return twiml("Reply YES, NO, or MAYBE to update your RSVP.");
+    return twiml(t("Sms.webhook.invalid"));
   }
-
-  const phone = normalizePhone(from);
 
   // Find invitations for this phone where the linked RSVP is still INVITED
   const invitations = await db.invitation.findMany({
@@ -126,24 +129,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   if (pending.length === 0) {
-    return twiml("No pending invitations found for this number.");
+    return twiml(t("Sms.webhook.none"));
   }
 
   if (pending.length > 1) {
     const lines = pending
       .map((p) => `• ${p.eventTitle}: ${APP_URL}/e/${p.eventSlug}/rsvp?token=${p.editToken}`)
       .join("\n");
-    return twiml(`You have ${pending.length} pending invitations. RSVP at each link:\n${lines}`);
+    return twiml(t("Sms.webhook.multiple", { count: pending.length, links: lines }));
   }
 
   const p = pending[0];
 
   if (p.rsvpDeadline && p.rsvpDeadline < new Date()) {
-    return twiml(`Sorry, RSVPs are closed for ${p.eventTitle}.`);
+    return twiml(t("Sms.webhook.closed", { eventTitle: p.eventTitle }));
   }
 
   if (newStatus === "MAYBE" && !p.maybeEnabled) {
-    return twiml(`${p.eventTitle} doesn't allow a "maybe" response. Reply YES or NO.`);
+    return twiml(t("Sms.webhook.noMaybe", { eventTitle: p.eventTitle }));
   }
 
   if (newStatus === "GOING" && p.capacity) {
@@ -156,9 +159,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       },
     });
     if (goingCount >= p.capacity) {
-      return twiml(
-        `Sorry, ${p.eventTitle} is full. You can still reply MAYBE if you'd like to be waitlisted.`
-      );
+      return twiml(t("Sms.webhook.full", { eventTitle: p.eventTitle }));
     }
   }
 
@@ -167,8 +168,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     data: { status: newStatus, responded: true },
   });
 
-  const statusLabel =
-    newStatus === "GOING" ? "going" : newStatus === "MAYBE" ? "maybe" : "not going";
+  const statusLabel = t(`Sms.webhook.status.${newStatus}`);
   const editUrl = `${APP_URL}/e/${p.eventSlug}/rsvp?token=${p.editToken}`;
-  return twiml(`Got it! You're ${statusLabel} for ${p.eventTitle}. Update anytime: ${editUrl}`);
+  return twiml(
+    t("Sms.webhook.confirmed", { status: statusLabel, eventTitle: p.eventTitle, editUrl })
+  );
 }

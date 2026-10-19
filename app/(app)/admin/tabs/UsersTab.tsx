@@ -1,4 +1,5 @@
 "use client";
+import { useLocale, useTranslations } from "next-intl";
 
 import { APP_SHELL } from "@/lib/theme";
 import { AppInput, appCardStyle, appInputStyle } from "@/components/ui/AppPrimitives";
@@ -35,12 +36,15 @@ export function UsersTab({
   handleUserDelete: (userId: string, name: string) => void;
   sessionUserId?: string;
 }) {
+  const tr = useTranslations("Ui.Admin");
+  const locale = useLocale();
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
         <AppInput
           type="text"
-          placeholder="Search users by name, email, or phone..."
+          placeholder={tr("searchUsersByNameEmailOrPhone")}
           value={userSearch}
           onChange={(e) => handleUserSearch(e.target.value)}
           style={{ flex: "1 1 200px", padding: "12px 16px" }}
@@ -59,10 +63,10 @@ export function UsersTab({
             colorScheme: "dark",
           }}
         >
-          <option value="ALL">All Roles</option>
-          <option value="ADMIN">ADMIN</option>
-          <option value="HOST">HOST</option>
-          <option value="GUEST">GUEST</option>
+          <option value="ALL">{tr("allRoles")}</option>
+          <option value="ADMIN">{tr("admin")}</option>
+          <option value="HOST">{tr("host")}</option>
+          <option value="GUEST">{tr("guest")}</option>
         </select>
 
         {/* Status Filter */}
@@ -80,10 +84,10 @@ export function UsersTab({
             colorScheme: "dark",
           }}
         >
-          <option value="ALL">All Statuses</option>
-          <option value="ACTIVE">Active</option>
-          <option value="PENDING_DELETE">Pending Deletion</option>
-          <option value="DELETED">Deleted / Anonymized</option>
+          <option value="ALL">{tr("allStatuses")}</option>
+          <option value="ACTIVE">{tr("active")}</option>
+          <option value="PENDING_DELETE">{tr("pendingDeletion")}</option>
+          <option value="DELETED">{tr("deletedAnonymized")}</option>
         </select>
 
         <button
@@ -100,7 +104,7 @@ export function UsersTab({
             whiteSpace: "nowrap",
           }}
         >
-          + Create User
+          {tr("createUser")}
         </button>
       </div>
 
@@ -120,10 +124,10 @@ export function UsersTab({
                   textAlign: "left",
                 }}
               >
-                <th style={{ padding: "16px" }}>User</th>
-                <th style={{ padding: "16px" }}>Contact</th>
-                <th style={{ padding: "16px" }}>Role</th>
-                <th style={{ padding: "16px", textAlign: "right" }}>Actions</th>
+                <th style={{ padding: "16px" }}>{tr("user")}</th>
+                <th style={{ padding: "16px" }}>{tr("contact")}</th>
+                <th style={{ padding: "16px" }}>{tr("role")}</th>
+                <th style={{ padding: "16px", textAlign: "right" }}>{tr("actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -137,7 +141,7 @@ export function UsersTab({
                       color: APP_SHELL.textMuted,
                     }}
                   >
-                    No users found.
+                    {tr("noUsersFound")}
                   </td>
                 </tr>
               ) : (
@@ -145,10 +149,12 @@ export function UsersTab({
                   <tr key={u.id} style={{ borderBottom: `1px solid ${APP_SHELL.navBorder}` }}>
                     <td style={{ padding: "16px" }}>
                       <div style={{ fontWeight: 700, color: APP_SHELL.textPrimary }}>
-                        {u.name || "Unnamed User"}
+                        {u.name || tr("unnamedUser")}
                       </div>
                       <div style={{ fontSize: "11px", color: APP_SHELL.textMuted }}>
-                        Registered {new Date(u.createdAt).toLocaleDateString()}
+                        {tr("registeredOn", {
+                          date: new Date(u.createdAt).toLocaleDateString(locale),
+                        })}
                       </div>
                       {u.deletionScheduledAt && (
                         <div
@@ -159,11 +165,12 @@ export function UsersTab({
                             marginTop: "4px",
                           }}
                         >
-                          Deletion requested on{" "}
+                          {tr("deletionRequestedOn")}{" "}
                           {u.deletionRequestedAt
-                            ? new Date(u.deletionRequestedAt).toLocaleDateString()
+                            ? new Date(u.deletionRequestedAt).toLocaleDateString(locale)
                             : "unknown"}{" "}
-                          — scheduled for {new Date(u.deletionScheduledAt).toLocaleDateString()}
+                          {tr("scheduledFor")}
+                          {new Date(u.deletionScheduledAt).toLocaleDateString(locale)}
                         </div>
                       )}
                     </td>
@@ -197,19 +204,19 @@ export function UsersTab({
                           value="GUEST"
                           style={{ backgroundColor: "#12091f", color: "#ffffff" }}
                         >
-                          GUEST
+                          {tr("guest")}
                         </option>
                         <option
                           value="HOST"
                           style={{ backgroundColor: "#12091f", color: "#ffffff" }}
                         >
-                          HOST
+                          {tr("host")}
                         </option>
                         <option
                           value="ADMIN"
                           style={{ backgroundColor: "#12091f", color: "#ffffff" }}
                         >
-                          ADMIN
+                          {tr("admin")}
                         </option>
                       </select>
                     </td>
@@ -222,7 +229,7 @@ export function UsersTab({
                             fontStyle: "italic",
                           }}
                         >
-                          Current Session
+                          {tr("currentSession")}
                         </span>
                       ) : !u.email &&
                         !u.phone ? null : u // Already Deleted / Anonymized user - show nothing
@@ -236,7 +243,7 @@ export function UsersTab({
                         >
                           <button
                             onClick={() =>
-                              handleCancelDeletion(u.id, u.name || u.email || "Unknown User")
+                              handleCancelDeletion(u.id, u.name || u.email || tr("unknownUser"))
                             }
                             style={{
                               backgroundColor: "transparent",
@@ -249,11 +256,14 @@ export function UsersTab({
                               padding: "4px 10px",
                             }}
                           >
-                            Restore
+                            {tr("restore")}
                           </button>
                           <button
                             onClick={() =>
-                              handleUserDeleteImmediately(u.id, u.name || u.email || "Unknown User")
+                              handleUserDeleteImmediately(
+                                u.id,
+                                u.name || u.email || tr("unknownUser")
+                              )
                             }
                             style={{
                               backgroundColor: "transparent",
@@ -266,13 +276,13 @@ export function UsersTab({
                               padding: "4px 10px",
                             }}
                           >
-                            Delete Now
+                            {tr("deleteNow")}
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() =>
-                            handleUserDelete(u.id, u.name || u.email || "Unknown User")
+                            handleUserDelete(u.id, u.name || u.email || tr("unknownUser"))
                           }
                           style={{
                             backgroundColor: "transparent",
@@ -283,7 +293,7 @@ export function UsersTab({
                             fontSize: "13px",
                           }}
                         >
-                          Delete
+                          {tr("delete")}
                         </button>
                       )}
                     </td>

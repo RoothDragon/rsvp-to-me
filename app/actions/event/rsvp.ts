@@ -1,5 +1,9 @@
 "use server";
 
+import { eventActionMessage } from "./localization";
+
+import { resolveLocale } from "@/i18n/config";
+
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { sendRsvpConfirmationEmail, sendApprovalEmail, sendHostRsvpAlertEmail } from "@/lib/email";
@@ -29,7 +33,7 @@ export async function verifyEventPassword(
   const ip = await getClientIp();
   const limit = await rateLimit(`event-pw:${slug}:${ip}`, 10, 600);
   if (!limit.success) {
-    return { success: false, error: "Too many attempts. Please try again later." };
+    return { success: false, error: await eventActionMessage("passwordRateLimited") };
   }
 
   const event = await db.event.findUnique({
@@ -38,12 +42,12 @@ export async function verifyEventPassword(
   });
 
   if (!event) {
-    return { success: false, error: "Event not found." };
+    return { success: false, error: await eventActionMessage("eventNotFoundPeriod") };
   }
 
   const password = rawPassword.trim();
   if (!event.passwordHash || !(await bcrypt.compare(password, event.passwordHash))) {
-    return { success: false, error: "Incorrect password." };
+    return { success: false, error: await eventActionMessage("incorrectPassword") };
   }
 
   const cookieStore = await cookies();
@@ -66,12 +70,12 @@ export async function verifyEventPassword(
 // guest typo (junk email, over-long answer) rather than only a crafted payload —
 // so surface it as the inline `{ success: false, error }` shape RsvpFlow renders
 // instead of a thrown ZodError the form can't catch.
-function rsvpValidationError(issues: { path: PropertyKey[] }[]): string {
+async function rsvpValidationError(issues: { path: PropertyKey[] }[]): Promise<string> {
   const fields = new Set(issues.flatMap((i) => i.path.map(String)));
-  if (fields.has("guestEmail")) return "Please enter a valid email address.";
-  if (fields.has("guestPhone")) return "Please enter a valid phone number.";
-  if (fields.has("answers")) return "One of your answers is too long (2000 characters max).";
-  return "Invalid RSVP data.";
+  if (fields.has("guestEmail")) return eventActionMessage("invalidEmail");
+  if (fields.has("guestPhone")) return eventActionMessage("invalidPhone");
+  if (fields.has("answers")) return eventActionMessage("answerTooLong");
+  return eventActionMessage("invalidRsvp");
 }
 
 async function linkUnlinkedInvitation(
@@ -105,7 +109,7 @@ async function linkUnlinkedInvitation(
 export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
   const parsed = AddRsvpSchema.safeParse(rawInput);
   if (!parsed.success) {
-    return { success: false as const, error: rsvpValidationError(parsed.error.issues) };
+    return { success: false as const, error: await rsvpValidationError(parsed.error.issues) };
   }
   const data = parsed.data;
   await assertCaptcha("rsvp_create", captchaToken);
@@ -118,11 +122,11 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
   const ip = await getClientIp();
   const ipLimit = await rateLimit(`rsvp:ip:${ip}`, 15, 600);
   if (!ipLimit.success) {
-    return { success: false, error: "Too many RSVPs. Please try again later." };
+    return { success: false, error: await eventActionMessage("rsvpRateLimited") };
   }
   const eventLimit = await rateLimit(`rsvp:evt:${data.eventId}:${ip}`, 8, 600);
   if (!eventLimit.success) {
-    return { success: false, error: "Too many RSVPs for this event. Please try again later." };
+    return { success: false, error: await eventActionMessage("eventRsvpRateLimited") };
   }
 
   const event = await db.event.findUnique({
@@ -144,37 +148,42 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
       theme: true,
       hostAlertEmail: true,
       hostAlertSms: true,
-      host: { select: { name: true, email: true, phone: true } },
-      coHosts: { select: { user: { select: { email: true, phone: true } } } },
+      host: { select: { name: true, email: true, phone: true, preferredLocale: true } },
+      coHosts: {
+        select: { user: { select: { email: true, phone: true, preferredLocale: true } } },
+      },
       rsvpFields: { select: { id: true } },
     },
   });
-  if (!event) return { success: false, error: "Event not found" };
+  if (!event) return { success: false, error: await eventActionMessage("eventNotFound") };
   if (event.startAt <= new Date()) {
-    return { success: false, error: "RSVPs are closed because this event has started" };
+    return { success: false, error: await eventActionMessage("eventStarted") };
   }
   if (event.rsvpDeadline && event.rsvpDeadline < new Date())
-    return { success: false, error: "RSVP deadline has passed" };
+    return { success: false, error: await eventActionMessage("deadlinePassed") };
 
   let userId: string | undefined;
+  let recipientLocale = resolveLocale(undefined);
   if (data.guestEmail) {
     const normalizedEmail = data.guestEmail.toLowerCase().trim();
     const guestUser = await db.user.upsert({
       where: { email: normalizedEmail },
       create: { email: normalizedEmail, name: data.guestName },
       update: {},
-      select: { id: true },
+      select: { id: true, preferredLocale: true },
     });
     userId = guestUser.id;
+    recipientLocale = resolveLocale(guestUser.preferredLocale);
   } else if (data.guestPhone) {
     const phone = data.guestPhone.trim().replace(/[\s\-().]/g, "");
     const guestUser = await db.user.upsert({
       where: { phone },
       create: { phone, name: data.guestName },
       update: {},
-      select: { id: true },
+      select: { id: true, preferredLocale: true },
     });
     userId = guestUser.id;
+    recipientLocale = resolveLocale(guestUser.preferredLocale);
   }
 
   // If a host pre-invited this guest, update their existing INVITED RSVP instead of creating a duplicate
@@ -228,7 +237,7 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
     return { atCapacity: false as const, rsvp };
   });
 
-  if (locked.atCapacity) return { success: false, error: "Event is at capacity" };
+  if (locked.atCapacity) return { success: false, error: await eventActionMessage("atCapacity") };
   const rsvp = locked.rsvp;
 
   await linkUnlinkedInvitation(
@@ -267,6 +276,7 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
 
   if (data.guestEmail) {
     sendRsvpConfirmationEmail(data.guestEmail, {
+      locale: recipientLocale,
       guestName: data.guestName,
       eventTitle: event.title,
       eventSlug: event.slug,
@@ -286,6 +296,7 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
   }
   if (data.guestPhone) {
     sendRsvpConfirmationSms(data.guestPhone, {
+      locale: recipientLocale,
       guestName: data.guestName,
       eventTitle: event.title,
       eventSlug: event.slug,
@@ -320,6 +331,7 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
       for (const recipient of recipients) {
         if (event.hostAlertEmail && recipient.email) {
           sendHostRsvpAlertEmail(recipient.email, {
+            locale: resolveLocale(recipient.preferredLocale),
             ...alertBase,
             goingCount: countFor("GOING"),
             maybeCount: countFor("MAYBE"),
@@ -328,7 +340,10 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
           }).catch(logSafe("addRSVP"));
         }
         if (event.hostAlertSms && recipient.phone) {
-          sendHostRsvpAlertSms(recipient.phone, alertBase).catch(logSafe("addRSVP"));
+          sendHostRsvpAlertSms(recipient.phone, {
+            ...alertBase,
+            locale: resolveLocale(recipient.preferredLocale),
+          }).catch(logSafe("addRSVP"));
         }
       }
     })().catch(logSafe("addRSVP"));
@@ -347,7 +362,7 @@ export async function updateRSVP(
 ) {
   const parsed = UpdateRsvpSchema.safeParse(rawInput);
   if (!parsed.success) {
-    return { success: false as const, error: rsvpValidationError(parsed.error.issues) };
+    return { success: false as const, error: await rsvpValidationError(parsed.error.issues) };
   }
   const data = parsed.data;
   await assertCaptcha("rsvp_edit", captchaToken);
@@ -366,17 +381,17 @@ export async function updateRSVP(
       },
     },
   });
-  if (!rsvp) return { success: false, error: "RSVP not found" };
+  if (!rsvp) return { success: false, error: await eventActionMessage("rsvpNotFound") };
 
   if (rsvp.event.startAt <= new Date()) {
-    return { success: false, error: "RSVPs are closed because this event has started" };
+    return { success: false, error: await eventActionMessage("eventStarted") };
   }
 
   // SEC-21(b): a token-holding guest could previously flip to GOING after the
   // deadline or past capacity — a capacity-bypass cousin of SEC-12. Re-validate
   // both here. Declining (NO) is always allowed so guests can cancel late.
   if (rsvp.event.rsvpDeadline && rsvp.event.rsvpDeadline < new Date() && data.status !== "NO") {
-    return { success: false, error: "RSVP deadline has passed" };
+    return { success: false, error: await eventActionMessage("deadlinePassed") };
   }
 
   // Only a transition *into* GOING consumes a new seat; note edits or downgrades
@@ -403,7 +418,7 @@ export async function updateRSVP(
     return { atCapacity: false as const };
   });
 
-  if (locked.atCapacity) return { success: false, error: "Event is at capacity" };
+  if (locked.atCapacity) return { success: false, error: await eventActionMessage("atCapacity") };
 
   if (data.plusOneGuestNames !== undefined) {
     await db.plusOneGuest.deleteMany({ where: { rsvpId: rsvp.id } });
@@ -462,11 +477,11 @@ export async function updateRsvpAsHost(
 ) {
   const parsed = UpdateRsvpSchema.safeParse(rawInput);
   if (!parsed.success) {
-    return { success: false as const, error: rsvpValidationError(parsed.error.issues) };
+    return { success: false as const, error: await rsvpValidationError(parsed.error.issues) };
   }
   const data = parsed.data;
   const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
+  if (!session) throw new Error(await eventActionMessage("unauthorized"));
   await assertCaptcha("rsvp_edit", captchaToken);
   const rsvp = await db.rSVP.findUnique({
     where: { id: rsvpId },
@@ -475,7 +490,7 @@ export async function updateRsvpAsHost(
       event: { select: { id: true, slug: true, rsvpFields: { select: { id: true } } } },
     },
   });
-  if (!rsvp) throw new Error("Forbidden");
+  if (!rsvp) throw new Error(await eventActionMessage("forbidden"));
   await assertHostOrCohost(rsvp.eventId);
 
   await db.rSVP.update({
@@ -542,12 +557,12 @@ export async function deleteRsvpAsHost(rsvpId: string) {
   // before any lookup, and a missing id throws the same "Forbidden" as an
   // unauthorized one (matching the info-section actions).
   const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
+  if (!session) throw new Error(await eventActionMessage("unauthorized"));
   const rsvp = await db.rSVP.findUnique({
     where: { id: rsvpId },
     include: { event: { select: { id: true, slug: true } } },
   });
-  if (!rsvp) throw new Error("Forbidden");
+  if (!rsvp) throw new Error(await eventActionMessage("forbidden"));
   await assertHostOrCohost(rsvp.event.id);
   await db.rSVP.delete({ where: { id: rsvpId } });
   logActivity(rsvp.event.id, "rsvp_delete", `${rsvp.guestName}'s RSVP was removed`).catch(
@@ -563,11 +578,12 @@ export async function deleteRsvpAsHost(rsvpId: string) {
 export async function approveRsvp(rsvpId: string, message?: string, captchaToken?: string | null) {
   // SEC-42: see deleteRsvpAsHost.
   const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
+  if (!session) throw new Error(await eventActionMessage("unauthorized"));
   await assertCaptcha("rsvp_moderation", captchaToken);
   const rsvp = await db.rSVP.findUnique({
     where: { id: rsvpId },
     include: {
+      user: { select: { preferredLocale: true } },
       event: {
         select: {
           slug: true,
@@ -578,13 +594,14 @@ export async function approveRsvp(rsvpId: string, message?: string, captchaToken
       },
     },
   });
-  if (!rsvp) throw new Error("Forbidden");
+  if (!rsvp) throw new Error(await eventActionMessage("forbidden"));
   await assertHostOrCohost(rsvp.eventId);
 
   await db.rSVP.update({ where: { id: rsvpId }, data: { approved: true } });
 
   if (rsvp.guestEmail) {
     await sendApprovalEmail(rsvp.guestEmail, {
+      locale: resolveLocale(rsvp.user?.preferredLocale),
       guestName: rsvp.guestName,
       eventTitle: rsvp.event.title,
       eventSlug: rsvp.event.slug,
@@ -595,6 +612,7 @@ export async function approveRsvp(rsvpId: string, message?: string, captchaToken
     }).catch(logSafe("approveRsvp"));
   } else if (rsvp.guestPhone) {
     await sendApprovalSms(rsvp.guestPhone, {
+      locale: resolveLocale(rsvp.user?.preferredLocale),
       eventTitle: rsvp.event.title,
       approved: true,
       message,
@@ -608,11 +626,12 @@ export async function approveRsvp(rsvpId: string, message?: string, captchaToken
 export async function declineRsvp(rsvpId: string, message?: string, captchaToken?: string | null) {
   // SEC-42: see deleteRsvpAsHost.
   const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
+  if (!session) throw new Error(await eventActionMessage("unauthorized"));
   await assertCaptcha("rsvp_moderation", captchaToken);
   const rsvp = await db.rSVP.findUnique({
     where: { id: rsvpId },
     include: {
+      user: { select: { preferredLocale: true } },
       event: {
         select: {
           slug: true,
@@ -623,11 +642,12 @@ export async function declineRsvp(rsvpId: string, message?: string, captchaToken
       },
     },
   });
-  if (!rsvp) throw new Error("Forbidden");
+  if (!rsvp) throw new Error(await eventActionMessage("forbidden"));
   await assertHostOrCohost(rsvp.eventId);
 
   if (rsvp.guestEmail) {
     await sendApprovalEmail(rsvp.guestEmail, {
+      locale: resolveLocale(rsvp.user?.preferredLocale),
       guestName: rsvp.guestName,
       eventTitle: rsvp.event.title,
       eventSlug: rsvp.event.slug,
@@ -638,6 +658,7 @@ export async function declineRsvp(rsvpId: string, message?: string, captchaToken
     }).catch(logSafe("declineRsvp"));
   } else if (rsvp.guestPhone) {
     await sendApprovalSms(rsvp.guestPhone, {
+      locale: resolveLocale(rsvp.user?.preferredLocale),
       eventTitle: rsvp.event.title,
       approved: false,
       message,

@@ -1,3 +1,4 @@
+import { getRequestLocale, getRequestTranslator } from "@/i18n/server";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { buildEventSocialMetadata } from "@/lib/event-social";
@@ -17,7 +18,11 @@ export async function generateMetadata(props: EventSlugLayoutProps): Promise<Met
   // Page metadata replaces this for viewable events. Keeping a privacy-safe
   // segment default prevents Next's not-found boundary from falling back to
   // site-wide metadata for missing and cancelled event URLs.
-  return buildEventSocialMetadata(null, slug);
+  const [locale, translate] = await Promise.all([getRequestLocale(), getRequestTranslator()]);
+  return buildEventSocialMetadata(null, slug, {
+    locale,
+    translate: (key, values) => translate(`Ui.Event.Social.${key}`, values),
+  });
 }
 
 export default async function EventSlugLayout({ children }: EventSlugLayoutProps) {

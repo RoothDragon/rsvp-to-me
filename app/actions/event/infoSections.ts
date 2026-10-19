@@ -1,5 +1,7 @@
 "use server";
 
+import { eventActionMessage } from "./localization";
+
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { logActivity, iconLabel } from "@/lib/activity";
@@ -59,7 +61,7 @@ export async function updateInfoSection(
     where: { id: sectionId },
     include: { event: { select: { slug: true } } },
   });
-  if (!section) throw new Error("Forbidden");
+  if (!section) throw new Error(await eventActionMessage("forbidden"));
   await assertHostOrCohost(section.eventId);
   await assertCaptcha("event_content", captchaToken);
   await db.eventInfoSection.update({
@@ -86,7 +88,7 @@ export async function removeInfoSection(sectionId: string) {
     where: { id: sectionId },
     include: { event: { select: { slug: true } } },
   });
-  if (!section) throw new Error("Forbidden");
+  if (!section) throw new Error(await eventActionMessage("forbidden"));
   await assertHostOrCohost(section.eventId);
   await db.eventInfoSection.delete({ where: { id: sectionId } });
   const activityEvent = await logActivity(

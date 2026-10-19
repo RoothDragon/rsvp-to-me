@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import React, { useState } from "react";
 import { Mail, MessageSquare, Settings, Eye, Globe, Link2, Lock, Check } from "lucide-react";
 import type { ResolvedTheme } from "@/lib/theme";
@@ -9,17 +11,6 @@ import QRCode from "qrcode";
 import { useCaptcha } from "@/components/ui/CaptchaProvider";
 
 type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
-
-const VISIBILITY_OPTIONS: {
-  value: Visibility;
-  icon: React.ElementType;
-  label: string;
-  description: string;
-}[] = [
-  { value: "PUBLIC", icon: Globe, label: "Public", description: "Anyone can find this event" },
-  { value: "UNLISTED", icon: Link2, label: "Unlisted", description: "Only people with the link" },
-  { value: "PRIVATE", icon: Lock, label: "Private", description: "Invite only, approval required" },
-];
 
 function visibilityIcon(v: Visibility) {
   if (v === "PUBLIC") return Globe;
@@ -40,10 +31,39 @@ export function HostBar({
   visibility: Visibility;
   channelConfig?: { email: boolean; sms: boolean };
 }) {
+  const translate = useTranslations("Ui.Event.HostBar");
+
+  const VISIBILITY_OPTIONS: {
+    value: Visibility;
+    icon: React.ElementType;
+    label: string;
+    description: string;
+  }[] = [
+    {
+      value: "PUBLIC",
+      icon: Globe,
+      label: translate("public"),
+      description: translate("anyoneCanFindEvent"),
+    },
+    {
+      value: "UNLISTED",
+      icon: Link2,
+      label: translate("unlisted"),
+      description: translate("onlyPeopleLink"),
+    },
+    {
+      value: "PRIVATE",
+      icon: Lock,
+      label: translate("private"),
+      description: translate("inviteOnlyApprovalRequired"),
+    },
+  ];
+
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [messageText, setMessageText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [blastResult, setBlastResult] = useState<string | null>(null);
+  const [blastSucceeded, setBlastSucceeded] = useState(false);
   const [sendEmail, setSendEmail] = useState(true);
   const [sendSms, setSendSms] = useState(false);
   const [recipientFilters, setRecipientFilters] = useState<
@@ -86,13 +106,16 @@ export function HostBar({
         inviteGuest(eventId, inviteInput.trim(), token)
       );
       if (result.success) {
-        setInviteStatus({ success: true, message: `Invite sent to ${result.emailOrPhone}!` });
+        setInviteStatus({
+          success: true,
+          message: translate("inviteSent", { destination: result.emailOrPhone }),
+        });
         setInviteInput("");
       }
     } catch (err: unknown) {
       setInviteStatus({
         success: false,
-        message: err instanceof Error ? err.message : "Failed to send invite.",
+        message: err instanceof Error ? err.message : translate("failedSendInvite"),
       });
     } finally {
       setInvitePending(false);
@@ -102,17 +125,26 @@ export function HostBar({
   const VisIcon = visibilityIcon(visibility);
 
   const actions = [
-    { id: "invite", icon: Mail, label: "Invite", href: null },
-    { id: "message", icon: MessageSquare, label: "Message", href: null },
+    { id: "invite", icon: Mail, label: translate("invite"), href: null },
+    { id: "message", icon: MessageSquare, label: translate("message"), href: null },
     {
       id: "visibility",
       icon: VisIcon,
       label:
-        visibility === "PUBLIC" ? "Public" : visibility === "UNLISTED" ? "Unlisted" : "Private",
+        visibility === "PUBLIC"
+          ? translate("public")
+          : visibility === "UNLISTED"
+            ? translate("unlisted")
+            : translate("private"),
       href: null,
     },
-    { id: "settings", icon: Settings, label: "Settings", href: `/e/${eventSlug}/settings` },
-    { id: "preview", icon: Eye, label: "Preview", href: null },
+    {
+      id: "settings",
+      icon: Settings,
+      label: translate("settings"),
+      href: `/e/${eventSlug}/settings`,
+    },
+    { id: "preview", icon: Eye, label: translate("preview"), href: null },
   ];
 
   const handleVisibilityChange = async (next: Visibility) => {
@@ -140,12 +172,14 @@ export function HostBar({
       recipientFilters.length === 0
     )
       return;
+    setBlastSucceeded(false);
     setIsSending(true);
     setBlastResult(null);
 
     let emailStatus = "";
     let smsStatus = "";
     let successCount = 0;
+    let hasRecipients = false;
 
     try {
       if (sendEmail) {
@@ -154,10 +188,11 @@ export function HostBar({
         );
         if (r.success) {
           successCount++;
+          hasRecipients ||= r.sent > 0;
           emailStatus =
             r.sent === 0
-              ? "No guests with email addresses found."
-              : `Sent email to ${r.sent} guest${r.sent !== 1 ? "s" : ""}.`;
+              ? translate("noGuestsEmailAddressesFound")
+              : translate("emailSent", { count: r.sent });
         }
       }
       if (sendSms) {
@@ -166,22 +201,24 @@ export function HostBar({
         );
         if (r.success) {
           successCount++;
+          hasRecipients ||= r.sent > 0;
           smsStatus =
             r.sent === 0
-              ? "No guests with phone numbers found."
-              : `Sent SMS to ${r.sent} guest${r.sent !== 1 ? "s" : ""}.`;
+              ? translate("noGuestsPhoneNumbersFound")
+              : translate("smsSent", { count: r.sent });
         }
       }
 
       if (successCount > 0) {
         const parts = [emailStatus, smsStatus].filter(Boolean);
+        setBlastSucceeded(hasRecipients);
         setBlastResult(parts.join(" "));
         setMessageText("");
       } else {
-        setBlastResult("Failed to send message. Try again.");
+        setBlastResult(translate("failedSendMessageTryAgain"));
       }
     } catch (err: unknown) {
-      setBlastResult(err instanceof Error ? err.message : "Failed to send message. Try again.");
+      setBlastResult(err instanceof Error ? err.message : translate("failedSendMessageTryAgain"));
     } finally {
       setIsSending(false);
     }
@@ -281,7 +318,7 @@ export function HostBar({
             setInviteInput("");
             setInviteStatus(null);
           }}
-          title="Invite Guests"
+          title={translate("inviteGuests")}
           onOpen={
             visibility !== "PRIVATE"
               ? async () => {
@@ -320,7 +357,7 @@ export function HostBar({
                   lineHeight: 1.6,
                 }}
               >
-                This is a private event. Guests must be invited directly via email or SMS.
+                {translate("privateEventGuestsMustInvitedDirectly")}
               </p>
               <a
                 href={`/e/${eventSlug}/settings?section=privacy`}
@@ -331,13 +368,13 @@ export function HostBar({
                   textDecoration: "none",
                 }}
               >
-                Change in Display Options →
+                {translate("changeDisplayOptions")}
               </a>
             </div>
           ) : (
             <>
               <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px", marginBottom: "16px" }}>
-                Share the event link or send invites directly.
+                {translate("shareEventLinkOrSendInvites")}
               </p>
               <div
                 style={{
@@ -381,7 +418,7 @@ export function HostBar({
                   }}
                 >
                   {copiedLink ? <Check size={16} /> : null}
-                  {copiedLink ? "Copied!" : "Copy Link"}
+                  {copiedLink ? translate("copied") : translate("copyLink")}
                 </button>
                 {qrDataUrl && (
                   <a
@@ -401,7 +438,7 @@ export function HostBar({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    ↓ QR
+                    {translate("qr")}
                   </a>
                 )}
               </div>
@@ -409,7 +446,7 @@ export function HostBar({
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
                   <Image
                     src={qrDataUrl}
-                    alt="Event QR code"
+                    alt={translate("eventQrCode")}
                     width={160}
                     height={160}
                     unoptimized
@@ -432,8 +469,7 @@ export function HostBar({
                 textAlign: "center",
               }}
             >
-              Messaging is not configured on this server. Share the event link above to invite
-              guests.
+              {translate("messagingNotConfiguredServerShareEvent")}
             </div>
           ) : (
             <div
@@ -444,17 +480,17 @@ export function HostBar({
               }}
             >
               <h4 style={{ color: "#fff", fontWeight: 600, fontSize: "14px", marginBottom: "8px" }}>
-                Send Direct Invite
+                {translate("sendDirectInvite")}
               </h4>
               <div style={{ display: "flex", gap: "8px" }}>
                 <input
                   type="text"
                   placeholder={
                     channelConfig.email && channelConfig.sms
-                      ? "emails or phones (e.g. tom@mail.com, +1555123...)"
+                      ? translate("emailsOrPhonesEGTom")
                       : channelConfig.sms
-                        ? "phone numbers (e.g. +1555123...)"
-                        : "email addresses (e.g. tom@mail.com)"
+                        ? translate("phoneNumbersEG1555123")
+                        : translate("emailAddressesEGTomMail")
                   }
                   value={inviteInput}
                   onChange={(e) => setInviteInput(e.target.value)}
@@ -489,7 +525,7 @@ export function HostBar({
                     opacity: !inviteInput.trim() || invitePending ? 0.5 : 1,
                   }}
                 >
-                  {invitePending ? "Sending…" : "Send"}
+                  {invitePending ? translate("sending") : translate("send")}
                 </button>
               </div>
               {inviteStatus && (
@@ -514,7 +550,7 @@ export function HostBar({
             setActivePanel(null);
             setBlastResult(null);
           }}
-          title="Message Guests"
+          title={translate("messageGuests")}
         >
           {!channelConfig.email && !channelConfig.sms ? (
             <div
@@ -525,14 +561,13 @@ export function HostBar({
                 color: "rgba(255,255,255,0.4)",
               }}
             >
-              Messaging is not configured on this server. Enable email or SMS in admin settings to
-              send blasts to guests.
+              {translate("messagingNotConfiguredServerEnableEmail")}
             </div>
           ) : (
             <>
               <textarea
                 rows={4}
-                placeholder="Type your message…"
+                placeholder={translate("typeMessage")}
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
                 style={{
@@ -558,14 +593,8 @@ export function HostBar({
                     marginBottom: "12px",
                     padding: "8px 12px",
                     borderRadius: "8px",
-                    background:
-                      blastResult.includes("Sent") || blastResult.includes("sent")
-                        ? "rgba(74,222,128,0.1)"
-                        : "rgba(248,113,113,0.1)",
-                    color:
-                      blastResult.includes("Sent") || blastResult.includes("sent")
-                        ? "#4ade80"
-                        : "#f87171",
+                    background: blastSucceeded ? "rgba(74,222,128,0.1)" : "rgba(248,113,113,0.1)",
+                    color: blastSucceeded ? "#4ade80" : "#f87171",
                   }}
                 >
                   {blastResult}
@@ -585,7 +614,7 @@ export function HostBar({
                       marginBottom: "8px",
                     }}
                   >
-                    Delivery Channels
+                    {translate("deliveryChannels")}
                   </div>
                   <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
                     {channelConfig.email && (
@@ -605,7 +634,7 @@ export function HostBar({
                           onChange={(e) => setSendEmail(e.target.checked)}
                           style={{ accentColor: t.accent }}
                         />
-                        <span>Email</span>
+                        <span>{translate("email")}</span>
                       </label>
                     )}
                     {channelConfig.sms && (
@@ -625,7 +654,7 @@ export function HostBar({
                           onChange={(e) => setSendSms(e.target.checked)}
                           style={{ accentColor: t.accent }}
                         />
-                        <span>SMS</span>
+                        <span>{translate("sms")}</span>
                       </label>
                     )}
                   </div>
@@ -644,16 +673,16 @@ export function HostBar({
                     marginBottom: "8px",
                   }}
                 >
-                  Recipients
+                  {translate("recipients")}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                   {(
                     [
-                      { key: "ALL", label: "All" },
-                      { key: "INVITED", label: "Invited" },
-                      { key: "GOING", label: "Yes" },
-                      { key: "MAYBE", label: "Maybe" },
-                      { key: "NO", label: "No" },
+                      { key: "ALL", label: translate("all") },
+                      { key: "INVITED", label: translate("invited") },
+                      { key: "GOING", label: translate("yes") },
+                      { key: "MAYBE", label: translate("maybe") },
+                      { key: "NO", label: translate("no") },
                     ] as const
                   ).map(({ key, label }) => {
                     const active = recipientFilters.includes(key);
@@ -712,7 +741,7 @@ export function HostBar({
                   marginTop: "8px",
                 }}
               >
-                {isSending ? "Sending…" : "Send Message"}
+                {isSending ? translate("sending") : translate("sendMessage")}
               </button>
             </>
           )}
@@ -720,9 +749,9 @@ export function HostBar({
       )}
 
       {activePanel === "visibility" && (
-        <SlideUp onClose={() => setActivePanel(null)} title="Event Visibility">
+        <SlideUp onClose={() => setActivePanel(null)} title={translate("eventVisibility")}>
           <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px", marginBottom: "16px" }}>
-            Control who can find and view this event.
+            {translate("controlWhoCanFindViewEvent")}
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {VISIBILITY_OPTIONS.map(({ value, icon: Icon, label, description }) => {
@@ -819,15 +848,15 @@ export function HostBar({
               (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.35)";
             }}
           >
-            More options in settings →
+            {translate("moreOptionsSettings")}
           </a>
         </SlideUp>
       )}
 
       {activePanel === "preview" && (
-        <SlideUp onClose={() => setActivePanel(null)} title="Preview as Guest">
+        <SlideUp onClose={() => setActivePanel(null)} title={translate("previewAsGuest")}>
           <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px", marginBottom: "16px" }}>
-            This shows you exactly what guests see when they open your event.
+            {translate("showsExactlyWhatGuestsSeeWhen")}
           </p>
           <button
             onClick={() => {
@@ -847,7 +876,7 @@ export function HostBar({
               cursor: "pointer",
             }}
           >
-            Open Guest Preview
+            {translate("openGuestPreview")}
           </button>
         </SlideUp>
       )}

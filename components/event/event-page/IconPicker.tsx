@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { ResolvedTheme } from "@/lib/theme";
 import { ICON_SET } from "./helpers";
 
@@ -14,6 +15,7 @@ export function IconPicker({
   onSelect: (key: string) => void;
   t: ResolvedTheme;
 }) {
+  const shared = useTranslations("Ui.Event.shared");
   return (
     <div
       style={{
@@ -28,7 +30,7 @@ export function IconPicker({
         <button
           key={key}
           onClick={() => onSelect(key)}
-          title={ICON_SET.find((i) => i.key === key)?.label}
+          title={shared("icons." + key)}
           style={{
             width: "40px",
             height: "40px",

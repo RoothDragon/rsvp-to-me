@@ -1,3 +1,5 @@
+import { createTranslator } from "next-intl";
+import dutch from "@/messages/nl-NL.json";
 import { describe, expect, it } from "vitest";
 import {
   buildEventSocialMetadata,
@@ -102,5 +104,36 @@ describe("event social metadata", () => {
     );
     expect(String(long.description).length).toBeLessThanOrEqual(200);
     expect(long.description).not.toContain("  ");
+  });
+});
+
+describe("localized social presentation", () => {
+  const translate = createTranslator({ locale: "nl-NL", messages: dutch.Ui.Event.Social });
+  const presentation = { locale: "nl-NL", translate };
+  it("localizes default invitation copy, image alt and OG locale while preserving titles and timezone", () => {
+    const metadata = buildEventSocialMetadata(
+      { ...publishedEvent, description: null, startAt: new Date("2030-07-21T00:30:00Z") },
+      publishedEvent.slug,
+      presentation
+    );
+    expect(metadata.title).toBe("Summer Party");
+    expect(metadata.description).toBe(
+      "Je bent uitgenodigd voor Summer Party op zaterdag 20 juli 2030."
+    );
+    expect(metadata.openGraph).toMatchObject({
+      locale: "nl_NL",
+      images: [expect.objectContaining({ alt: "Uitnodiging voor Summer Party" })],
+    });
+  });
+  it("keeps private event content hidden in Dutch metadata", () => {
+    const metadata = buildEventSocialMetadata(
+      { ...publishedEvent, visibility: "PRIVATE" },
+      publishedEvent.slug,
+      presentation
+    );
+    expect(metadata.title).toBe("Uitnodiging voor een evenement");
+    expect(metadata.description).toBe("Bekijk deze uitnodiging op RSVP to Me.");
+    expect(JSON.stringify(metadata)).not.toContain("Summer Party");
+    expect(metadata.robots).toEqual({ index: false, follow: false });
   });
 });

@@ -1,3 +1,4 @@
+import { requireEmailI18n, type EmailI18n } from "../i18n";
 import type { EmailTheme } from "@/lib/email-theme";
 import {
   buildGoogleCalendarUrl,
@@ -25,17 +26,20 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 
 /** Structured date/time + location card with optional map and calendar links. */
 export function DetailsCard({
+  i18n,
   theme,
   event,
   showMapLink = true,
   showCalendarLinks = true,
 }: {
+  i18n?: EmailI18n;
   theme: EmailTheme;
   event: EventEmailDetails;
   showMapLink?: boolean;
   showCalendarLinks?: boolean;
 }) {
-  const { date, time } = formatEventDateTime(event.startAt, event.endAt, event.timezone);
+  const { t, locale } = requireEmailI18n(i18n);
+  const { date, time } = formatEventDateTime(event.startAt, event.endAt, event.timezone, locale);
   const isVirtual = event.locationType === "VIRTUAL";
   const mapQuery = [event.locationName, event.locationAddress].filter(Boolean).join(", ");
 
@@ -78,7 +82,7 @@ export function DetailsCard({
         {isVirtual ? (
           <DetailRow label="💻">
             <p className="dm-text-primary" style={textStyle}>
-              {event.locationName || "Virtual event"}
+              {event.locationName || t("Email.virtualEvent")}
             </p>
             {event.virtualUrl ? (
               <p style={subStyle}>
@@ -88,7 +92,7 @@ export function DetailsCard({
                   rel="noopener noreferrer"
                   style={linkStyle}
                 >
-                  Join link
+                  {t("Email.joinLink")}
                 </a>
               </p>
             ) : null}
@@ -111,7 +115,7 @@ export function DetailsCard({
                   rel="noopener noreferrer"
                   style={linkStyle}
                 >
-                  Open in Google Maps
+                  {t("Email.openMap")}
                 </a>
               </p>
             ) : null}
@@ -121,7 +125,7 @@ export function DetailsCard({
         {showCalendarLinks ? (
           <DetailRow label="🗓️">
             <p style={subStyle}>
-              Add to calendar:{" "}
+              {t("Email.addCalendar")}{" "}
               <a
                 href={buildGoogleCalendarUrl(event)}
                 target="_blank"

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Plus, MapPin, Video, Check, ExternalLink, Pencil } from "lucide-react";
 import { useState, useRef, useEffect, useTransition } from "react";
 import { saveEventLocation } from "@/app/actions/event";
@@ -35,6 +37,8 @@ export function LocationEdit({
     virtualUrl: string | null;
   }) => void;
 }) {
+  const translate = useTranslations("Ui.Event.LocationEdit");
+
   const getChipStyle = (): React.CSSProperties => ({
     display: "inline-flex",
     alignItems: "center",
@@ -156,8 +160,8 @@ export function LocationEdit({
       <>
         <Video size={18} style={{ color: t.accent, flexShrink: 0 }} />
         <div>
-          <div style={{ fontWeight: 600, fontSize: "15px" }}>Virtual Event</div>
-          <div style={{ color: t.textMuted, fontSize: "13px" }}>Click to join</div>
+          <div style={{ fontWeight: 600, fontSize: "15px" }}>{translate("virtualEvent")}</div>
+          <div style={{ color: t.textMuted, fontSize: "13px" }}>{translate("clickJoin")}</div>
         </div>
         {!isHost && <ExternalLink size={14} style={{ marginLeft: "auto", color: t.textMuted }} />}
       </>
@@ -165,9 +169,9 @@ export function LocationEdit({
       <>
         <MapPin size={18} style={{ color: t.accent, flexShrink: 0, marginTop: "2px" }} />
         <div>
-          <div style={{ fontWeight: 600, fontSize: "15px" }}>To Be Determined (TBD)</div>
+          <div style={{ fontWeight: 600, fontSize: "15px" }}>{translate("determinedTbd")}</div>
           <div style={{ color: t.textMuted, fontSize: "13px", marginTop: "2px" }}>
-            Location details will be announced later
+            {translate("locationDetailsAnnouncedLater")}
           </div>
         </div>
       </>
@@ -181,7 +185,7 @@ export function LocationEdit({
           <div
             style={{ ...editCardStyle, justifyContent: "space-between" }}
             onClick={openPopover}
-            title="Click to edit location"
+            title={translate("clickEditLocation")}
           >
             <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", flex: 1 }}>
               {locationCardInner}
@@ -229,7 +233,7 @@ export function LocationEdit({
                   }}
                 >
                   <MapPin size={15} style={{ color: t.accent }} />
-                  Open in Maps
+                  {translate("openMaps")}
                 </a>
                 <button
                   onClick={() => {
@@ -263,7 +267,7 @@ export function LocationEdit({
                   <span style={{ width: "15px", fontSize: "14px", opacity: copied ? 0 : 1 }}>
                     📋
                   </span>
-                  {copied ? "Copied!" : "Copy address"}
+                  {copied ? translate("copied") : translate("copyAddress")}
                 </button>
               </div>
             )}
@@ -278,7 +282,7 @@ export function LocationEdit({
       ) : isHost ? (
         <button onClick={openPopover} className="chip-button" style={getChipStyle()}>
           <Plus size={13} />
-          Add Location
+          {translate("addLocation")}
         </button>
       ) : null}
 
@@ -330,7 +334,7 @@ export function LocationEdit({
                 opacity: isPending ? 0.5 : 1,
               }}
             >
-              {isPending ? "Saving…" : "Save"}
+              {isPending ? translate("saving") : translate("save")}
             </button>
             <button
               onClick={() => setOpen(false)}
@@ -345,7 +349,7 @@ export function LocationEdit({
                 cursor: "pointer",
               }}
             >
-              Cancel
+              {translate("cancel")}
             </button>
           </div>
         </div>

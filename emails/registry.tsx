@@ -1,3 +1,8 @@
+import { formatEventDateTime } from "@/lib/calendar";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/config";
+import { getTranslator } from "@/i18n/server";
+import type { EmailI18nProps, NotificationTranslator } from "./i18n";
+import { cloneElement } from "react";
 import type * as React from "react";
 import type { EmailTheme } from "@/lib/email-theme";
 import { substitutePlaceholders } from "./render";
@@ -156,6 +161,28 @@ export const EMAIL_TEMPLATE_META: Record<TemplateId, EmailTemplateMeta> = {
   },
 };
 
+/** Localized editor labels/defaults; IDs, placeholders, and toggles stay stable. */
+export function getEmailTemplateMeta(
+  t: NotificationTranslator,
+  vars: Record<string, string | undefined> = {}
+) {
+  const result = { ...EMAIL_TEMPLATE_META };
+  for (const id of TEMPLATE_IDS) {
+    // Metadata defaults display legacy placeholders, while sends supply their values.
+    const values = Object.fromEntries(
+      EMAIL_TEMPLATE_META[id].placeholders.map((key) => [key, vars[key] ?? `{${key}}`])
+    );
+    result[id] = {
+      ...EMAIL_TEMPLATE_META[id],
+      label: t(`Email.templates.${id}.label`),
+      description: t(`Email.templates.${id}.description`),
+      defaultSubject: t(`Email.templates.${id}.defaultSubject`, values),
+      defaultBody: t(`Email.templates.${id}.defaultBody`, values),
+    };
+  }
+  return result;
+}
+
 // ── Sample data for previews, admin test-sends, and tests ────────────────────
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -224,18 +251,44 @@ export function mergedToggles(
  * data — used by the admin live preview, admin test-sends, and tests.
  * `overrides` are the (possibly unsaved) admin copy/toggle settings.
  */
-export function buildSampleEmail(
+export async function buildSampleEmail(
   id: TemplateId,
   theme: EmailTheme,
-  overrides?: TemplateOverrides
+  overrides?: TemplateOverrides,
+  locale: Locale = DEFAULT_LOCALE
+): Promise<{ subject: string; element: React.ReactElement }> {
+  const t = await getTranslator(locale);
+  const rendered = buildSampleEmailElement(id, theme, overrides, t, locale);
+  return {
+    ...rendered,
+    element: cloneElement(rendered.element as React.ReactElement<EmailI18nProps>, {
+      i18n: { locale, t },
+    }),
+  };
+}
+
+function buildSampleEmailElement(
+  id: TemplateId,
+  theme: EmailTheme,
+  overrides: TemplateOverrides | undefined,
+  t: NotificationTranslator,
+  locale: Locale
 ): { subject: string; element: React.ReactElement } {
-  const meta = EMAIL_TEMPLATE_META[id];
-  const vars = SAMPLE_VARS[id];
-  const subject = substitutePlaceholders(overrides?.subject || meta.defaultSubject, vars);
-  const body = substitutePlaceholders(
-    (meta.bodyEditable && overrides?.body) || meta.defaultBody,
-    vars
-  );
+  const vars = { ...SAMPLE_VARS[id] };
+  if (vars.status) vars.status = t("Email.status.GOING");
+  if (vars.decision) vars.decision = t("Email.decision.approved");
+  if (vars.eventDate) {
+    const event = sampleEventDetails();
+    vars.eventDate = formatEventDateTime(event.startAt, event.endAt, event.timezone, locale).date;
+  }
+  const meta = getEmailTemplateMeta(t, vars)[id];
+  const subject = overrides?.subject
+    ? substitutePlaceholders(overrides.subject, vars)
+    : meta.defaultSubject;
+  const body =
+    meta.bodyEditable && overrides?.body
+      ? substitutePlaceholders(overrides.body, vars)
+      : meta.defaultBody;
   const toggles = mergedToggles(id, overrides);
   const event = sampleEventDetails();
   const eventUrl = `${APP_URL}/e/${event.slug}`;
@@ -266,7 +319,7 @@ export function buildSampleEmail(
             body={body}
             toggles={toggles}
             event={event}
-            statusLabel="Going"
+            status="GOING"
             eventUrl={eventUrl}
             editUrl={`${eventUrl}/rsvp?token=sample-token`}
           />
@@ -281,7 +334,7 @@ export function buildSampleEmail(
             toggles={toggles}
             eventTitle={event.title}
             approved
-            hostMessage="Can't wait to see you there!"
+            hostMessage={t("Email.sample.hostMessage")}
             eventUrl={eventUrl}
           />
         ),
@@ -295,7 +348,7 @@ export function buildSampleEmail(
             toggles={toggles}
             eventTitle={event.title}
             hostName="Joe"
-            message={"Quick update — we moved the start time to 7pm.\nSee you soon!"}
+            message={t("Email.sample.blast")}
             eventUrl={eventUrl}
           />
         ),
@@ -307,9 +360,9 @@ export function buildSampleEmail(
           <HostRsvpAlertEmail
             theme={theme}
             guestName="Alex Sample"
-            statusLabel="Going"
+            status="GOING"
             plusOneCount={1}
-            note="So excited!"
+            note={t("Email.sample.note")}
             eventTitle={event.title}
             goingCount={12}
             maybeCount={3}

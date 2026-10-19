@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useTransition } from "react";
 import type { ResolvedTheme } from "@/lib/theme";
 import type { SettingsPageStyles } from "./styles";
@@ -16,6 +18,8 @@ export function DangerZonePanel({
   t: ResolvedTheme;
   S: SettingsPageStyles;
 }) {
+  const translate = useTranslations("Ui.Event.DangerZonePanel");
+
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -30,10 +34,10 @@ export function DangerZonePanel({
         if (res && res.success) {
           window.location.href = "/dashboard";
         } else {
-          setError("Failed to delete event.");
+          setError(translate("failedDeleteEvent"));
         }
       } catch (err) {
-        const errMsg = err instanceof Error ? err.message : "An error occurred.";
+        const errMsg = err instanceof Error ? err.message : translate("errorOccurred");
         setError(errMsg);
       }
     });
@@ -50,7 +54,7 @@ export function DangerZonePanel({
         }}
       >
         <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#ef4444", marginBottom: "12px" }}>
-          Danger Zone
+          {translate("dangerZone")}
         </h2>
         <p
           style={{
@@ -60,8 +64,7 @@ export function DangerZonePanel({
             lineHeight: "1.5",
           }}
         >
-          Delete this event and permanently erase all guest data, RSVPs, comments, polls, and
-          potluck items. This action is irreversible.
+          {translate("deleteEventPermanentlyEraseAllGuest")}
         </p>
         <button
           type="button"
@@ -86,7 +89,7 @@ export function DangerZonePanel({
             e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
           }}
         >
-          Delete Event
+          {translate("deleteEvent")}
         </button>
       </EventCard>
 
@@ -119,7 +122,7 @@ export function DangerZonePanel({
             margin: "0 0 12px",
           }}
         >
-          Delete Event?
+          {translate("deleteEvent2")}
         </h3>
         <p
           style={{
@@ -129,8 +132,8 @@ export function DangerZonePanel({
             lineHeight: "1.5",
           }}
         >
-          This action is permanent and cannot be undone. To confirm, please type{" "}
-          <strong style={{ color: t.textPrimary }}>DELETE</strong> in the box below:
+          {translate("actionPermanentCannotUndoneConfirmPlease")}{" "}
+          <strong style={{ color: t.textPrimary }}>DELETE</strong> {translate("boxBelow")}
         </p>
         <input
           type="text"
@@ -178,7 +181,7 @@ export function DangerZonePanel({
               fontFamily: "inherit",
             }}
           >
-            Cancel
+            {translate("cancel")}
           </button>
           <button
             type="button"
@@ -202,7 +205,7 @@ export function DangerZonePanel({
               gap: "6px",
             }}
           >
-            {isPending ? "Deleting..." : "Confirm Delete"}
+            {isPending ? translate("deleting") : translate("confirmDelete")}
           </button>
         </div>
       </Dialog>

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { render } from "@/tests/components/render";
 import React from "react";
 import { SettingsPage } from "@/components/event/SettingsPage";
 import type { EventInput } from "@/components/event/settings-page/types";

@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { X } from "lucide-react";
 import { APP_SHELL } from "@/lib/theme";
@@ -17,6 +18,8 @@ export function AdminMobileDrawer({
   handleTabChange: (id: TabId) => void;
   setFeedback: React.Dispatch<React.SetStateAction<AdminFeedback | null>>;
 }) {
+  const tr = useTranslations("Ui.Admin");
+
   return (
     <>
       {isDrawerOpen && (
@@ -63,7 +66,7 @@ export function AdminMobileDrawer({
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 800, color: APP_SHELL.textPrimary }}>
-                🛡️ Admin Navigation
+                {tr("adminNavigation")}
               </h3>
               <button
                 type="button"
@@ -96,15 +99,15 @@ export function AdminMobileDrawer({
             >
               {(
                 [
-                  { id: "overview", label: "📊 Overview" },
-                  { id: "users", label: "👥 User Management" },
-                  { id: "events", label: "🎈 Event Moderation" },
-                  { id: "invites", label: "🔑 Host Settings" },
-                  { id: "email", label: "📧 Email Settings" },
-                  { id: "sms", label: "💬 SMS Settings" },
-                  { id: "themes", label: "🎨 Theme Presets" },
-                  { id: "backups", label: "💾 Database Backups" },
-                  { id: "docs", label: "📚 Documentation" },
+                  { id: "overview", label: tr("overview2") },
+                  { id: "users", label: tr("userManagement") },
+                  { id: "events", label: tr("eventModeration") },
+                  { id: "invites", label: tr("hostSettings") },
+                  { id: "email", label: tr("emailSettings") },
+                  { id: "sms", label: tr("smsSettings") },
+                  { id: "themes", label: tr("themePresets2") },
+                  { id: "backups", label: tr("databaseBackups") },
+                  { id: "docs", label: tr("documentation") },
                 ] as const
               ).map((tab) => (
                 <button

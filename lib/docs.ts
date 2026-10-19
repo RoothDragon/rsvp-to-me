@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { cache } from "react";
+import { DEFAULT_LOCALE, locales, resolveLocale, type Locale } from "@/i18n/config";
 
 /**
  * Frontmatter-driven documentation loader for the in-app Documentation portal.
@@ -32,6 +33,9 @@ export interface LoadedDoc {
   category: string;
   audience: DocAudience;
   order: number;
+  /** Actual article language; an untranslated article falls back as a whole. */
+  locale: Locale;
+  dir: "ltr" | "rtl";
   /** Markdown body, with the frontmatter block stripped. */
   content: string;
 }
@@ -63,31 +67,60 @@ function parseFrontmatter(raw: string): { data: Record<string, string>; body: st
  * Load every doc for an audience, sorted by `order` then title. Returns an empty
  * array if the audience folder does not exist yet (e.g. `docs/host/`).
  */
-export const loadDocs = cache(async (audience: DocAudience): Promise<LoadedDoc[]> => {
-  const dir = path.join(DOCS_ROOT, audience);
-  let files: string[];
-  try {
-    files = (await readdir(dir)).filter((f) => f.endsWith(".md"));
-  } catch {
-    return [];
+export const loadDocs = cache(
+  async (audience: DocAudience, requestedLocale: Locale = DEFAULT_LOCALE): Promise<LoadedDoc[]> => {
+    // Only registered locales can select an overlay directory.
+    const locale = resolveLocale(requestedLocale);
+    const dir = path.join(DOCS_ROOT, audience);
+    let files: string[];
+    try {
+      files = (await readdir(dir)).filter((f) => f.endsWith(".md"));
+    } catch {
+      return [];
+    }
+
+    const docs = await Promise.all(
+      files.map(async (file) => {
+        const canonical = parseFrontmatter(await readFile(path.join(dir, file), "utf8"));
+        let article = canonical;
+        let articleLocale: Locale = DEFAULT_LOCALE;
+        if (locale !== DEFAULT_LOCALE) {
+          try {
+            article = parseFrontmatter(
+              await readFile(path.join(DOCS_ROOT, "locales", locale, audience, file), "utf8")
+            );
+            articleLocale = locale;
+          } catch (error) {
+            // A missing translation falls back; a broken deployment must not be hidden.
+            if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) {
+              throw error;
+            }
+          }
+        }
+        const slug = file.replace(/\.md$/, "");
+        return {
+          // Keep canonical title as the tie-breaker so translation cannot reorder guides.
+          canonicalTitle: canonical.data.title || slug,
+          article: {
+            slug,
+            title: article.data.title || slug,
+            description: article.data.description || "",
+            category: article.data.category || "General",
+            audience,
+            order: canonical.data.order ? Number(canonical.data.order) : 999,
+            locale: articleLocale,
+            dir: locales[articleLocale].dir,
+            content: article.body,
+          } satisfies LoadedDoc,
+        };
+      })
+    );
+
+    docs.sort(
+      (a, b) =>
+        a.article.order - b.article.order ||
+        a.canonicalTitle.localeCompare(b.canonicalTitle, "en-US")
+    );
+    return docs.map(({ article }) => article);
   }
-
-  const docs = await Promise.all(
-    files.map(async (file) => {
-      const raw = await readFile(path.join(dir, file), "utf8");
-      const { data, body } = parseFrontmatter(raw);
-      return {
-        slug: file.replace(/\.md$/, ""),
-        title: data.title || file.replace(/\.md$/, ""),
-        description: data.description || "",
-        category: data.category || "General",
-        audience: (data.audience as DocAudience) || audience,
-        order: data.order ? Number(data.order) : 999,
-        content: body,
-      } satisfies LoadedDoc;
-    })
-  );
-
-  docs.sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
-  return docs;
-});
+);

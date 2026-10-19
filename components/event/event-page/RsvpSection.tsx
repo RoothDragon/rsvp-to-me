@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations, useLocale } from "next-intl";
+
 import { useEffect, useRef, useState } from "react";
 import { CalendarCheck, CircleCheck, CircleHelp, CircleX, Clock3 } from "lucide-react";
 import type { EventData } from "./types";
@@ -10,15 +12,6 @@ import { RSVP_RESPONSE_STATUSES, RsvpStatusChoice } from "@/components/rsvp/stat
 const FLOATING_BOTTOM_GAP = 12;
 
 type SubmittedStatus = "GOING" | "MAYBE" | "NO";
-
-const RESPONSE_SUMMARIES: Record<
-  SubmittedStatus,
-  { label: string; icon: typeof CircleCheck; color: string }
-> = {
-  GOING: { label: "You’re going", icon: CircleCheck, color: "#22c55e" },
-  MAYBE: { label: "Marked as maybe", icon: CircleHelp, color: "#f59e0b" },
-  NO: { label: "Can’t make it", icon: CircleX, color: "#ef4444" },
-};
 
 export function RsvpSection({
   event,
@@ -37,6 +30,18 @@ export function RsvpSection({
   rsvpDone: boolean;
   rsvpApproved: boolean;
 }) {
+  const translate = useTranslations("Ui.Event.RsvpSection");
+  const locale = useLocale();
+
+  const RESPONSE_SUMMARIES: Record<
+    SubmittedStatus,
+    { label: string; icon: typeof CircleCheck; color: string }
+  > = {
+    GOING: { label: translate("reGoing"), icon: CircleCheck, color: "#22c55e" },
+    MAYBE: { label: translate("markedAsMaybe"), icon: CircleHelp, color: "#f59e0b" },
+    NO: { label: translate("canTMake"), icon: CircleX, color: "#ef4444" },
+  };
+
   const slotRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const rafIdRef = useRef<number | null>(null);
@@ -48,7 +53,11 @@ export function RsvpSection({
   const deadline = event.rsvpDeadline ? new Date(event.rsvpDeadline) : null;
   const deadlinePassed = deadline ? deadline < now : false;
   const eventStarted = new Date(event.startAt) <= now;
-  const deadlineDate = deadline?.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  const deadlineDate = deadline?.toLocaleDateString(locale, {
+    month: "long",
+    day: "numeric",
+    timeZone: event.timezone,
+  });
   const deadlineDays = deadline
     ? Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
     : null;
@@ -56,12 +65,12 @@ export function RsvpSection({
     deadlineDays === null
       ? null
       : deadlineDays > 1
-        ? `${deadlineDays} days remaining`
+        ? translate("remainingDays", { count: deadlineDays })
         : deadlineDays === 1
-          ? "1 day remaining"
+          ? translate("1DayRemaining")
           : deadlineDays === 0
-            ? "today"
-            : "deadline passed";
+            ? translate("today")
+            : translate("deadlinePassed");
 
   const unansweredWindowOpen = !eventStarted && !deadlinePassed;
   const responseWindowOpen = !eventStarted && (!deadlinePassed || event.allowEditAfterDeadline);
@@ -179,11 +188,11 @@ export function RsvpSection({
                     aria-level={2}
                     style={{ fontWeight: 700, fontSize: "14px", lineHeight: 1.25 }}
                   >
-                    {rsvpApproved ? summary.label : "RSVP received"}
+                    {rsvpApproved ? summary.label : translate("rsvpReceived")}
                   </div>
                   {!rsvpApproved && (
                     <div style={{ color: t.textMuted, fontSize: "11px", marginTop: "2px" }}>
-                      Awaiting host approval
+                      {translate("awaitingHostApproval")}
                     </div>
                   )}
                 </div>
@@ -199,7 +208,7 @@ export function RsvpSection({
                     textDecoration: "none",
                   }}
                 >
-                  Edit my RSVP
+                  {translate("editMyRsvp")}
                 </a>
               )}
             </div>
@@ -218,7 +227,7 @@ export function RsvpSection({
                   id="event-rsvp-heading"
                   style={{ fontSize: "17px", fontWeight: 700, margin: 0 }}
                 >
-                  Are you going?
+                  {translate("going")}
                 </h2>
               </div>
               {deadline && (
@@ -230,7 +239,7 @@ export function RsvpSection({
                     fontWeight: deadlinePassed ? 600 : 400,
                   }}
                 >
-                  RSVPs requested no later than {deadlineDate} · {deadlineCountdown}
+                  {translate("rsvpsRequestedNoLaterThan")} {deadlineDate} · {deadlineCountdown}
                 </div>
               )}
 
@@ -245,12 +254,12 @@ export function RsvpSection({
                       marginBottom: "4px",
                     }}
                   >
-                    RSVPs Closed
+                    {translate("rsvpsClosed")}
                   </div>
                   <div style={{ fontSize: "12px", color: t.textMuted }}>
                     {eventStarted
-                      ? "This event has started. Contact the host if you need to change your RSVP."
-                      : "The deadline to RSVP for this event has passed."}
+                      ? translate("eventHasStartedContactHostIf")
+                      : translate("deadlineRsvpEventHasPassed")}
                   </div>
                 </div>
               ) : (

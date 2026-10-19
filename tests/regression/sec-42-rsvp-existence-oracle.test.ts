@@ -1,3 +1,4 @@
+import "@/tests/helpers/english-request-locale";
 // SEC-42 — existence oracle on host RSVP actions.
 //
 // Bug (found 2026-07, [cd6748] OWASP audit): deleteRsvpAsHost / approveRsvp /

@@ -1,16 +1,21 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
-import { render, fireEvent } from "@testing-library/react";
+import { render, fireEvent } from "@/tests/components/render";
 import React from "react";
 import { ThemePanel } from "@/components/event/settings-page/ThemePanel";
 import { GuestSharingCard } from "@/components/event/event-page/GuestSharingCard";
+import english from "@/messages/en-US.json";
+import dutch from "@/messages/nl-NL.json";
 import { testTheme } from "./helpers/theme";
 import type { EventInput } from "@/components/event/settings-page/types";
 import type { EventData } from "@/components/event/event-page/types";
 
 const noop = vi.fn();
 
-function renderPanel(overrides: Partial<React.ComponentProps<typeof ThemePanel>> = {}) {
+function renderPanel(
+  overrides: Partial<React.ComponentProps<typeof ThemePanel>> = {},
+  locale: "en-US" | "nl-NL" = "en-US"
+) {
   const event = {
     title: "Summer Gala",
     theme: {
@@ -58,7 +63,8 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof ThemePanel>>
       triggerSaveTheme={noop}
       t={testTheme}
       {...overrides}
-    />
+    />,
+    { locale, messages: locale === "nl-NL" ? dutch : english }
   );
 }
 
@@ -130,5 +136,20 @@ describe("event page font scope", () => {
     );
     const title = getByText("Share this event");
     expect(title.style.fontFamily).toBe("");
+  });
+});
+
+describe("localized theme descriptors", () => {
+  it("translates built-in labels and color tooltips without changing stable values", () => {
+    const { getByTitle, getByText } = renderPanel({ themeCustomizeOpen: true }, "nl-NL");
+    expect(getByText("Kleuren aanpassen")).toBeVisible();
+    fireEvent.click(getByTitle("Paars"));
+    expect(noop).toHaveBeenCalledWith("#a855f7");
+    fireEvent.click(getByText("✨ Effecten"));
+    expect(getByText("Dichtheid")).toBeVisible();
+    expect(getByText("Snelheid")).toBeVisible();
+    expect(getByText("Harten")).toBeVisible();
+    fireEvent.click(getByTitle("Harten"));
+    expect(noop).toHaveBeenCalledWith("hearts");
   });
 });

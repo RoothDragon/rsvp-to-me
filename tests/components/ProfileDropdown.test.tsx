@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "./render";
 import React from "react";
 import ProfileDropdown from "@/components/ui/ProfileDropdown";
 import { ParticleLayer } from "@/components/event/event-page/ParticleLayer";

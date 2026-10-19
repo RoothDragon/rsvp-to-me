@@ -18,8 +18,8 @@ import {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-export function formatDate(d: Date, tz: string) {
-  return new Date(d).toLocaleDateString("en-US", {
+export function formatDate(d: Date, tz: string, locale: string = "en-US") {
+  return new Date(d).toLocaleDateString(locale, {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -27,19 +27,20 @@ export function formatDate(d: Date, tz: string) {
     timeZone: tz,
   });
 }
-export function formatTime(d: Date, tz: string) {
-  return new Date(d).toLocaleTimeString("en-US", {
+export function formatTime(d: Date, tz: string, locale: string = "en-US") {
+  return new Date(d).toLocaleTimeString(locale, {
     hour: "numeric",
     minute: "2-digit",
     timeZone: tz,
   });
 }
-export function timeAgo(d: Date) {
-  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
+export function timeAgo(d: Date, locale: string = "en-US") {
+  const seconds = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  const format = new Intl.RelativeTimeFormat(locale, { numeric: "auto", style: "short" });
+  if (seconds < 60) return format.format(0, "second");
+  if (seconds < 3600) return format.format(-Math.floor(seconds / 60), "minute");
+  if (seconds < 86400) return format.format(-Math.floor(seconds / 3600), "hour");
+  return format.format(-Math.floor(seconds / 86400), "day");
 }
 
 // Convert a UTC Date to a "YYYY-MM-DDTHH:MM" string in the given timezone
@@ -140,7 +141,15 @@ export function buildMapUrl(address: string) {
   return `https://www.google.com/maps/search/?api=1&query=${encoded}`;
 }
 
-export function getPlaceholder(key: string) {
+export function getPlaceholder(key: string, translate?: (key: string) => string) {
+  if (translate)
+    return translate(
+      ["link", "gift", "shirt", "utensils", "parking", "bed", "info", "zelle", "venmo"].includes(
+        key
+      )
+        ? key
+        : "default"
+    );
   switch (key) {
     case "link":
       return "Link details (e.g. Group chat, playlist)...";

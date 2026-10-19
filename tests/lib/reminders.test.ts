@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   mockEventFindMany: vi.fn(),
+  mockUserFindMany: vi.fn().mockResolvedValue([]),
   mockSentReminderCreate: vi.fn().mockResolvedValue({}),
   mockSessionDeleteMany: vi.fn().mockResolvedValue({ count: 0 }),
   mockCronLockDeleteMany: vi.fn().mockResolvedValue({ count: 0 }),
@@ -17,6 +18,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/db", () => ({
   db: {
+    user: { findMany: mocks.mockUserFindMany },
     event: { findMany: mocks.mockEventFindMany },
     sentReminder: { create: mocks.mockSentReminderCreate },
     session: { deleteMany: mocks.mockSessionDeleteMany },
@@ -78,6 +80,7 @@ beforeEach(() => {
   mocks.mockCronLockDelete.mockResolvedValue({});
   mocks.mockSentReminderCreate.mockResolvedValue({});
   mocks.mockInvitationFindMany.mockResolvedValue([]);
+  mocks.mockUserFindMany.mockResolvedValue([]);
   mocks.mockSendBlastEmail.mockResolvedValue(undefined);
   mocks.mockSendSmsBlast.mockResolvedValue(undefined);
   mocks.mockIsRedisEnabled.mockReturnValue(false);
@@ -378,5 +381,80 @@ describe("processReminders — event filtering", () => {
         }),
       })
     );
+  });
+});
+
+// Recipient language is independent of the cron process and browser state.
+describe("processReminders — recipient locales", () => {
+  it("groups one reminder by stored locale and records only the existing event/type marker", async () => {
+    const event = makeReminderEvent({
+      startAt: new Date(Date.now() + 60 * 60 * 1000),
+      host: { name: null },
+      reminderSettings: { emailHoursBefore: 2, smsHoursBefore: 0 },
+      rsvps: [
+        {
+          guestEmail: "en@example.com",
+          guestPhone: null,
+          user: { preferredLocale: "en-US", emailNotifications: true, smsNotifications: true },
+        },
+        {
+          guestEmail: "nl@example.com",
+          guestPhone: null,
+          user: { preferredLocale: "nl-NL", emailNotifications: true, smsNotifications: true },
+        },
+        {
+          guestEmail: "off@example.com",
+          guestPhone: null,
+          user: { preferredLocale: "nl-NL", emailNotifications: false, smsNotifications: true },
+        },
+      ],
+    });
+    mocks.mockEventFindMany.mockResolvedValue([event]);
+    await processReminders();
+    expect(mocks.mockSendBlastEmail).toHaveBeenCalledTimes(2);
+    expect(mocks.mockSendBlastEmail).toHaveBeenCalledWith(
+      ["en@example.com"],
+      expect.objectContaining({
+        locale: "en-US",
+        hostName: "Your host",
+        message: "Wine Night starts in 2 hours! See you soon.",
+      })
+    );
+    expect(mocks.mockSendBlastEmail).toHaveBeenCalledWith(
+      ["nl@example.com"],
+      expect.objectContaining({
+        locale: "nl-NL",
+        hostName: "De organisator",
+        message: "Wine Night begint over 2 uur! Tot snel.",
+      })
+    );
+    expect(mocks.mockSentReminderCreate).toHaveBeenCalledTimes(1);
+    expect(mocks.mockSentReminderCreate).toHaveBeenCalledWith({
+      data: { eventId: "event-1", type: "email_hours" },
+    });
+  });
+  it("does not record a successful marker when a later locale group fails", async () => {
+    mocks.mockEventFindMany.mockResolvedValue([
+      makeReminderEvent({
+        startAt: new Date(Date.now() + 60 * 60 * 1000),
+        reminderSettings: { emailHoursBefore: 2, smsHoursBefore: 0 },
+        rsvps: [
+          {
+            guestEmail: "en@example.com",
+            user: { preferredLocale: "en-US", emailNotifications: true },
+          },
+          {
+            guestEmail: "nl@example.com",
+            user: { preferredLocale: "nl-NL", emailNotifications: true },
+          },
+        ],
+      }),
+    ]);
+    mocks.mockSendBlastEmail
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error("group failed"));
+    await processReminders();
+    expect(mocks.mockSendBlastEmail).toHaveBeenCalledTimes(2);
+    expect(mocks.mockSentReminderCreate).not.toHaveBeenCalled();
   });
 });

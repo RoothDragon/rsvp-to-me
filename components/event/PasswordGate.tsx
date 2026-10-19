@@ -1,11 +1,15 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { verifyEventPassword } from "@/app/actions/event";
 import { useCaptcha } from "@/components/ui/CaptchaProvider";
 
 export function PasswordGate({ slug }: { slug: string }) {
+  const translate = useTranslations("Ui.Event.PasswordGate");
+
   const [pw, setPw] = useState("");
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -58,7 +62,7 @@ export function PasswordGate({ slug }: { slug: string }) {
       >
         <div style={{ fontSize: "32px", textAlign: "center", marginBottom: "16px" }}>🔒</div>
         <h1 style={{ fontSize: "20px", fontWeight: 700, textAlign: "center", marginBottom: "8px" }}>
-          Private Event
+          {translate("privateEvent")}
         </h1>
         <p
           style={{
@@ -68,12 +72,12 @@ export function PasswordGate({ slug }: { slug: string }) {
             marginBottom: "24px",
           }}
         >
-          Enter the password to view this event.
+          {translate("enterPasswordViewEvent")}
         </p>
         <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <input
             type="text"
-            placeholder="Event password"
+            placeholder={translate("eventPassword")}
             value={pw}
             onChange={(e) => {
               setPw(e.target.value);
@@ -92,7 +96,11 @@ export function PasswordGate({ slug }: { slug: string }) {
               outline: "none",
             }}
           />
-          {error && <div style={{ color: "#f87171", fontSize: "13px" }}>Incorrect password</div>}
+          {error && (
+            <div style={{ color: "#f87171", fontSize: "13px" }}>
+              {translate("incorrectPassword")}
+            </div>
+          )}
           <button
             type="submit"
             disabled={!pw.trim() || loading}
@@ -108,7 +116,7 @@ export function PasswordGate({ slug }: { slug: string }) {
               fontWeight: 700,
             }}
           >
-            {loading ? "Verifying..." : "Enter Event"}
+            {loading ? translate("verifying") : translate("enterEvent")}
           </button>
         </form>
       </div>

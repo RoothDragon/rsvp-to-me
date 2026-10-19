@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { X } from "lucide-react";
 import type { ResolvedTheme } from "@/lib/theme";
 import type { CoHostEntry, EventInput, SettingsOverrides, SessionUser } from "./types";
@@ -45,8 +47,10 @@ export function HostsPanel({
   isOwner: boolean;
   sessionUser: SessionUser | null;
 }) {
+  const translate = useTranslations("Ui.Event.HostsPanel");
+
   return (
-    <Section title="Hosts" t={t}>
+    <Section title={translate("hosts")} t={t}>
       <div style={{ marginBottom: "20px" }}>
         {/* Main Host Section */}
         <div
@@ -68,11 +72,15 @@ export function HostsPanel({
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: "14px", fontWeight: 600, color: t.textPrimary }}>
                 {isOwner
-                  ? `You ${event.hostDisplayName ? `(${event.hostDisplayName})` : ""}`
+                  ? translate("you", {
+                      name: event.hostDisplayName ? `(${event.hostDisplayName})` : "",
+                    })
                   : event.host.name || event.host.email}
               </div>
               <div style={{ fontSize: "12px", color: t.textMuted }}>
-                {isOwner ? "Host" : `${event.host.email} · Host`}
+                {isOwner
+                  ? translate("host")
+                  : translate("hostContact", { email: event.host.email })}
               </div>
             </div>
           </div>
@@ -87,11 +95,11 @@ export function HostsPanel({
                   marginBottom: "4px",
                 }}
               >
-                DISPLAY NAME OVERRIDE
+                {translate("displayNameOverride")}
               </label>
               <input
                 style={{ ...S.inp, fontSize: "12px", padding: "6px 10px" }}
-                placeholder="Override your display name for this event..."
+                placeholder={translate("overrideDisplayNameEvent")}
                 value={hostDisplayName}
                 onChange={(e) => {
                   setHostDisplayName(e.target.value);
@@ -121,11 +129,11 @@ export function HostsPanel({
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: "14px", fontWeight: 600, color: t.textPrimary }}>
                   {ch.user.id === sessionUser?.id
-                    ? `You ${ch.displayName ? `(${ch.displayName})` : ""}`
+                    ? translate("you", { name: ch.displayName ? `(${ch.displayName})` : "" })
                     : ch.user.name || ch.user.email}
                 </div>
                 <div style={{ fontSize: "12px", color: t.textMuted }}>
-                  {ch.user.email} · Co-host
+                  {ch.user.email} {translate("coHost")}
                 </div>
               </div>
               {(isOwner || ch.user.id === sessionUser?.id) && (
@@ -138,7 +146,11 @@ export function HostsPanel({
                     color: t.textMuted,
                     padding: "4px",
                   }}
-                  title={ch.user.id === sessionUser?.id ? "Remove yourself" : "Remove co-host"}
+                  title={
+                    ch.user.id === sessionUser?.id
+                      ? translate("removeYourself")
+                      : translate("removeCoHost")
+                  }
                 >
                   <X size={16} />
                 </button>
@@ -156,15 +168,15 @@ export function HostsPanel({
                   }}
                 >
                   {ch.user.id === sessionUser?.id
-                    ? "YOUR DISPLAY NAME OVERRIDE"
-                    : "CO-HOST DISPLAY NAME OVERRIDE"}
+                    ? translate("displayNameOverride2")
+                    : translate("coHostDisplayNameOverride")}
                 </label>
                 <input
                   style={{ ...S.inp, fontSize: "12px", padding: "6px 10px" }}
                   placeholder={
                     ch.user.id === sessionUser?.id
-                      ? "Override your display name..."
-                      : "Override display name for this co-host..."
+                      ? translate("overrideDisplayName")
+                      : translate("overrideDisplayNameCoHost")
                   }
                   defaultValue={ch.displayName || ""}
                   onBlur={(e) => {
@@ -192,7 +204,7 @@ export function HostsPanel({
                 marginBottom: "8px",
               }}
             >
-              PENDING CO-HOST INVITATIONS
+              {translate("pendingCoHostInvitations")}
             </h4>
             {pendingInvitations.map((invite) => (
               <div
@@ -223,7 +235,7 @@ export function HostsPanel({
                       {invite.email}
                     </div>
                     <div style={{ fontSize: "12px", color: t.textMuted }}>
-                      Invited · Pending acceptance
+                      {translate("invitedPendingAcceptance")}
                     </div>
                   </div>
                 </div>
@@ -236,7 +248,7 @@ export function HostsPanel({
                     color: t.textMuted,
                     padding: "4px",
                   }}
-                  title="Cancel invitation"
+                  title={translate("cancelInvitation")}
                 >
                   <X size={16} />
                 </button>
@@ -253,7 +265,7 @@ export function HostsPanel({
             onKeyDown={(e) => {
               if (e.key === "Enter") handleAddCohost();
             }}
-            placeholder="cohost@email.com"
+            placeholder={translate("cohostEmailCom")}
             style={{ ...S.inp, flex: 1 }}
           />
           <button
@@ -261,7 +273,7 @@ export function HostsPanel({
             disabled={isPending || !cohostEmail.trim()}
             style={S.smallBtn}
           >
-            Add Co-Host
+            {translate("addCoHost")}
           </button>
         </div>
       )}

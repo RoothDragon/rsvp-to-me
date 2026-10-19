@@ -143,6 +143,14 @@ vi.mock("@/lib/session", () => ({
   getSession: mockGetSession,
   invalidateUserSessions: vi.fn(),
 }));
+vi.mock("@/i18n/server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/i18n/server")>();
+  return {
+    ...actual,
+    getRequestLocale: async () => "en-US" as const,
+    getRequestTranslator: () => actual.getTranslator("en-US"),
+  };
+});
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/email", () => ({
   testEmailConfig: mockTestEmailConfig,
@@ -450,7 +458,8 @@ describe("app/actions/admin.ts", () => {
             accountId: "cf-account-id",
             apiToken: "actual-cf-api-token",
           }),
-        })
+        }),
+        "en-US"
       );
     });
 
@@ -476,7 +485,8 @@ describe("app/actions/admin.ts", () => {
           cloudflare: expect.objectContaining({
             secret: "newly-generated-secret",
           }),
-        })
+        }),
+        "en-US"
       );
     });
 
@@ -722,7 +732,8 @@ describe("app/actions/admin.ts", () => {
         );
         expect(mockSendWelcomeEmail).toHaveBeenCalledWith(
           "new@example.com",
-          expect.stringContaining("/auth/verify?token=")
+          expect.stringContaining("/auth/verify?token="),
+          "en-US"
         );
         expect(revalidatePath).toHaveBeenCalledWith("/admin");
       });

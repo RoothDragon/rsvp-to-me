@@ -1,9 +1,12 @@
+import "@/tests/helpers/english-request-locale";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { sendCoHostInviteEmail } from "@/lib/email";
 import { revalidatePath } from "next/cache";
 
 const {
   mockEventFindUnique,
   mockUserFindUnique,
+  mockUserFindMany,
   mockEventCoHostCreate,
   mockEventCoHostFindUnique,
   mockEventCoHostDelete,
@@ -17,6 +20,7 @@ const {
 } = vi.hoisted(() => ({
   mockEventFindUnique: vi.fn(),
   mockUserFindUnique: vi.fn(),
+  mockUserFindMany: vi.fn().mockResolvedValue([]),
   mockEventCoHostCreate: vi.fn(),
   mockEventCoHostFindUnique: vi.fn(),
   mockEventCoHostDelete: vi.fn(),
@@ -32,7 +36,7 @@ const {
 vi.mock("@/lib/db", () => ({
   db: {
     event: { findUnique: mockEventFindUnique },
-    user: { findUnique: mockUserFindUnique },
+    user: { findUnique: mockUserFindUnique, findMany: mockUserFindMany },
     eventCoHost: {
       create: mockEventCoHostCreate,
       findUnique: mockEventCoHostFindUnique,
@@ -104,6 +108,17 @@ describe("addCoHost", () => {
     expect(result.success).toBe(true);
     expect(result.email).toBe(COHOST_EMAIL);
     expect(result.invited).toBe(true);
+  });
+
+  it("uses the invited account preference rather than the host language", async () => {
+    mockUserFindMany.mockResolvedValueOnce([
+      { email: "other@example.com", phone: null, preferredLocale: "nl-NL" },
+    ]);
+    await addCoHost(EVENT_ID, "other@example.com");
+    expect(sendCoHostInviteEmail).toHaveBeenCalledWith(
+      "other@example.com",
+      expect.objectContaining({ locale: "nl-NL" })
+    );
   });
 
   it("creates a CoHostInvitation row", async () => {

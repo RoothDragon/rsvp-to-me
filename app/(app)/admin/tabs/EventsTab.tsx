@@ -1,4 +1,5 @@
 "use client";
+import { useLocale, useTranslations } from "next-intl";
 
 import { APP_SHELL } from "@/lib/theme";
 import { AppInput, appCardStyle } from "@/components/ui/AppPrimitives";
@@ -15,11 +16,14 @@ export function EventsTab({
   events: AdminEvent[];
   handleEventDelete: (eventId: string, title: string) => void;
 }) {
+  const tr = useTranslations("Ui.Admin");
+  const locale = useLocale();
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <AppInput
         type="text"
-        placeholder="Search events by title, slug, or host details..."
+        placeholder={tr("searchEventsByTitleSlugOrHostDetails")}
         value={eventSearch}
         onChange={(e) => handleEventSearch(e.target.value)}
         style={{ padding: "12px 16px" }}
@@ -41,10 +45,10 @@ export function EventsTab({
                   textAlign: "left",
                 }}
               >
-                <th style={{ padding: "16px" }}>Event Info</th>
-                <th style={{ padding: "16px" }}>Host</th>
-                <th style={{ padding: "16px" }}>Stats</th>
-                <th style={{ padding: "16px", textAlign: "right" }}>Actions</th>
+                <th style={{ padding: "16px" }}>{tr("eventInfo")}</th>
+                <th style={{ padding: "16px" }}>{tr("host2")}</th>
+                <th style={{ padding: "16px" }}>{tr("stats")}</th>
+                <th style={{ padding: "16px", textAlign: "right" }}>{tr("actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -58,7 +62,7 @@ export function EventsTab({
                       color: APP_SHELL.textMuted,
                     }}
                   >
-                    No events found.
+                    {tr("noEventsFound")}
                   </td>
                 </tr>
               ) : (
@@ -73,7 +77,9 @@ export function EventsTab({
                           marginTop: "2px",
                         }}
                       >
-                        Date: {new Date(e.startAt).toLocaleString()} · status: {e.status}
+                        {tr("date")}
+                        {new Date(e.startAt).toLocaleString(locale)} {tr("status")}
+                        {e.status}
                       </div>
                     </td>
                     <td style={{ padding: "16px" }}>
@@ -83,7 +89,9 @@ export function EventsTab({
                       </div>
                     </td>
                     <td style={{ padding: "16px" }}>
-                      <div style={{ color: APP_SHELL.textPrimary }}>{e.rsvpCount} RSVPs</div>
+                      <div style={{ color: APP_SHELL.textPrimary }}>
+                        {tr("rsvpsMessage", { value0: e.rsvpCount })}
+                      </div>
                       <span
                         style={{
                           fontSize: "10px",
@@ -107,7 +115,7 @@ export function EventsTab({
                           marginRight: "16px",
                         }}
                       >
-                        Moderate
+                        {tr("moderate")}
                       </a>
                       <button
                         onClick={() => handleEventDelete(e.id, e.title)}
@@ -120,7 +128,7 @@ export function EventsTab({
                           fontSize: "13px",
                         }}
                       >
-                        Delete
+                        {tr("delete")}
                       </button>
                     </td>
                   </tr>

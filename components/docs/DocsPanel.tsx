@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
+import remarkCanonicalHeadings from "@/lib/remark-canonical-headings";
 import { Search, FileText } from "lucide-react";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -17,9 +19,12 @@ export interface PanelDoc {
   description: string;
   category: string;
   content: string;
+  locale?: string;
+  dir?: "ltr" | "rtl";
 }
 
 export default function DocsPanel({ docs }: { docs: PanelDoc[] }) {
+  const t = useTranslations("Ui.Docs");
   const [activeSlug, setActiveSlug] = useState(docs[0]?.slug ?? "");
   const [query, setQuery] = useState("");
 
@@ -96,11 +101,7 @@ export default function DocsPanel({ docs }: { docs: PanelDoc[] }) {
   };
 
   if (docs.length === 0) {
-    return (
-      <div style={{ color: APP_SHELL.textMuted, fontSize: "14px" }}>
-        No documentation is available.
-      </div>
-    );
+    return <div style={{ color: APP_SHELL.textMuted, fontSize: "14px" }}>{t("unavailable")}</div>;
   }
 
   return (
@@ -111,7 +112,7 @@ export default function DocsPanel({ docs }: { docs: PanelDoc[] }) {
             size={16}
             style={{
               position: "absolute",
-              left: "12px",
+              insetInlineStart: "12px",
               top: "50%",
               transform: "translateY(-50%)",
               color: APP_SHELL.textMuted,
@@ -120,11 +121,14 @@ export default function DocsPanel({ docs }: { docs: PanelDoc[] }) {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search docs…"
+            placeholder={t("search")}
+            aria-label={t("search")}
             style={{
               width: "100%",
               boxSizing: "border-box",
-              padding: "9px 12px 9px 36px",
+              paddingBlock: "9px",
+              paddingInlineStart: "36px",
+              paddingInlineEnd: "12px",
               background: APP_SHELL.inputBg,
               border: `1px solid ${APP_SHELL.inputBorder}`,
               borderRadius: APP_SHELL.inputRadius,
@@ -135,10 +139,13 @@ export default function DocsPanel({ docs }: { docs: PanelDoc[] }) {
           />
         </div>
 
-        <nav style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <nav
+          aria-label={t("navigation")}
+          style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+        >
           {grouped.length === 0 && (
             <div style={{ color: APP_SHELL.textMuted, fontSize: "13px", padding: "8px 4px" }}>
-              No matching docs.
+              {t("noMatches")}
             </div>
           )}
           {grouped.map((group) => (
@@ -153,7 +160,9 @@ export default function DocsPanel({ docs }: { docs: PanelDoc[] }) {
                   padding: "0 8px 8px",
                 }}
               >
-                {group.category}
+                <span lang={group.items[0]?.locale ?? "en-US"} dir={group.items[0]?.dir ?? "ltr"}>
+                  {group.category}
+                </span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                 {group.items.map((d) => {
@@ -163,7 +172,7 @@ export default function DocsPanel({ docs }: { docs: PanelDoc[] }) {
                       key={d.slug}
                       onClick={() => selectDoc(d.slug)}
                       style={{
-                        textAlign: "left",
+                        textAlign: "start",
                         border: "none",
                         cursor: "pointer",
                         padding: "9px 12px",
@@ -182,7 +191,9 @@ export default function DocsPanel({ docs }: { docs: PanelDoc[] }) {
                         if (!active) e.currentTarget.style.backgroundColor = "transparent";
                       }}
                     >
-                      {d.title}
+                      <span lang={d.locale ?? "en-US"} dir={d.dir ?? "ltr"}>
+                        {d.title}
+                      </span>
                     </button>
                   );
                 })}
@@ -192,7 +203,11 @@ export default function DocsPanel({ docs }: { docs: PanelDoc[] }) {
         </nav>
       </aside>
 
-      <main className="docs-panel-main">
+      <main
+        className="docs-panel-main"
+        lang={activeDoc.locale ?? "en-US"}
+        dir={activeDoc.dir ?? "ltr"}
+      >
         <div style={{ marginBottom: "20px" }}>
           <div
             style={{
@@ -210,13 +225,19 @@ export default function DocsPanel({ docs }: { docs: PanelDoc[] }) {
             <FileText size={13} /> {activeDoc.category}
           </div>
           <div style={{ color: APP_SHELL.textSecondary, fontSize: "14px" }}>
-            {activeDoc.description}
+            <span lang={activeDoc.locale ?? "en-US"} dir={activeDoc.dir ?? "ltr"}>
+              {activeDoc.description}
+            </span>
           </div>
         </div>
 
-        <article className="md-body">
+        <article
+          className="md-body"
+          lang={activeDoc.locale ?? "en-US"}
+          dir={activeDoc.dir ?? "ltr"}
+        >
           <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
+            remarkPlugins={[remarkGfm, remarkCanonicalHeadings]}
             rehypePlugins={[rehypeSlug, rehypeHighlight]}
             components={markdownComponents}
             urlTransform={(url, key, node) => {

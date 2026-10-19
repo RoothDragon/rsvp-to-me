@@ -1,3 +1,4 @@
+import { getRequestLocale, getRequestTranslator } from "@/i18n/server";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { AppShell } from "@/components/ui/AppShell";
@@ -9,16 +10,15 @@ import { resolveTheme } from "@/lib/theme";
 import { MessageSquare } from "lucide-react";
 
 // Helper to format date Partiful-style
-const formatPartifulDate = (dateVal: Date | string) => {
+const formatPartifulDate = (dateVal: Date | string, locale: string) => {
   const d = new Date(dateVal);
-  const weekday = d.toLocaleDateString("en-US", { weekday: "short" });
-  const dateStr = d.toLocaleDateString("en-US", { month: "numeric", day: "numeric" });
-  const hour = d.getHours();
-  const minute = d.getMinutes();
-  const ampm = hour >= 12 ? "pm" : "am";
-  const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
-  const formattedMin = minute === 0 ? "" : `:${minute.toString().padStart(2, "0")}`;
-  return `${weekday} ${dateStr} at ${formattedHour}${formattedMin}${ampm}`;
+  return new Intl.DateTimeFormat(locale, {
+    weekday: "short",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(d);
 };
 
 function AvatarBubble({
@@ -68,6 +68,9 @@ function AvatarBubble({
 }
 
 export default async function Home() {
+  const tr = await getRequestTranslator();
+  const locale = await getRequestLocale();
+
   const session = await getSession();
   if (session) redirect("/dashboard");
 
@@ -126,7 +129,7 @@ export default async function Home() {
               WebkitTextFillColor: "transparent",
             }}
           >
-            RSVP to Me
+            {tr("Ui.Home.rsvpToMe")}
           </h1>
           <p
             style={{
@@ -136,39 +139,44 @@ export default async function Home() {
               lineHeight: 1.6,
             }}
           >
-            Beautiful, personal event pages for wine nights, dinner parties, and everything in
-            between.
+            {tr("Ui.Home.beautifulPersonalEventPagesForWineNightsDinnerParties")}
           </p>
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-            <a
-              href="/auth/sign-in"
-              style={{
-                padding: "14px 32px",
-                background: APP_SHELL.accent,
-                color: APP_SHELL.textPrimary,
-                borderRadius: APP_SHELL.btnRadius,
-                textDecoration: "none",
-                fontSize: "16px",
-                fontWeight: 700,
-              }}
-            >
-              Sign in
-            </a>
-            <a
-              href="/auth/register"
-              style={{
-                padding: "14px 32px",
-                background: APP_SHELL.cardBg2,
-                border: `1px solid ${APP_SHELL.cardBorder}`,
-                color: APP_SHELL.textPrimary,
-                borderRadius: APP_SHELL.btnRadius,
-                textDecoration: "none",
-                fontSize: "16px",
-                fontWeight: 700,
-              }}
-            >
-              Create account
-            </a>
+            {tr.rich("Ui.Home.signInCreateAccountMessage", {
+              part0: (chunks) => (
+                <a
+                  href="/auth/sign-in"
+                  style={{
+                    padding: "14px 32px",
+                    background: APP_SHELL.accent,
+                    color: APP_SHELL.textPrimary,
+                    borderRadius: APP_SHELL.btnRadius,
+                    textDecoration: "none",
+                    fontSize: "16px",
+                    fontWeight: 700,
+                  }}
+                >
+                  {chunks}
+                </a>
+              ),
+              part1: (chunks) => (
+                <a
+                  href="/auth/register"
+                  style={{
+                    padding: "14px 32px",
+                    background: APP_SHELL.cardBg2,
+                    border: `1px solid ${APP_SHELL.cardBorder}`,
+                    color: APP_SHELL.textPrimary,
+                    borderRadius: APP_SHELL.btnRadius,
+                    textDecoration: "none",
+                    fontSize: "16px",
+                    fontWeight: 700,
+                  }}
+                >
+                  {chunks}
+                </a>
+              ),
+            })}
           </div>
         </div>
 
@@ -185,7 +193,7 @@ export default async function Home() {
                 paddingBottom: "12px",
               }}
             >
-              Upcoming Public Events
+              {tr("Ui.Home.upcomingPublicEvents")}
             </h2>
             <div
               style={{
@@ -284,7 +292,7 @@ export default async function Home() {
                           pointerEvents: "none",
                         }}
                       >
-                        {formatPartifulDate(event.startAt)}
+                        {formatPartifulDate(event.startAt, locale)}
                       </div>
                     </div>
 
@@ -316,7 +324,7 @@ export default async function Home() {
                         }}
                       >
                         <span style={{ color: APP_SHELL.textSecondary, fontSize: "11px" }}>
-                          Hosted by
+                          {tr("Ui.Home.hostedBy")}
                         </span>
                         <div style={{ display: "flex", alignItems: "center" }}>
                           <AvatarBubble
@@ -338,7 +346,7 @@ export default async function Home() {
                           fontSize: "11px",
                         }}
                       >
-                        <span>{goingCount} going</span>
+                        <span>{tr("Ui.Home.goingMessage", { value0: goingCount })}</span>
                         {commentCount > 0 && (
                           <div style={{ display: "flex", alignItems: "center", gap: "3px" }}>
                             <span>·</span>

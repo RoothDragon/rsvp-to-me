@@ -1,3 +1,5 @@
+import { groupRecipientsByLocale, resolveRecipientGroups } from "@/emails/recipients";
+import { getTranslator } from "@/i18n/server";
 import { db } from "./db";
 import { sendBlastEmail } from "./email";
 import { sendSmsBlast } from "./sms";
@@ -13,10 +15,6 @@ type ReminderType =
   | "sms_hours"
   | "nudge_email"
   | "nudge_sms";
-
-function hoursLabel(n: number) {
-  return n === 1 ? "1 hour" : `${n} hours`;
-}
 
 export async function processReminders(): Promise<void> {
   const jobName = "process_reminders";
@@ -84,6 +82,7 @@ export async function processReminders(): Promise<void> {
               select: {
                 emailNotifications: true,
                 smsNotifications: true,
+                preferredLocale: true,
               },
             },
           },
@@ -110,11 +109,48 @@ export async function processReminders(): Promise<void> {
       const rsvpEmails = new Set(emails);
       const rsvpPhones = new Set(phones);
 
-      const hostName = event.hostDisplayName ?? event.host.name ?? "Your host";
-      const base = { eventTitle: event.title, eventSlug: event.slug, hostName };
-      // Theme is loaded fresh each cron tick, so host theme edits are
-      // reflected in the next reminder that goes out.
-      const emailBase = { ...base, theme: event.theme };
+      // One marker per event/type is intentionally preserved. A failed later locale
+      // group can cause accepted earlier groups to repeat on the next cron tick.
+      const sendLocalized = async (type: ReminderType, addresses: string[], raw = false) => {
+        const channel = type.startsWith("email") || type === "nudge_email" ? "email" : "phone";
+        const groups = raw
+          ? await resolveRecipientGroups(addresses, channel)
+          : groupRecipientsByLocale(
+              event.rsvps.flatMap((r) => {
+                const address = channel === "email" ? r.guestEmail : r.guestPhone;
+                if (!address || !addresses.includes(address)) return [];
+                if (
+                  r.user &&
+                  !(channel === "email" ? r.user.emailNotifications : r.user.smsNotifications)
+                )
+                  return [];
+                return [{ address, preferredLocale: r.user?.preferredLocale }];
+              })
+            );
+        for (const [locale, recipients] of groups) {
+          const t = await getTranslator(locale);
+          const base = {
+            locale,
+            eventTitle: event.title,
+            eventSlug: event.slug,
+            hostName: event.hostDisplayName ?? event.host.name ?? t("Email.yourHost"),
+            message: t(`Reminders.${type}`, {
+              eventTitle: event.title,
+              hours: rs.emailHoursBefore,
+            }),
+          };
+          if (channel === "email")
+            await sendBlastEmail(recipients, { ...base, theme: event.theme });
+          else
+            await sendSmsBlast(recipients, {
+              ...base,
+              message: t(`Reminders.${type}`, {
+                eventTitle: event.title,
+                hours: rs.smsHoursBefore,
+              }),
+            });
+        }
+      };
 
       const checks: Array<{
         type: ReminderType;
@@ -126,55 +162,37 @@ export async function processReminders(): Promise<void> {
           type: "email_week",
           enabled: rs.emailWeekBefore && emails.length > 0,
           dueAt: new Date(startAt.getTime() - 7 * 24 * 60 * 60 * 1000),
-          send: () =>
-            sendBlastEmail(emails, {
-              ...emailBase,
-              message: `Just a reminder — ${event.title} is one week away! We can't wait to see you.`,
-            }),
+          send: () => sendLocalized("email_week", emails),
         },
         {
           type: "email_day",
           enabled: rs.emailDayBefore && emails.length > 0,
           dueAt: new Date(startAt.getTime() - 24 * 60 * 60 * 1000),
-          send: () =>
-            sendBlastEmail(emails, {
-              ...emailBase,
-              message: `${event.title} is tomorrow! See you then.`,
-            }),
+          send: () => sendLocalized("email_day", emails),
         },
         {
           type: "email_hours",
           enabled: rs.emailHoursBefore > 0 && emails.length > 0,
           dueAt: new Date(startAt.getTime() - rs.emailHoursBefore * 60 * 60 * 1000),
-          send: () =>
-            sendBlastEmail(emails, {
-              ...emailBase,
-              message: `${event.title} starts in ${hoursLabel(rs.emailHoursBefore)}! See you soon.`,
-            }),
+          send: () => sendLocalized("email_hours", emails),
         },
         {
           type: "sms_week",
           enabled: rs.smsWeekBefore && phones.length > 0,
           dueAt: new Date(startAt.getTime() - 7 * 24 * 60 * 60 * 1000),
-          send: () =>
-            sendSmsBlast(phones, { ...base, message: `${event.title} is one week away!` }),
+          send: () => sendLocalized("sms_week", phones),
         },
         {
           type: "sms_day",
           enabled: rs.smsDayBefore && phones.length > 0,
           dueAt: new Date(startAt.getTime() - 24 * 60 * 60 * 1000),
-          send: () =>
-            sendSmsBlast(phones, { ...base, message: `${event.title} is tomorrow! See you then.` }),
+          send: () => sendLocalized("sms_day", phones),
         },
         {
           type: "sms_hours",
           enabled: rs.smsHoursBefore > 0 && phones.length > 0,
           dueAt: new Date(startAt.getTime() - rs.smsHoursBefore * 60 * 60 * 1000),
-          send: () =>
-            sendSmsBlast(phones, {
-              ...base,
-              message: `${event.title} starts in ${hoursLabel(rs.smsHoursBefore)}!`,
-            }),
+          send: () => sendLocalized("sms_hours", phones),
         },
         {
           type: "nudge_email",
@@ -189,10 +207,7 @@ export async function processReminders(): Promise<void> {
               (e) => !rsvpEmails.has(e)
             );
             if (nudgeEmails.length === 0) return;
-            return sendBlastEmail(nudgeEmails, {
-              ...emailBase,
-              message: `You're invited to ${event.title} in 3 days — have you had a chance to RSVP?`,
-            });
+            return sendLocalized("nudge_email", nudgeEmails, true);
           },
         },
         {
@@ -208,10 +223,7 @@ export async function processReminders(): Promise<void> {
               (p) => !rsvpPhones.has(p)
             );
             if (nudgePhones.length === 0) return;
-            return sendSmsBlast(nudgePhones, {
-              ...base,
-              message: `${event.title} is in 3 days — have you had a chance to RSVP?`,
-            });
+            return sendLocalized("nudge_sms", nudgePhones, true);
           },
         },
       ];

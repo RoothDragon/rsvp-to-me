@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -19,11 +20,13 @@ function looksLikePhone(s: string): boolean {
 }
 
 function TokenError() {
+  const tr = useTranslations("Ui.Auth");
+
   const searchParams = useSearchParams();
   if (searchParams.get("error") !== "invalid-token") return null;
   return (
     <InlineAlert style={{ marginBottom: "20px" }}>
-      That link has expired or already been used. Request a new one below.
+      {tr("thatLinkHasExpiredOrAlreadyBeenUsedRequest")}
     </InlineAlert>
   );
 }
@@ -35,6 +38,8 @@ export default function SignInForm({
   openRegistration: boolean;
   redirect?: string;
 }) {
+  const tr = useTranslations("Ui.Auth");
+
   const [identifier, setIdentifier] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [authFailed, setAuthFailed] = useState(false);
@@ -56,7 +61,7 @@ export default function SignInForm({
       );
     } catch (reason) {
       setLoading(false);
-      setError(reason instanceof Error ? reason.message : "Security check failed.");
+      setError(reason instanceof Error ? reason.message : tr("securityCheckFailed"));
       return;
     }
     setLoading(false);
@@ -65,7 +70,7 @@ export default function SignInForm({
     } else if (result.success) {
       setSubmitted(true);
     } else {
-      setError(result.error ?? "Something went wrong.");
+      setError(result.error ?? tr("somethingWentWrong"));
     }
   };
 
@@ -82,10 +87,10 @@ export default function SignInForm({
               marginBottom: "8px",
             }}
           >
-            RSVP
+            {tr("rsvp")}
           </h1>
           <p style={{ color: APP_SHELL.textSecondary, fontSize: "15px" }}>
-            Sign in with a magic link
+            {tr("signInWithAMagicLink")}
           </p>
         </div>
 
@@ -104,12 +109,15 @@ export default function SignInForm({
                   marginBottom: "8px",
                 }}
               >
-                {isPhone ? "Check your texts" : "Check your email"}
+                {isPhone ? tr("checkYourTexts") : tr("checkYourEmail")}
               </h2>
               <p style={{ color: APP_SHELL.textSecondary, fontSize: "14px", lineHeight: 1.6 }}>
-                We sent a magic link to{" "}
-                <strong style={{ color: "rgba(255,255,255,0.8)" }}>{identifier}</strong>. Click it
-                to sign in — it expires in 15 minutes.
+                {tr.rich("weSentAMagicLinkToClickItMessage", {
+                  part0: (chunks) => (
+                    <strong style={{ color: "rgba(255,255,255,0.8)" }}>{chunks}</strong>
+                  ),
+                  value0: identifier,
+                })}
               </p>
             </div>
           ) : authFailed ? (
@@ -123,7 +131,7 @@ export default function SignInForm({
                   marginBottom: "8px",
                 }}
               >
-                Sign-in failed
+                {tr("signInFailed")}
               </h2>
               <p
                 style={{
@@ -133,21 +141,21 @@ export default function SignInForm({
                   marginBottom: "20px",
                 }}
               >
-                We couldn&apos;t complete your request. If your email or phone is registered, please
-                check your connection and try again. For self-hosters, check the container logs for
-                details or fallbacks (look for{" "}
-                <code
-                  style={{
-                    background: "rgba(255,255,255,0.08)",
-                    borderRadius: "4px",
-                    padding: "1px 5px",
-                    fontSize: "12px",
-                    color: "rgba(255,255,255,0.7)",
-                  }}
-                >
-                  [auth:magic-link-fallback]
-                </code>
-                ).
+                {tr.rich("weCouldnTCompleteYourRequestIfYourMessage", {
+                  part0: (chunks) => (
+                    <code
+                      style={{
+                        background: "rgba(255,255,255,0.08)",
+                        borderRadius: "4px",
+                        padding: "1px 5px",
+                        fontSize: "12px",
+                        color: "rgba(255,255,255,0.7)",
+                      }}
+                    >
+                      {chunks}
+                    </code>
+                  ),
+                })}
               </p>
               <button
                 onClick={() => {
@@ -166,18 +174,18 @@ export default function SignInForm({
                   fontFamily: "inherit",
                 }}
               >
-                Try again
+                {tr("tryAgain")}
               </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
-              <FormField label="Email or phone number" style={{ marginBottom: "20px" }}>
+              <FormField label={tr("emailOrPhoneNumber")} style={{ marginBottom: "20px" }}>
                 <AppInput
                   type="text"
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="you@example.com or +1 555 000 0000"
+                  placeholder={tr("youExampleComOr15550000000")}
                   style={{ padding: "12px 14px", fontSize: "15px" }}
                 />
               </FormField>
@@ -193,7 +201,7 @@ export default function SignInForm({
                   fontSize: "15px",
                 }}
               >
-                {loading ? "Sending…" : "Send magic link"}
+                {loading ? tr("sending") : tr("sendMagicLink")}
               </AppButton>
 
               <div style={{ textAlign: "center", marginTop: "20px" }}>
@@ -201,8 +209,8 @@ export default function SignInForm({
                   href="/auth/register"
                   style={{ color: APP_SHELL.textMuted, fontSize: "13px", textDecoration: "none" }}
                 >
-                  {openRegistration ? "No account? " : "New host? "}
-                  <span style={{ color: APP_SHELL.accent }}>Create one →</span>
+                  {openRegistration ? tr("noAccount") : tr("newHost")}{" "}
+                  <span style={{ color: APP_SHELL.accent }}>{tr("createOne")}</span>
                 </a>
               </div>
             </form>

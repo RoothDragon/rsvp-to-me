@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import type { ResolvedTheme } from "@/lib/theme";
 import type { SettingsOverrides } from "./types";
 import type { SettingsPageStyles } from "./styles";
@@ -60,11 +62,13 @@ export function RsvpOptionsPanel({
   t: ResolvedTheme;
   S: SettingsPageStyles;
 }) {
+  const translate = useTranslations("Ui.Event.RsvpOptionsPanel");
+
   return (
-    <Section title="RSVP Options" t={t}>
+    <Section title={translate("rsvpOptions")} t={t}>
       {/* Max plus-ones select dropdown */}
       <div style={{ marginBottom: "16px" }}>
-        <Label t={t}>Max plus-ones per guest</Label>
+        <Label t={t}>{translate("maxPlusOnesPerGuest")}</Label>
         <select
           style={{ ...S.inp, cursor: "pointer" }}
           value={plusOneAllowed ? plusOneMax : 0}
@@ -76,10 +80,10 @@ export function RsvpOptionsPanel({
             triggerSaveSettings({ plusOneAllowed: allowed, plusOneMax: allowed ? val : 0 });
           }}
         >
-          <option value={0}>No +1s</option>
+          <option value={0}>{translate("no1s")}</option>
           {Array.from({ length: 9 }, (_, i) => (
             <option key={i + 1} value={i + 1}>
-              Up to {i + 1}
+              {translate("up")} {i + 1}
             </option>
           ))}
         </select>
@@ -87,7 +91,7 @@ export function RsvpOptionsPanel({
 
       {plusOneAllowed && (
         <Toggle
-          label="Require plus-one names"
+          label={translate("requirePlusOneNames")}
           value={plusOneNamesRequired}
           onChange={(val) => {
             setPlusOneNamesRequired(val);
@@ -114,10 +118,10 @@ export function RsvpOptionsPanel({
             letterSpacing: "0.02em",
           }}
         >
-          RSVP & Approval Options
+          {translate("rsvpApprovalOptions")}
         </div>
         <Toggle
-          label="Require host approval for each RSVP"
+          label={translate("requireHostApprovalEachRsvp")}
           value={approvalRequired}
           onChange={(val) => {
             setApprovalRequired(val);
@@ -126,7 +130,7 @@ export function RsvpOptionsPanel({
           t={t}
         />
         <Toggle
-          label="Guests can RSVP «Maybe»"
+          label={translate("guestsCanRsvpMaybe")}
           value={maybeEnabled}
           onChange={(val) => {
             setMaybeEnabled(val);
@@ -152,13 +156,13 @@ export function RsvpOptionsPanel({
             letterSpacing: "0.02em",
           }}
         >
-          Notification Settings
+          {translate("notificationSettings")}
         </div>
         <div style={{ fontSize: "13px", color: t.textMuted, marginBottom: "12px" }}>
-          New-RSVP alerts go to you and your co-hosts.
+          {translate("newRsvpAlertsGoCoHosts")}
         </div>
         <Toggle
-          label="Email me when a guest RSVPs"
+          label={translate("emailMeWhenGuestRsvps")}
           value={hostAlertEmail}
           onChange={(val) => {
             setHostAlertEmail(val);
@@ -168,7 +172,7 @@ export function RsvpOptionsPanel({
         />
         {channelConfig.sms && (
           <Toggle
-            label="Text me when a guest RSVPs"
+            label={translate("textMeWhenGuestRsvps")}
             value={hostAlertSms}
             onChange={(val) => {
               setHostAlertSms(val);
@@ -179,7 +183,7 @@ export function RsvpOptionsPanel({
         )}
       </div>
       <Toggle
-        label="Show RSVP timestamps"
+        label={translate("showRsvpTimestamps")}
         value={showTimestamps}
         onChange={(val) => {
           setShowTimestamps(val);
@@ -189,10 +193,10 @@ export function RsvpOptionsPanel({
       />
 
       <div style={{ marginBottom: "16px", marginTop: "16px" }}>
-        <Label t={t}>Capacity limit (optional)</Label>
+        <Label t={t}>{translate("capacityLimitOptional")}</Label>
         <input
           type="number"
-          placeholder="No limit"
+          placeholder={translate("noLimit")}
           value={capacity}
           onChange={(e) => setCapacity(e.target.value)}
           onBlur={() => {
@@ -210,7 +214,7 @@ export function RsvpOptionsPanel({
         />
       </div>
       <div style={{ marginBottom: "16px" }}>
-        <Label t={t}>RSVP deadline (optional)</Label>
+        <Label t={t}>{translate("rsvpDeadlineOptional")}</Label>
         <input
           type="datetime-local"
           value={rsvpDeadline}
@@ -229,7 +233,7 @@ export function RsvpOptionsPanel({
       </div>
       {rsvpDeadline && (
         <Toggle
-          label="Allow editing RSVPs after deadline"
+          label={translate("allowEditingRsvpsAfterDeadline")}
           value={allowEditAfterDeadline}
           onChange={(val) => {
             setAllowEditAfterDeadline(val);

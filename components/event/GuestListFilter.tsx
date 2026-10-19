@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations, useLocale } from "next-intl";
+
 import { useState, useTransition } from "react";
 import type { ResolvedTheme } from "@/lib/theme";
 import {
@@ -82,6 +84,10 @@ export function GuestListFilter({
   guestRsvpDisplay?: Partial<GuestRsvpDisplayFields>;
   t: ResolvedTheme;
 }) {
+  const shared = useTranslations("Ui.Event.shared");
+  const translate = useTranslations("Ui.Event.GuestListFilter");
+  const locale = useLocale();
+
   const [filter, setFilter] = useState<Filter>("ALL");
   const [going, setGoing] = useState(initialGoing);
   const [maybe, setMaybe] = useState(initialMaybe);
@@ -109,12 +115,12 @@ export function GuestListFilter({
 
   const statusLabel = (s: string) =>
     s === "GOING"
-      ? "Going"
+      ? translate("going")
       : s === "MAYBE"
-        ? "Maybe"
+        ? translate("maybe")
         : s === "INVITED"
-          ? "Invited"
-          : "Can't make it";
+          ? translate("invited")
+          : translate("canTMake");
   const statusColor = (s: string) =>
     s === "GOING" ? t.badgeText : s === "MAYBE" ? t.textSecondary : t.textMuted;
 
@@ -193,33 +199,35 @@ export function GuestListFilter({
   const chips: { key: Filter; label: string; count: number | string | null }[] = [
     {
       key: "ALL",
-      label: "All",
+      label: translate("all"),
       count: showTotal ? allRsvps.length + (isHost ? invited.length : 0) : null,
     },
     ...(isHost
       ? [
-          { key: "CHECKED_IN" as Filter, label: "Arrived", count: checkedInParties },
+          { key: "CHECKED_IN" as Filter, label: translate("arrived"), count: checkedInParties },
           {
             key: "NOT_CHECKED_IN" as Filter,
-            label: "Not arrived",
+            label: translate("notArrived"),
             count: attendanceParties - checkedInParties,
           },
         ]
       : []),
     ...(isHost
-      ? [{ key: "PENDING" as Filter, label: "Pending Approval", count: pending.length }]
+      ? [{ key: "PENDING" as Filter, label: translate("pendingApproval"), count: pending.length }]
       : []),
     ...GUEST_RSVP_GROUPS.filter(({ status }) => display[status].list !== "HIDDEN").map(
-      ({ status, label }) => ({
+      ({ status }) => ({
         key: status,
-        label,
+        label: shared("guestStatuses." + status),
         count: guestCountLabel(
           status === "GOING" ? going.length : status === "MAYBE" ? maybe.length : no.length,
           display[status]
         ),
       })
     ),
-    ...(isHost ? [{ key: "INVITED" as Filter, label: "Invited", count: invited.length }] : []),
+    ...(isHost
+      ? [{ key: "INVITED" as Filter, label: translate("invited"), count: invited.length }]
+      : []),
   ];
 
   const chipStyle = (active: boolean): React.CSSProperties => ({
@@ -248,7 +256,7 @@ export function GuestListFilter({
   };
 
   const handleDelete = (rsvpId: string) => {
-    if (!confirm("Remove this RSVP? This cannot be undone.")) return;
+    if (!confirm(translate("removeRsvpCannotUndone"))) return;
     setDeletingId(rsvpId);
     startTransition(async () => {
       const result = await deleteRsvpAsHost(rsvpId);
@@ -286,7 +294,7 @@ export function GuestListFilter({
   };
 
   const handleDeleteInvited = (id: string) => {
-    if (!confirm("Remove this guest? This cannot be undone.")) return;
+    if (!confirm(translate("removeGuestCannotUndone"))) return;
     startTransition(async () => {
       const result = await deleteRsvpAsHost(id);
       if (result.success) {
@@ -296,7 +304,7 @@ export function GuestListFilter({
   };
 
   const handleDeleteInvitation = (invitationId: string) => {
-    if (!confirm("Remove this invitation? This cannot be undone.")) return;
+    if (!confirm(translate("removeInvitationCannotUndone"))) return;
     setDeletingInvitationId(invitationId);
     startTransition(async () => {
       const result = await deleteInvitationAsHost(invitationId);
@@ -308,7 +316,7 @@ export function GuestListFilter({
   };
 
   const handleDecline = (rsvpId: string) => {
-    if (!confirm("Decline and remove this RSVP request?")) return;
+    if (!confirm(translate("declineRemoveRsvpRequest"))) return;
     startTransition(async () => {
       const res = await runWithCaptcha("rsvp_moderation", (token) =>
         declineRsvp(rsvpId, undefined, token)
@@ -351,9 +359,7 @@ export function GuestListFilter({
         }));
       } catch (error) {
         updateRsvp(rsvp.id, (item) => ({ ...item, checkIn: rsvp.checkIn }));
-        setAttendanceError(
-          error instanceof Error ? error.message : "Unable to check in this party."
-        );
+        setAttendanceError(error instanceof Error ? error.message : translate("unableCheckParty"));
       } finally {
         setCheckInPendingId(null);
       }
@@ -374,7 +380,7 @@ export function GuestListFilter({
         await undoCheckIn(rsvp.id);
       } catch (error) {
         updateRsvp(rsvp.id, (item) => ({ ...item, checkIn: rsvp.checkIn }));
-        setAttendanceError(error instanceof Error ? error.message : "Unable to undo check-in.");
+        setAttendanceError(error instanceof Error ? error.message : translate("unableUndoCheck"));
       } finally {
         setCheckInPendingId(null);
       }
@@ -400,9 +406,7 @@ export function GuestListFilter({
         }));
       } catch (error) {
         updateInvitedRsvp(guest.rsvpId!, (item) => ({ ...item, checkIn: previousCheckIn }));
-        setAttendanceError(
-          error instanceof Error ? error.message : "Unable to check in this party."
-        );
+        setAttendanceError(error instanceof Error ? error.message : translate("unableCheckParty"));
       } finally {
         setCheckInPendingId(null);
       }
@@ -425,7 +429,7 @@ export function GuestListFilter({
         await undoCheckIn(guest.rsvpId!);
       } catch (error) {
         updateInvitedRsvp(guest.rsvpId!, (item) => ({ ...item, checkIn: previousCheckIn }));
-        setAttendanceError(error instanceof Error ? error.message : "Unable to undo check-in.");
+        setAttendanceError(error instanceof Error ? error.message : translate("unableUndoCheck"));
       } finally {
         setCheckInPendingId(null);
       }
@@ -442,11 +446,13 @@ export function GuestListFilter({
         );
         setInvitationMessage(
           result.errors?.length
-            ? `Invite resent with a warning: ${result.errors.join("; ")}`
-            : `Invite resent to ${guest.sentTo}.`
+            ? translate("inviteWarning", { warning: result.errors.join("; ") })
+            : translate("inviteResent", { destination: guest.sentTo })
         );
       } catch (error) {
-        setInvitationMessage(error instanceof Error ? error.message : "Unable to resend invite.");
+        setInvitationMessage(
+          error instanceof Error ? error.message : translate("unableResendInvite")
+        );
       } finally {
         setResendPendingId(null);
       }
@@ -507,7 +513,7 @@ export function GuestListFilter({
         setSearch(newRsvp.guestName);
         setHighlightedId(newRsvp.id);
       } catch (error) {
-        setAttendanceError(error instanceof Error ? error.message : "Unable to add this walk-in.");
+        setAttendanceError(error instanceof Error ? error.message : translate("unableAddWalk"));
       }
     });
   };
@@ -524,10 +530,14 @@ export function GuestListFilter({
             marginBottom: "16px",
           }}
         >
-          <div style={{ fontWeight: 800, fontSize: "15px" }}>Event attendance</div>
+          <div style={{ fontWeight: 800, fontSize: "15px" }}>{translate("eventAttendance")}</div>
           <div style={{ color: t.textSecondary, fontSize: "13px", marginTop: "4px" }}>
-            {checkedInParties} of {attendanceParties} parties · {checkedInPeople} of{" "}
-            {expectedPeople} people arrived
+            {translate("attendanceSummary", {
+              checkedParties: checkedInParties,
+              parties: attendanceParties,
+              checkedPeople: checkedInPeople,
+              people: expectedPeople,
+            })}
           </div>
           <div style={{ display: "flex", gap: "8px", marginTop: "14px", flexWrap: "wrap" }}>
             <input
@@ -536,8 +546,8 @@ export function GuestListFilter({
                 setSearch(event.target.value);
                 setHighlightedId(null);
               }}
-              placeholder="Search name, email, phone…"
-              aria-label="Search guest list"
+              placeholder={translate("searchNameEmailPhone")}
+              aria-label={translate("searchGuestList")}
               style={{
                 flex: "1 1 220px",
                 minWidth: 0,
@@ -561,7 +571,7 @@ export function GuestListFilter({
                 fontWeight: 700,
               }}
             >
-              Download CSV
+              {translate("downloadCsv")}
             </a>
             <button
               onClick={() => setShowWalkIn((value) => !value)}
@@ -577,7 +587,7 @@ export function GuestListFilter({
                 cursor: "pointer",
               }}
             >
-              {showWalkIn ? "Cancel" : "+ Add walk-in"}
+              {showWalkIn ? translate("cancel") : translate("addWalk")}
             </button>
           </div>
           {showWalkIn && (
@@ -600,8 +610,8 @@ export function GuestListFilter({
                 maxLength={100}
                 value={walkInName}
                 onChange={(event) => setWalkInName(event.target.value)}
-                placeholder="Guest name"
-                aria-label="Walk-in guest name"
+                placeholder={translate("guestName")}
+                aria-label={translate("walkGuestName")}
                 style={{
                   padding: "9px",
                   borderRadius: "8px",
@@ -615,8 +625,8 @@ export function GuestListFilter({
                 max={11}
                 value={walkInPartySize}
                 onChange={(event) => setWalkInPartySize(Number(event.target.value))}
-                aria-label="Total party size"
-                title="Total party size"
+                aria-label={translate("totalPartySize")}
+                title={translate("totalPartySize")}
                 style={{
                   padding: "9px",
                   borderRadius: "8px",
@@ -629,8 +639,8 @@ export function GuestListFilter({
                   maxLength={100}
                   value={walkInEmail}
                   onChange={(event) => setWalkInEmail(event.target.value)}
-                  placeholder="Email (optional)"
-                  aria-label="Walk-in email"
+                  placeholder={translate("emailOptional")}
+                  aria-label={translate("walkEmail")}
                   style={{
                     padding: "9px",
                     borderRadius: "8px",
@@ -644,8 +654,8 @@ export function GuestListFilter({
                   maxLength={30}
                   value={walkInPhone}
                   onChange={(event) => setWalkInPhone(event.target.value)}
-                  placeholder="Phone (optional)"
-                  aria-label="Walk-in phone"
+                  placeholder={translate("phoneOptional")}
+                  aria-label={translate("walkPhone")}
                   style={{
                     padding: "9px",
                     borderRadius: "8px",
@@ -666,7 +676,7 @@ export function GuestListFilter({
                   cursor: isPending ? "wait" : "pointer",
                 }}
               >
-                {isPending ? "Adding…" : "Add and check in"}
+                {isPending ? translate("adding") : translate("addCheck")}
               </button>
             </form>
           )}
@@ -719,8 +729,11 @@ export function GuestListFilter({
 
       {collapsedGroups.length > 0 && (
         <p style={{ color: t.textMuted, fontSize: "13px", marginBottom: "16px" }}>
-          To see {collapsedGroups.map(({ label }) => `“${label}”`).join(" or ")} names, select that
-          response above.
+          {translate("collapsedHint", {
+            responses: new Intl.ListFormat(locale, { type: "disjunction" }).format(
+              collapsedGroups.map(({ status }) => shared("guestStatuses." + status))
+            ),
+          })}
         </p>
       )}
 
@@ -729,10 +742,10 @@ export function GuestListFilter({
       filter !== "INVITED" ? (
         <div style={{ textAlign: "center", padding: "60px 20px", color: t.textMuted }}>
           {collapsedGroups.length > 0
-            ? "Choose a response above to open its guest list."
+            ? translate("chooseResponseAboveOpenItsGuest")
             : isHost
-              ? "No one here yet."
-              : "No guests to display in this view."}
+              ? translate("noOneHereYet")
+              : translate("noGuestsDisplayView")}
         </div>
       ) : (
         <>
@@ -809,7 +822,7 @@ export function GuestListFilter({
                         color: t.accent,
                       }}
                     >
-                      ✓ Arrived
+                      {translate("arrived2")}
                     </span>
                   )}
                 </div>
@@ -872,7 +885,8 @@ export function GuestListFilter({
                   </div>
                 )}
                 <div style={{ color: t.textMuted, fontSize: "11px", marginTop: "4px" }}>
-                  {new Date(r.createdAt).toLocaleDateString("en-US", {
+                  {new Date(r.createdAt).toLocaleDateString(locale, {
+                    timeZone: timezone,
                     month: "short",
                     day: "numeric",
                     hour: "numeric",
@@ -880,8 +894,8 @@ export function GuestListFilter({
                   })}
                   {r.checkIn && (
                     <>
-                      {" · Checked in "}
-                      {new Intl.DateTimeFormat("en-US", {
+                      {translate("checked")}
+                      {new Intl.DateTimeFormat(locale, {
                         hour: "numeric",
                         minute: "2-digit",
                         timeZone: timezone,
@@ -911,12 +925,12 @@ export function GuestListFilter({
                     }}
                   >
                     {checkInPendingId === r.id
-                      ? "Saving…"
+                      ? translate("saving")
                       : r.checkIn
                         ? undoConfirmId === r.id
-                          ? "Confirm undo"
-                          : "Undo check-in"
-                        : "Check in"}
+                          ? translate("confirmUndo")
+                          : translate("undoCheck")
+                        : translate("check")}
                   </button>
                   <button
                     onClick={() => handleApprove(r.id)}
@@ -933,7 +947,7 @@ export function GuestListFilter({
                       fontFamily: "inherit",
                     }}
                   >
-                    Approve
+                    {translate("approve")}
                   </button>
                   <button
                     onClick={() => handleDecline(r.id)}
@@ -950,7 +964,7 @@ export function GuestListFilter({
                       fontFamily: "inherit",
                     }}
                   >
-                    Decline
+                    {translate("decline")}
                   </button>
                 </div>
               ) : (
@@ -974,12 +988,12 @@ export function GuestListFilter({
                       }}
                     >
                       {checkInPendingId === r.id
-                        ? "Saving…"
+                        ? translate("saving")
                         : r.checkIn
                           ? undoConfirmId === r.id
-                            ? "Confirm undo"
-                            : "Undo check-in"
-                          : "Check in"}
+                            ? translate("confirmUndo")
+                            : translate("undoCheck")
+                          : translate("check")}
                     </button>
                     <a
                       href={`/e/${slug}/rsvp?token=${r.editToken}&return=guests`}
@@ -996,7 +1010,7 @@ export function GuestListFilter({
                         textAlign: "center",
                       }}
                     >
-                      Edit
+                      {translate("edit")}
                     </a>
                     <button
                       onClick={() => handleDelete(r.id)}
@@ -1013,7 +1027,7 @@ export function GuestListFilter({
                         fontFamily: "inherit",
                       }}
                     >
-                      Remove
+                      {translate("remove")}
                     </button>
                   </div>
                 )
@@ -1071,7 +1085,7 @@ export function GuestListFilter({
                         flexShrink: 0,
                       }}
                     >
-                      No reply
+                      {translate("noReply")}
                     </span>
                     {inv.checkIn && (
                       <span
@@ -1084,7 +1098,7 @@ export function GuestListFilter({
                           color: t.accent,
                         }}
                       >
-                        ✓ Arrived
+                        {translate("arrived2")}
                       </span>
                     )}
                   </div>
@@ -1101,15 +1115,16 @@ export function GuestListFilter({
                     {inv.sentTo}
                   </div>
                   <div style={{ color: t.textMuted, fontSize: "12px", marginTop: "2px" }}>
-                    Invited via {inv.channel === "EMAIL" ? "email" : "SMS"} ·{" "}
-                    {new Date(inv.sentAt).toLocaleDateString("en-US", {
+                    {translate("invitedVia")}{" "}
+                    {inv.channel === "EMAIL" ? translate("email") : translate("sms")} ·{" "}
+                    {new Date(inv.sentAt).toLocaleDateString(locale, {
                       month: "short",
                       day: "numeric",
                     })}
                     {inv.checkIn && (
                       <>
-                        {" · Checked in "}
-                        {new Intl.DateTimeFormat("en-US", {
+                        {translate("checked")}
+                        {new Intl.DateTimeFormat(locale, {
                           hour: "numeric",
                           minute: "2-digit",
                           timeZone: timezone,
@@ -1141,12 +1156,12 @@ export function GuestListFilter({
                         }}
                       >
                         {checkInPendingId === inv.rsvpId
-                          ? "Saving…"
+                          ? translate("saving")
                           : inv.checkIn
                             ? undoConfirmId === inv.rsvpId
-                              ? "Confirm undo"
-                              : "Undo check-in"
-                            : "Check in"}
+                              ? translate("confirmUndo")
+                              : translate("undoCheck")
+                            : translate("check")}
                       </button>
                     )}
                     <button
@@ -1164,7 +1179,9 @@ export function GuestListFilter({
                         fontFamily: "inherit",
                       }}
                     >
-                      {resendPendingId === inv.id ? "Sending…" : "Resend invite"}
+                      {resendPendingId === inv.id
+                        ? translate("sending")
+                        : translate("resendInvite")}
                     </button>
                     {inv.editToken && (
                       <>
@@ -1183,7 +1200,7 @@ export function GuestListFilter({
                             textAlign: "center",
                           }}
                         >
-                          Edit
+                          {translate("edit")}
                         </a>
                         <button
                           onClick={() => handleDeleteInvited(inv.id)}
@@ -1199,7 +1216,7 @@ export function GuestListFilter({
                             fontFamily: "inherit",
                           }}
                         >
-                          Remove
+                          {translate("remove")}
                         </button>
                       </>
                     )}
@@ -1219,7 +1236,7 @@ export function GuestListFilter({
                           fontFamily: "inherit",
                         }}
                       >
-                        Remove
+                        {translate("remove")}
                       </button>
                     )}
                   </div>
@@ -1229,7 +1246,7 @@ export function GuestListFilter({
 
           {filter === "INVITED" && displayedInvited.length === 0 && (
             <div style={{ textAlign: "center", padding: "60px 20px", color: t.textMuted }}>
-              No pending invites.
+              {translate("noPendingInvites")}
             </div>
           )}
         </>

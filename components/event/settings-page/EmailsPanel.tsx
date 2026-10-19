@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useEffect, useState } from "react";
 import { Send } from "lucide-react";
 import type { ResolvedTheme } from "@/lib/theme";
@@ -14,6 +16,8 @@ import { useCaptcha } from "@/components/ui/CaptchaProvider";
 type EventTemplateOption = { id: string; label: string; description: string };
 
 export function EmailsPanel({ eventId, t }: { eventId: string; t: ResolvedTheme }) {
+  const translate = useTranslations("Ui.Event.EmailsPanel");
+
   const [templates, setTemplates] = useState<EventTemplateOption[]>([]);
   const [selectedId, setSelectedId] = useState("invite");
   // Tag the preview with the template it was rendered for, so a stale result
@@ -28,8 +32,8 @@ export function EmailsPanel({ eventId, t }: { eventId: string; t: ResolvedTheme 
   useEffect(() => {
     getEventEmailTemplates()
       .then(setTemplates)
-      .catch(() => setStatus("Failed to load templates"));
-  }, []);
+      .catch(() => setStatus(translate("failedLoadTemplates")));
+  }, [translate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,12 +42,12 @@ export function EmailsPanel({ eventId, t }: { eventId: string; t: ResolvedTheme 
         if (!cancelled) setPreview({ id: selectedId, ...p });
       })
       .catch(() => {
-        if (!cancelled) setStatus("Failed to render preview");
+        if (!cancelled) setStatus(translate("failedRenderPreview"));
       });
     return () => {
       cancelled = true;
     };
-  }, [eventId, selectedId]);
+  }, [eventId, selectedId, translate]);
 
   const currentPreview = preview?.id === selectedId ? preview : null;
 
@@ -54,9 +58,13 @@ export function EmailsPanel({ eventId, t }: { eventId: string; t: ResolvedTheme 
       const res = await runWithCaptcha("email_test", (token) =>
         sendEventEmailTest(eventId, selectedId as Parameters<typeof sendEventEmailTest>[1], token)
       );
-      setStatus(res.success ? `Test sent to ${res.sentTo}` : (res.error ?? "Send failed"));
+      setStatus(
+        res.success
+          ? translate("testSent", { destination: res.sentTo })
+          : (res.error ?? translate("sendFailed"))
+      );
     } catch (reason) {
-      setStatus(reason instanceof Error ? reason.message : "Send failed");
+      setStatus(reason instanceof Error ? reason.message : translate("sendFailed"));
     } finally {
       setSending(false);
     }
@@ -65,17 +73,15 @@ export function EmailsPanel({ eventId, t }: { eventId: string; t: ResolvedTheme 
   const selected = templates.find((tpl) => tpl.id === selectedId);
 
   return (
-    <Section title="Emails" t={t}>
+    <Section title={translate("emails")} t={t}>
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         <div style={{ fontSize: "13px", color: t.textSecondary }}>
-          {
-            "Guests receive these emails styled with this event's theme — change the theme and the emails follow automatically. Email wording is managed by your site admin."
-          }
+          {translate("guestsReceiveTheseEmailsStyledEvent")}
         </div>
 
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "flex-end" }}>
           <div style={{ flex: "1 1 240px" }}>
-            <Label t={t}>Email</Label>
+            <Label t={t}>{translate("email")}</Label>
             <select
               value={selectedId}
               onChange={(e) => setSelectedId(e.target.value)}
@@ -117,7 +123,7 @@ export function EmailsPanel({ eventId, t }: { eventId: string; t: ResolvedTheme 
               opacity: sending || !currentPreview ? 0.6 : 1,
             }}
           >
-            <Send size={14} /> Send me a test
+            <Send size={14} /> {translate("sendMeTest")}
           </button>
         </div>
 
@@ -138,10 +144,11 @@ export function EmailsPanel({ eventId, t }: { eventId: string; t: ResolvedTheme 
                 whiteSpace: "nowrap",
               }}
             >
-              Subject: <span style={{ color: t.textPrimary }}>{currentPreview.subject}</span>
+              {translate("subject")}{" "}
+              <span style={{ color: t.textPrimary }}>{currentPreview.subject}</span>
             </div>
             <iframe
-              title="Email preview"
+              title={translate("emailPreview")}
               sandbox=""
               srcDoc={currentPreview.html}
               style={{
@@ -154,7 +161,11 @@ export function EmailsPanel({ eventId, t }: { eventId: string; t: ResolvedTheme 
             />
           </div>
         ) : (
-          !status && <div style={{ fontSize: "13px", color: t.textMuted }}>Rendering preview…</div>
+          !status && (
+            <div style={{ fontSize: "13px", color: t.textMuted }}>
+              {translate("renderingPreview")}
+            </div>
+          )
         )}
       </div>
     </Section>

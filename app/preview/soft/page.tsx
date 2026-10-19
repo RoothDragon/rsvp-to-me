@@ -1,8 +1,11 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { resolveTheme } from "@/lib/theme";
 
 export default function SoftPreview() {
+  const tr = useTranslations("Ui.Preview");
+
   const accent = "#22c55e"; // green
   const secondary = "#f9a8d4"; // pink
   const t = resolveTheme("SOFT", accent, secondary, accent);
@@ -57,18 +60,24 @@ export default function SoftPreview() {
 
         {/* Date */}
         <div className="flex items-center gap-2 mb-3">
-          <span
-            className="text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full"
-            style={{ background: t.badgeBg, color: t.badgeText }}
-          >
-            Friday, June 27
-          </span>
-          <span
-            className="text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full"
-            style={{ background: t.badgeBg, color: t.badgeText }}
-          >
-            8:00 PM
-          </span>
+          {tr.rich("fridayJune27800PmMessage", {
+            part0: (chunks) => (
+              <span
+                className="text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full"
+                style={{ background: t.badgeBg, color: t.badgeText }}
+              >
+                {chunks}
+              </span>
+            ),
+            part1: (chunks) => (
+              <span
+                className="text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full"
+                style={{ background: t.badgeBg, color: t.badgeText }}
+              >
+                {chunks}
+              </span>
+            ),
+          })}
         </div>
 
         {/* Title */}
@@ -79,7 +88,7 @@ export default function SoftPreview() {
             fontFamily: t.headingFont,
           }}
         >
-          Wine Night ✨
+          {tr("wineNight")}
         </h1>
 
         {/* Host */}
@@ -88,9 +97,9 @@ export default function SoftPreview() {
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
             style={{ background: t.avatarGradient, color: t.accentFg }}
           >
-            J
+            {tr("j")}
           </div>
-          <span style={{ color: t.textSecondary }}>Hosted by Joe</span>
+          <span style={{ color: t.textSecondary }}>{tr("hostedByJoe")}</span>
         </div>
 
         {/* Location */}
@@ -100,16 +109,14 @@ export default function SoftPreview() {
         >
           <span style={{ color: t.accent, fontSize: "18px" }}>📍</span>
           <div>
-            <div className="font-medium">Joe&apos;s Place</div>
-            <div style={{ color: t.textMuted, fontSize: "14px" }}>123 Main St, Brooklyn, NY</div>
+            <div className="font-medium">{tr("joeSPlace")}</div>
+            <div style={{ color: t.textMuted, fontSize: "14px" }}>{tr("123MainStBrooklynNy")}</div>
           </div>
         </div>
 
         {/* Description */}
         <p className="mb-8 leading-relaxed" style={{ color: t.textSecondary }}>
-          Monthly wine night at my place! Bring a bottle you love and be ready to share what you
-          enjoy about it. I&apos;ll have snacks and plenty of glasses. This month&apos;s theme is
-          anything from Burgundy. 🍇
+          {tr("monthlyWineNightAtMyPlaceBringABottle")}
         </p>
 
         {/* RSVP Card */}
@@ -122,13 +129,13 @@ export default function SoftPreview() {
           }}
         >
           <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: t.headingFont }}>
-            Are you coming?
+            {tr("areYouComing")}
           </h2>
           <div className="flex gap-3 mb-5">
             {[
-              { label: "Going", emoji: "🎉", active: true },
-              { label: "Maybe", emoji: "🤔", active: false },
-              { label: "Can't go", emoji: "😔", active: false },
+              { label: tr("going"), emoji: "🎉", active: true },
+              { label: tr("maybe"), emoji: "🤔", active: false },
+              { label: tr("canTGo"), emoji: "😔", active: false },
             ].map((opt) => (
               <button
                 key={opt.label}
@@ -156,7 +163,7 @@ export default function SoftPreview() {
           <div className="space-y-3">
             <input
               className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-              placeholder="Your name"
+              placeholder={tr("yourName")}
               style={{
                 background: t.inputBg,
                 border: `1px solid ${t.inputBorder}`,
@@ -165,7 +172,7 @@ export default function SoftPreview() {
             />
             <input
               className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-              placeholder="Email (optional — for updates)"
+              placeholder={tr("emailOptionalForUpdates")}
               style={{
                 background: t.inputBg,
                 border: `1px solid ${t.inputBorder}`,
@@ -181,7 +188,7 @@ export default function SoftPreview() {
                 border: "none",
               }}
             >
-              Send RSVP
+              {tr("sendRsvp")}
             </button>
           </div>
         </div>
@@ -195,8 +202,8 @@ export default function SoftPreview() {
           }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Going (8)</h3>
-            <span style={{ color: t.textMuted, fontSize: "13px" }}>3 maybe</span>
+            <h3 className="font-semibold">{tr("going8")}</h3>
+            <span style={{ color: t.textMuted, fontSize: "13px" }}>{tr("3Maybe")}</span>
           </div>
           <div className="flex gap-2 flex-wrap">
             {["Sarah", "Mike", "Emma", "James", "Priya", "Tom", "Leila", "Raj"].map((name) => (
@@ -228,15 +235,15 @@ export default function SoftPreview() {
             border: `1px solid ${t.cardBorder}`,
           }}
         >
-          <h3 className="font-semibold mb-4">Vibes 💬</h3>
+          <h3 className="font-semibold mb-4">{tr("vibes")}</h3>
           <div className="space-y-3 mb-4">
             {[
               {
                 name: "Sarah",
-                msg: "Cannot wait!! Bringing a Pinot I've been saving 🍷",
-                time: "2h ago",
+                msg: tr("cannotWaitBringingAPinotIVeBeenSaving"),
+                time: tr("2hAgo"),
               },
-              { name: "Mike", msg: "YES. Bringing something from Burgundy!", time: "1h ago" },
+              { name: "Mike", msg: tr("yesBringingSomethingFromBurgundy"), time: tr("1hAgo") },
             ].map((c) => (
               <div key={c.name} className="flex gap-3">
                 <div
@@ -261,7 +268,7 @@ export default function SoftPreview() {
           <div className="flex gap-2">
             <input
               className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
-              placeholder="Say something..."
+              placeholder={tr("saySomething")}
               style={{
                 background: t.inputBg,
                 border: `1px solid ${t.inputBorder}`,
@@ -276,13 +283,13 @@ export default function SoftPreview() {
                 border: `1px solid ${t.accentBorder}`,
               }}
             >
-              Post
+              {tr("post")}
             </button>
           </div>
         </div>
 
         <p className="text-center mt-8 text-xs" style={{ color: t.textMuted }}>
-          rsvp to me
+          {tr("rsvpToMe")}
         </p>
       </div>
     </div>

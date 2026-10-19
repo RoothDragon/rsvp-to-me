@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   forwardRef,
   type ButtonHTMLAttributes,
@@ -139,6 +140,7 @@ export function FeedbackToast({
   feedback: { type: "success" | "error"; message: string } | null;
   onDismiss: () => void;
 }) {
+  const t = useTranslations("Ui.Common");
   if (!feedback) return null;
   const color = feedback.type === "success" ? "#22c55e" : "#ef4444";
 
@@ -146,7 +148,7 @@ export function FeedbackToast({
     <button
       type="button"
       onClick={onDismiss}
-      aria-label="Dismiss notification"
+      aria-label={t("dismissNotification")}
       style={{
         position: "fixed",
         top: "20px",

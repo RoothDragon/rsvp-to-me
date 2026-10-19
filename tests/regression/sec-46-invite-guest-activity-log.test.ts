@@ -1,3 +1,4 @@
+import "@/tests/helpers/english-request-locale";
 // SEC-46 — Host/co-host invite issuance was not attributed in the activity log.
 //
 // Bug (found 2026-07, STRIDE threat model of the auth/invite flows —

@@ -1,3 +1,4 @@
+import "@/tests/helpers/english-request-locale";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";

@@ -1,4 +1,5 @@
 "use client";
+import { useLocale, useTranslations } from "next-intl";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RotateCcw, Send } from "lucide-react";
@@ -20,13 +21,6 @@ type TemplateEntry = {
   overrides: { subject?: string; body?: string } & Partial<Record<TemplateToggleKey, boolean>>;
 };
 
-const TOGGLE_LABELS: Record<TemplateToggleKey, string> = {
-  showCoverImage: "Cover image",
-  showHostFlourish: "Hosted-by flourish",
-  showMapLink: "Google Maps link",
-  showCalendarLinks: "Add-to-calendar links",
-};
-
 const BASES = ["DARK", "SOFT", "BOLD"] as const;
 
 const inputStyle: React.CSSProperties = {
@@ -43,6 +37,10 @@ const labelStyle: React.CSSProperties = {
 };
 
 export function EmailTemplatesSection() {
+  const tr = useTranslations("Ui.Admin");
+  const locale = useLocale();
+  const tEvent = useTranslations("Ui.Event");
+
   const [templates, setTemplates] = useState<TemplateEntry[]>([]);
   const [selectedId, setSelectedId] = useState<TemplateId>("invite");
   const [subject, setSubject] = useState("");
@@ -68,8 +66,8 @@ export function EmailTemplatesSection() {
     // setState only in the async callback (not synchronously in the effect body).
     getEmailTemplatesAdmin()
       .then(({ templates: loaded }) => setTemplates(loaded as TemplateEntry[]))
-      .catch(() => setStatus("Failed to load templates"));
-  }, []);
+      .catch(() => setStatus(tr("failedToLoadTemplates")));
+  }, [locale, tr]);
 
   // Seed the editor from the selected template's saved copy when the selection
   // changes. Adjusting state during render (React's documented pattern) instead
@@ -120,13 +118,13 @@ export function EmailTemplatesSection() {
     try {
       const res = await saveEmailTemplateAction(selected.meta.id, currentOverrides());
       if (!res.success) {
-        setStatus(res.error ?? "Save failed");
+        setStatus(res.error ?? tr("saveFailed"));
       } else {
         await loadTemplates();
-        setStatus("Saved");
+        setStatus(tr("saved"));
       }
     } catch {
-      setStatus("Save failed");
+      setStatus(tr("saveFailed"));
     } finally {
       setBusy(false);
     }
@@ -145,20 +143,16 @@ export function EmailTemplatesSection() {
       const cleared: Partial<Record<TemplateToggleKey, boolean>> = {};
       for (const key of selected.meta.toggles) cleared[key] = true;
       setToggles(cleared);
-      setStatus("Reset to default");
+      setStatus(tr("resetToDefault2"));
     } catch {
-      setStatus("Reset failed");
+      setStatus(tr("resetFailed"));
     } finally {
       setBusy(false);
     }
   };
 
   const handleResetAll = async () => {
-    if (
-      !window.confirm(
-        "Reset ALL email templates to their defaults? This clears every saved subject, body, and toggle override for all templates. This can't be undone."
-      )
-    ) {
+    if (!window.confirm(tr("resetAllEmailTemplatesToTheirDefaultsThisClears"))) {
       return;
     }
     setBusy(true);
@@ -176,11 +170,11 @@ export function EmailTemplatesSection() {
       }
       setStatus(
         res.cleared > 0
-          ? `Reset all templates (${res.cleared} override${res.cleared === 1 ? "" : "s"} cleared)`
-          : "All templates were already at their defaults"
+          ? tr("resetAllTemplatesCount", { count: res.cleared })
+          : tr("allTemplatesWereAlreadyAtTheirDefaults")
       );
     } catch {
-      setStatus("Reset all failed");
+      setStatus(tr("resetAllFailed"));
     } finally {
       setBusy(false);
     }
@@ -192,9 +186,11 @@ export function EmailTemplatesSection() {
     setStatus(null);
     try {
       const res = await sendEmailTemplateTestAction(selected.meta.id, sampleBase);
-      setStatus(res.success ? `Test sent to ${res.sentTo}` : (res.error ?? "Send failed"));
+      setStatus(
+        res.success ? tr("testSentTo", { recipient: res.sentTo }) : (res.error ?? tr("sendFailed"))
+      );
     } catch {
-      setStatus("Send failed");
+      setStatus(tr("sendFailed"));
     } finally {
       setBusy(false);
     }
@@ -211,7 +207,9 @@ export function EmailTemplatesSection() {
 
   if (!selected) {
     return (
-      <div style={{ color: APP_SHELL.textSecondary, fontSize: "13px" }}>Loading templates…</div>
+      <div style={{ color: APP_SHELL.textSecondary, fontSize: "13px" }}>
+        {tr("loadingTemplates")}
+      </div>
     );
   }
 
@@ -220,7 +218,7 @@ export function EmailTemplatesSection() {
       {/* Template picker + test send */}
       <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "flex-end" }}>
         <div style={{ flex: "1 1 260px" }}>
-          <label style={labelStyle}>Template</label>
+          <label style={labelStyle}>{tr("template")}</label>
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value as TemplateId)}
@@ -256,13 +254,13 @@ export function EmailTemplatesSection() {
             opacity: busy ? 0.6 : 1,
           }}
         >
-          <Send size={14} /> Send test to me
+          <Send size={14} /> {tr("sendTestToMe")}
         </button>
         <button
           type="button"
           onClick={handleResetAll}
           disabled={busy}
-          title="Clear every saved override and restore all shipped defaults"
+          title={tr("clearEverySavedOverrideAndRestoreAllShippedDefaults")}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -278,7 +276,7 @@ export function EmailTemplatesSection() {
             opacity: busy ? 0.6 : 1,
           }}
         >
-          <RotateCcw size={14} /> Reset all to default
+          <RotateCcw size={14} /> {tr("resetAllToDefault")}
         </button>
       </div>
 
@@ -290,7 +288,7 @@ export function EmailTemplatesSection() {
         {/* Editor column */}
         <div style={{ flex: "1 1 320px", display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
-            <label style={labelStyle}>Subject</label>
+            <label style={labelStyle}>{tr("subject")}</label>
             <input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
@@ -300,7 +298,7 @@ export function EmailTemplatesSection() {
 
           {selected.meta.bodyEditable && (
             <div>
-              <label style={labelStyle}>Body copy</label>
+              <label style={labelStyle}>{tr("bodyCopy")}</label>
               <textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
@@ -312,7 +310,7 @@ export function EmailTemplatesSection() {
 
           {selected.meta.placeholders.length > 0 && (
             <div>
-              <label style={labelStyle}>Placeholders (click to insert)</label>
+              <label style={labelStyle}>{tr("placeholdersClickToInsert")}</label>
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                 {selected.meta.placeholders.map((name) => (
                   <button
@@ -340,7 +338,7 @@ export function EmailTemplatesSection() {
 
           {selected.meta.toggles.length > 0 && (
             <div>
-              <label style={labelStyle}>Content blocks</label>
+              <label style={labelStyle}>{tr("contentBlocks")}</label>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {selected.meta.toggles.map((key) => (
                   <label
@@ -360,7 +358,7 @@ export function EmailTemplatesSection() {
                       onChange={(e) => setToggles((t) => ({ ...t, [key]: e.target.checked }))}
                       style={{ accentColor: APP_SHELL.accent }}
                     />
-                    {TOGGLE_LABELS[key]}
+                    {tr("templateToggle." + key)}
                   </label>
                 ))}
               </div>
@@ -384,7 +382,7 @@ export function EmailTemplatesSection() {
                 opacity: busy ? 0.6 : 1,
               }}
             >
-              Save Template
+              {tr("saveTemplate")}
             </button>
             <button
               type="button"
@@ -405,7 +403,7 @@ export function EmailTemplatesSection() {
                 opacity: busy ? 0.6 : 1,
               }}
             >
-              <RotateCcw size={14} /> Reset to default
+              <RotateCcw size={14} /> {tr("resetToDefault2")}
             </button>
           </div>
 
@@ -426,7 +424,7 @@ export function EmailTemplatesSection() {
               flexWrap: "wrap",
             }}
           >
-            <label style={{ ...labelStyle, marginBottom: 0 }}>Live preview</label>
+            <label style={{ ...labelStyle, marginBottom: 0 }}>{tr("livePreview")}</label>
             {selected.meta.eventScoped && (
               <div style={{ display: "flex", gap: "4px" }}>
                 {BASES.map((base) => (
@@ -445,7 +443,7 @@ export function EmailTemplatesSection() {
                       cursor: "pointer",
                     }}
                   >
-                    {base === "DARK" ? "Dark" : base === "SOFT" ? "Soft" : "Bold"}
+                    {tEvent("shared.baseThemes." + base)}
                   </button>
                 ))}
               </div>
@@ -463,10 +461,13 @@ export function EmailTemplatesSection() {
                   whiteSpace: "nowrap",
                 }}
               >
-                Subject: <span style={{ color: APP_SHELL.textPrimary }}>{preview.subject}</span>
+                {tr.rich("subjectMessage", {
+                  part0: (chunks) => <span style={{ color: APP_SHELL.textPrimary }}>{chunks}</span>,
+                  value0: preview.subject,
+                })}
               </div>
               <iframe
-                title="Email preview"
+                title={tr("emailPreview")}
                 sandbox=""
                 srcDoc={preview.html}
                 style={{
@@ -480,7 +481,7 @@ export function EmailTemplatesSection() {
             </>
           ) : (
             <div style={{ color: APP_SHELL.textSecondary, fontSize: "13px" }}>
-              Rendering preview…
+              {tr("renderingPreview")}
             </div>
           )}
         </div>

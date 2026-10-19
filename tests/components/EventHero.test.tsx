@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act } from "@/tests/components/render";
 import { testTheme } from "./helpers/theme";
 import { EventHero } from "@/components/event/event-page/EventHero";
 import React from "react";

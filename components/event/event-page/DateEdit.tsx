@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations, useLocale } from "next-intl";
+
 import { X, Pencil, CalendarPlus } from "lucide-react";
 import { useState, useRef, useEffect, useTransition } from "react";
 import { saveEventDates } from "@/app/actions/event";
@@ -79,6 +81,9 @@ export function DateEdit({
   locationName: string | null;
   virtualUrl: string | null;
 }) {
+  const translate = useTranslations("Ui.Event.DateEdit");
+  const locale = useLocale();
+
   const [open, setOpen] = useState(false);
   const [calOpen, setCalOpen] = useState(false);
   const [startDate, setStartDate] = useState("");
@@ -186,7 +191,7 @@ export function DateEdit({
           <div
             style={{ cursor: isHost ? "pointer" : "default" }}
             onClick={isHost ? openPopover : undefined}
-            title={isHost ? "Click to edit date/time" : undefined}
+            title={isHost ? translate("clickEditDateTime") : undefined}
           >
             <div
               style={{
@@ -197,7 +202,7 @@ export function DateEdit({
                 textShadow: t.heroTextShadow,
               }}
             >
-              {formatDate(startAt, timezone)}
+              {formatDate(startAt, timezone, locale)}
             </div>
             <div
               style={{
@@ -208,8 +213,8 @@ export function DateEdit({
                 textShadow: t.heroTextShadow,
               }}
             >
-              {formatTime(startAt, timezone)}
-              {endAt ? ` – ${formatTime(endAt, timezone)}` : ""}
+              {formatTime(startAt, timezone, locale)}
+              {endAt ? ` – ${formatTime(endAt, timezone, locale)}` : ""}
             </div>
           </div>
           {isHost && (
@@ -254,7 +259,7 @@ export function DateEdit({
                   marginBottom: "6px",
                 }}
               >
-                Start Date & Time
+                {translate("startDateTime")}
               </label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <input
@@ -305,9 +310,9 @@ export function DateEdit({
                   marginBottom: "6px",
                 }}
               >
-                End Date & Time{" "}
+                {translate("endDateTime")}{" "}
                 <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>
-                  (optional)
+                  {translate("optional")}
                 </span>
               </label>
               <div style={{ display: "flex", gap: "6px" }}>
@@ -393,7 +398,7 @@ export function DateEdit({
                   opacity: !startDate || !startTime || isPending ? 0.5 : 1,
                 }}
               >
-                {isPending ? "Saving…" : "Save"}
+                {isPending ? translate("saving") : translate("save")}
               </button>
               <button
                 onClick={() => setOpen(false)}
@@ -408,7 +413,7 @@ export function DateEdit({
                   cursor: "pointer",
                 }}
               >
-                Cancel
+                {translate("cancel")}
               </button>
             </div>
           </div>
@@ -435,7 +440,7 @@ export function DateEdit({
             boxSizing: "border-box",
             transition: "all 0.2s ease",
           }}
-          title="Add to Calendar"
+          title={translate("addCalendar")}
         >
           <CalendarPlus size={22} />
         </button>
@@ -465,7 +470,7 @@ export function DateEdit({
               onClick={() => setCalOpen(false)}
               theme={t}
             >
-              Google Calendar
+              {translate("googleCalendar")}
             </CalendarMenuItem>
             <CalendarMenuItem
               href={icalDataUri}
@@ -473,7 +478,7 @@ export function DateEdit({
               onClick={() => setCalOpen(false)}
               theme={t}
             >
-              iCal / Outlook (.ics)
+              {translate("icalOutlookIcs")}
             </CalendarMenuItem>
           </div>
         )}

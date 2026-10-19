@@ -1,3 +1,4 @@
+import { getRequestLocale, getRequestTranslator } from "@/i18n/server";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
@@ -82,11 +83,16 @@ const getEventPageData = cache((slug: string) =>
 export async function generateMetadata(props: PageProps<"/e/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
   const event = await getEventPageData(slug);
-  return buildEventSocialMetadata(event, slug);
+  const [locale, translate] = await Promise.all([getRequestLocale(), getRequestTranslator()]);
+  return buildEventSocialMetadata(event, slug, {
+    locale,
+    translate: (key, values) => translate(`Ui.Event.Social.${key}`, values),
+  });
 }
 
 export default async function EventRoute(props: PageProps<"/e/[slug]">) {
   const { slug } = await props.params;
+  const translate = await getRequestTranslator();
   const searchParams = await props.searchParams;
   const isPreview = searchParams?.preview === "1";
   const token = searchParams?.token as string | undefined;
@@ -101,10 +107,10 @@ export default async function EventRoute(props: PageProps<"/e/[slug]">) {
         <div style={{ textAlign: "center", maxWidth: "400px", padding: "40px 24px" }}>
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>🗑️</div>
           <h1 style={{ fontSize: "24px", fontWeight: 800, marginBottom: "12px" }}>
-            This event was deleted
+            {translate("Ui.Event.Page.deletedTitle")}
           </h1>
           <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "15px", lineHeight: 1.5 }}>
-            The host has removed this event.
+            {translate("Ui.Event.Page.deletedDescription")}
           </p>
         </div>
       </AppShell>
@@ -131,10 +137,10 @@ export default async function EventRoute(props: PageProps<"/e/[slug]">) {
         <div style={{ textAlign: "center", maxWidth: "400px", padding: "40px 24px" }}>
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔒</div>
           <h1 style={{ fontSize: "24px", fontWeight: 800, marginBottom: "12px" }}>
-            This is a private event
+            {translate("Ui.Event.Page.privateTitle")}
           </h1>
           <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "15px", lineHeight: 1.5 }}>
-            To attend, contact the host to receive an invitation.
+            {translate("Ui.Event.Page.privateDescription")}
           </p>
           <a
             href={`/auth/sign-in?redirect=/e/${slug}`}
@@ -151,7 +157,7 @@ export default async function EventRoute(props: PageProps<"/e/[slug]">) {
               fontWeight: 600,
             }}
           >
-            Sign in to access
+            {translate("Ui.Event.Page.signIn")}
           </a>
         </div>
       </AppShell>

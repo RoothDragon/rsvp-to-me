@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import {
   APP_SHELL,
@@ -7,7 +8,7 @@ import {
   getDefaultCardOpacity,
   resolveTheme,
 } from "@/lib/theme";
-import { FONT_OPTIONS, FONT_CATEGORY_LABELS, getFontById } from "@/lib/fonts";
+import { FONT_OPTIONS, getFontById } from "@/lib/fonts";
 import type { AdminThemePreset, ThemePresetFormState, ThemeSnapObj } from "./types";
 import { Dialog } from "@/components/ui/Dialog";
 
@@ -57,6 +58,9 @@ export function ThemePresetModal({
   handleSaveThemePreset: (e: React.FormEvent) => Promise<void>;
   handleSaveThemePresetAsDefault: () => Promise<void>;
 }) {
+  const tr = useTranslations("Ui.Admin");
+  const tEvent = useTranslations("Ui.Event");
+
   return (
     <Dialog
       open={themePresetForm !== null}
@@ -104,7 +108,7 @@ export function ThemePresetModal({
                     minWidth: 0,
                   }}
                 >
-                  {themePresetForm.id ? "Edit Preset" : "New Preset"}
+                  {themePresetForm.id ? tr("editPreset") : tr("newPreset2")}
                 </h3>
                 {formDiffersFromDefault && defSnap && (
                   <button
@@ -122,7 +126,7 @@ export function ThemePresetModal({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    ↺ Reset to Default
+                    {tr("resetToDefault")}
                   </button>
                 )}
                 {origDiffersFromDefault && formDiffersFromOriginal && origSnap && (
@@ -141,7 +145,7 @@ export function ThemePresetModal({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    ↺ Reset to Original
+                    {tr("resetToOriginal")}
                   </button>
                 )}
                 <button
@@ -177,7 +181,7 @@ export function ThemePresetModal({
                     color: APP_SHELL.textSecondary,
                   }}
                 >
-                  EMOJI
+                  {tr("emoji")}
                 </label>
                 <input
                   type="text"
@@ -204,14 +208,14 @@ export function ThemePresetModal({
                     color: APP_SHELL.textSecondary,
                   }}
                 >
-                  NAME
+                  {tr("name")}
                 </label>
                 <input
                   type="text"
                   value={themePresetForm.name}
                   onChange={(e) => setThemePresetForm((f) => f && { ...f, name: e.target.value })}
                   required
-                  placeholder="e.g. Midnight Purple"
+                  placeholder={tr("eGMidnightPurple")}
                   style={{
                     backgroundColor: APP_SHELL.inputBg,
                     border: `1px solid ${APP_SHELL.inputBorder}`,
@@ -234,7 +238,7 @@ export function ThemePresetModal({
                   color: APP_SHELL.textSecondary,
                 }}
               >
-                BASE STYLE
+                {tr("baseStyle")}
               </label>
               <div style={{ display: "flex", gap: "8px" }}>
                 {BASE_THEMES.map((bt) => (
@@ -262,7 +266,7 @@ export function ThemePresetModal({
                         backgroundColor: APP_SHELL.inputBg,
                       }}
                     >
-                      {bt.label}
+                      {tEvent("shared.baseThemes." + bt.id)}
                     </div>
                   </button>
                 ))}
@@ -278,7 +282,7 @@ export function ThemePresetModal({
                   color: APP_SHELL.textSecondary,
                 }}
               >
-                BACKGROUND GRADIENT
+                {tr("backgroundGradient")}
               </label>
               <div style={{ display: "flex", gap: "10px" }}>
                 <label
@@ -381,7 +385,7 @@ export function ThemePresetModal({
                   color: APP_SHELL.textSecondary,
                 }}
               >
-                ACCENT COLOR
+                {tr("accentColor")}
               </label>
               <div
                 style={{
@@ -408,7 +412,7 @@ export function ThemePresetModal({
                   />
                 ))}
                 <label
-                  title="Custom"
+                  title={tr("custom")}
                   style={{
                     width: "28px",
                     height: "28px",
@@ -471,7 +475,7 @@ export function ThemePresetModal({
                   }
                   style={{ width: "16px", height: "16px", cursor: "pointer" }}
                 />
-                Seasonal preset
+                {tr("seasonalPreset")}
               </label>
               {themePresetForm.seasonal && (
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -482,7 +486,7 @@ export function ThemePresetModal({
                       color: APP_SHELL.textSecondary,
                     }}
                   >
-                    MONTH (1–12)
+                    {tr("month112")}
                   </label>
                   <input
                     type="number"
@@ -498,7 +502,7 @@ export function ThemePresetModal({
                           }
                       )
                     }
-                    placeholder="e.g. 10"
+                    placeholder={tr("eG10")}
                     style={{
                       width: "72px",
                       backgroundColor: APP_SHELL.inputBg,
@@ -523,7 +527,7 @@ export function ThemePresetModal({
                   color: APP_SHELL.textSecondary,
                 }}
               >
-                HEADING FONT
+                {tr("headingFont")}
               </label>
               <select
                 value={themePresetForm.fontId ?? ""}
@@ -540,10 +544,10 @@ export function ThemePresetModal({
                   outline: "none",
                 }}
               >
-                <option value="">Theme default</option>
+                <option value="">{tr("themeDefault")}</option>
                 {FONT_OPTIONS.map((f) => (
                   <option key={f.id} value={f.id}>
-                    {f.label} ({FONT_CATEGORY_LABELS[f.category]})
+                    {tEvent("shared.fonts." + f.id)} ({tr("fontCategory." + f.category)})
                   </option>
                 ))}
               </select>
@@ -563,7 +567,7 @@ export function ThemePresetModal({
                     textAlign: "center",
                   }}
                 >
-                  You&rsquo;re Invited!
+                  {tr("youRsquoReInvited")}
                 </div>
               )}
             </div>
@@ -581,7 +585,7 @@ export function ThemePresetModal({
                       color: APP_SHELL.textSecondary,
                     }}
                   >
-                    CARD OPACITY
+                    {tr("cardOpacity")}
                   </label>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <input
@@ -610,8 +614,8 @@ export function ThemePresetModal({
                     </span>
                   </div>
                   <div style={{ fontSize: "11px", color: APP_SHELL.textSecondary }}>
-                    Controls card transparency. Default for {themePresetForm.base}:{" "}
-                    {Math.round(defaultOp * 100)}%
+                    {tr("controlsCardTransparencyDefaultFor")}
+                    {themePresetForm.base}: {Math.round(defaultOp * 100)}%
                   </div>
                 </div>
               );
@@ -656,7 +660,7 @@ export function ThemePresetModal({
                         fontFamily: pv.headingFont,
                       }}
                     >
-                      {themePresetForm.emoji} {themePresetForm.name || "Untitled"}
+                      {themePresetForm.emoji} {themePresetForm.name || tr("untitled")}
                     </span>
                   </div>
                   {/* Card zone */}
@@ -683,10 +687,10 @@ export function ThemePresetModal({
                             fontFamily: pv.headingFont,
                           }}
                         >
-                          Event details
+                          {tr("eventDetails")}
                         </div>
                         <div style={{ fontSize: "11px", color: pv.textMuted }}>
-                          Saturday · 7:00 PM
+                          {tr("saturday700Pm")}
                         </div>
                       </div>
                       <button
@@ -701,7 +705,7 @@ export function ThemePresetModal({
                           cursor: "default",
                         }}
                       >
-                        RSVP
+                        {tr("rsvp")}
                       </button>
                     </div>
                   </div>
@@ -725,7 +729,7 @@ export function ThemePresetModal({
                   cursor: "pointer",
                 }}
               >
-                Cancel
+                {tr("cancel")}
               </button>
               {themePresetForm.id &&
                 themePresetOriginal &&
@@ -757,7 +761,7 @@ export function ThemePresetModal({
                         cursor: "pointer",
                       }}
                     >
-                      ↺ Reset
+                      {tr("reset")}
                     </button>
                   ) : null;
                 })()}
@@ -777,7 +781,11 @@ export function ThemePresetModal({
                   opacity: isSavingPreset ? 0.7 : 1,
                 }}
               >
-                {isSavingPreset ? "Saving…" : themePresetForm.id ? "Save Changes" : "Create Preset"}
+                {isSavingPreset
+                  ? tr("saving")
+                  : themePresetForm.id
+                    ? tr("saveChanges")
+                    : tr("createPreset")}
               </button>
               {themePresetForm.id && (
                 <button
@@ -797,7 +805,7 @@ export function ThemePresetModal({
                     opacity: isSavingPreset ? 0.7 : 1,
                   }}
                 >
-                  Save as Default
+                  {tr("saveAsDefault")}
                 </button>
               )}
             </div>

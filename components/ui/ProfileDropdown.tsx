@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useEffectsHidden, setEffectsHidden } from "@/lib/effect-visibility";
@@ -79,6 +80,7 @@ function MenuButton({ children, onSelect }: { children: ReactNode; onSelect: () 
 }
 
 export default function ProfileDropdown({ user }: { user: DropdownUser | null }) {
+  const t = useTranslations("Ui.Navigation");
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const effectsHidden = useEffectsHidden();
@@ -102,7 +104,7 @@ export default function ProfileDropdown({ user }: { user: DropdownUser | null })
     };
   }, []);
 
-  const displayName = user?.name || user?.email?.split("@")[0] || "User";
+  const displayName = user?.name || user?.email?.split("@")[0] || t("user");
   const initials = displayName.slice(0, 2).toUpperCase();
   const closeMenu = () => setIsOpen(false);
   const toggleEffects = () => {
@@ -115,7 +117,7 @@ export default function ProfileDropdown({ user }: { user: DropdownUser | null })
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        aria-label={user ? "Open profile menu" : "Open menu"}
+        aria-label={user ? t("openProfile") : t("openMenu")}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         style={{
@@ -201,7 +203,7 @@ export default function ProfileDropdown({ user }: { user: DropdownUser | null })
       {isOpen && (
         <div
           role="menu"
-          aria-label={user ? "Profile menu" : "Viewer menu"}
+          aria-label={user ? t("profileMenu") : t("viewerMenu")}
           style={{
             position: "absolute",
             right: 0,
@@ -249,7 +251,7 @@ export default function ProfileDropdown({ user }: { user: DropdownUser | null })
                     textOverflow: "ellipsis",
                   }}
                 >
-                  {user.email || "No email"}
+                  {user.email || t("noEmail")}
                 </div>
                 {user.role !== "GUEST" && (
                   <span
@@ -269,36 +271,36 @@ export default function ProfileDropdown({ user }: { user: DropdownUser | null })
                       textTransform: "uppercase",
                     }}
                   >
-                    {user.role}
+                    {user.role === "ADMIN" ? t("adminRole") : t("hostRole")}
                   </span>
                 )}
               </div>
 
               {user.role === "ADMIN" && (
                 <MenuLink href="/admin" onSelect={closeMenu}>
-                  🛡️ Admin Panel
+                  🛡️ {t("admin")}
                 </MenuLink>
               )}
               <MenuLink href="/dashboard" onSelect={closeMenu}>
-                🗓️ Event Dashboard
+                🗓️ {t("dashboard")}
               </MenuLink>
               <MenuLink href="/profile" onSelect={closeMenu}>
-                ⚙️ Profile Settings
+                ⚙️ {t("profile")}
               </MenuLink>
               {user.role !== "GUEST" && (
                 <MenuLink href="/help" onSelect={closeMenu}>
-                  📖 Help &amp; Guides
+                  📖 {t("help")}
                 </MenuLink>
               )}
             </>
           ) : (
             <MenuLink href="/auth/sign-in" onSelect={closeMenu}>
-              🔑 Login
+              🔑 {t("login")}
             </MenuLink>
           )}
 
           <MenuButton onSelect={toggleEffects}>
-            ✨ {effectsHidden ? "Show effects" : "Hide effects"}
+            ✨ {effectsHidden ? t("showEffects") : t("hideEffects")}
           </MenuButton>
 
           {user && (
@@ -308,7 +310,7 @@ export default function ProfileDropdown({ user }: { user: DropdownUser | null })
                 style={{ height: "1px", backgroundColor: APP_SHELL.navBorder, margin: "6px 0" }}
               />
               <MenuLink href="/auth/sign-out" onSelect={closeMenu}>
-                🚪 Sign Out
+                🚪 {t("signOut")}
               </MenuLink>
             </>
           )}

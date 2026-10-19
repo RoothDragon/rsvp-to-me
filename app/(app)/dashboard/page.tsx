@@ -1,3 +1,4 @@
+import { getRequestTranslator } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getDashboardEvents, getDashboardActivity, getDashboardInvites } from "@/app/actions/event";
@@ -5,7 +6,10 @@ import { isOpenRegistrationActive } from "@/lib/auth";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { getSessionUser } from "@/lib/session-user";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export async function generateMetadata(): Promise<Metadata> {
+  const tr = await getRequestTranslator();
+  return { title: tr("Ui.Dashboard.metadataTitle") };
+}
 
 export default async function DashboardPage() {
   const sessionUser = await getSessionUser();

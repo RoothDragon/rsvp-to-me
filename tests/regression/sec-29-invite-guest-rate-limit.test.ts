@@ -1,3 +1,4 @@
+import "@/tests/helpers/english-request-locale";
 // SEC-29 — Host inviteGuest fan-out had no batch cap or rate limit.
 //
 // Bug (found 2026-07, security review): inviteGuest in app/actions/event.ts

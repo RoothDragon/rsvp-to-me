@@ -17,6 +17,7 @@ model User {
   phone               String?             @unique
   name                String?
   avatarUrl           String?
+  preferredLocale     String?
   role                Role                @default(GUEST)
   emailNotifications  Boolean             @default(true)
   smsNotifications    Boolean             @default(true)

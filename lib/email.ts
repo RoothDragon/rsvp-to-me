@@ -1,3 +1,5 @@
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/config";
+import { getTranslator } from "@/i18n/server";
 import { createElement } from "react";
 import nodemailer from "nodemailer";
 import { decryptConfig } from "./crypto";
@@ -7,7 +9,7 @@ import { getEmailTemplateSettings, mergeWithDefaults } from "./email-settings";
 import { renderEmail, substitutePlaceholders } from "@/emails/render";
 import { mergedToggles, type TemplateId } from "@/emails/registry";
 import type { EventEmailDetails } from "@/emails/components/DetailsCard";
-import type { RsvpStatusLabel } from "@/emails/types";
+
 import { InviteEmail } from "@/emails/templates/InviteEmail";
 import { RsvpConfirmationEmail } from "@/emails/templates/RsvpConfirmationEmail";
 import { ApprovalEmail } from "@/emails/templates/ApprovalEmail";
@@ -25,18 +27,20 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
  * Admin-editable copy (subject/body with {placeholders}) + structural toggles
  * for a template, resolved from SystemConfig at send time.
  */
-async function templateCopy(id: TemplateId, vars: Record<string, string | undefined>) {
+async function templateCopy(
+  id: TemplateId,
+  vars: Record<string, string | undefined>,
+  locale: Locale
+) {
+  const t = await getTranslator(locale);
   const overrides = await getEmailTemplateSettings(id);
-  const merged = mergeWithDefaults(id, overrides);
+  const merged = mergeWithDefaults(id, overrides, t, vars);
   return {
-    subject: substitutePlaceholders(merged.subject, vars),
-    body: substitutePlaceholders(merged.body, vars),
+    subject: overrides.subject ? substitutePlaceholders(overrides.subject, vars) : merged.subject,
+    body: overrides.body ? substitutePlaceholders(merged.body, vars) : merged.body,
     toggles: mergedToggles(id, overrides),
   };
 }
-
-const statusLabel = (status: "GOING" | "MAYBE" | "NO"): RsvpStatusLabel =>
-  status === "GOING" ? "Going" : status === "MAYBE" ? "Maybe" : "Can't Go";
 
 export function isSafeWorkerUrl(urlStr: string): boolean {
   try {
@@ -365,26 +369,28 @@ export async function sendRenderedEmail(opts: {
   return send(opts);
 }
 
-export async function sendMagicLinkEmail(to: string, magicLink: string) {
+export async function sendMagicLinkEmail(to: string, magicLink: string, locale: Locale) {
   if (process.env.NODE_ENV !== "production") {
     console.log(`[auth:magic-link-fallback] Magic link for ${to} is: ${magicLink}`);
   }
 
-  const { subject, body } = await templateCopy("magicLink", {});
+  const { subject, body } = await templateCopy("magicLink", {}, locale);
   const { html, text } = await renderEmail(
-    createElement(MagicLinkEmail, { theme: appShellEmailTheme(), body, magicLink })
+    createElement(MagicLinkEmail, { theme: appShellEmailTheme(), body, magicLink }),
+    locale
   );
   return send({ to, subject, html, text });
 }
 
-export async function sendWelcomeEmail(to: string, magicLink: string) {
+export async function sendWelcomeEmail(to: string, magicLink: string, locale: Locale) {
   if (process.env.NODE_ENV !== "production") {
     console.log(`[admin:welcome-email] Welcome link for ${to} is: ${magicLink}`);
   }
 
-  const { subject, body } = await templateCopy("welcome", {});
+  const { subject, body } = await templateCopy("welcome", {}, locale);
   const { html, text } = await renderEmail(
-    createElement(WelcomeEmail, { theme: appShellEmailTheme(), body, magicLink })
+    createElement(WelcomeEmail, { theme: appShellEmailTheme(), body, magicLink }),
+    locale
   );
   return send({ to, subject, html, text });
 }
@@ -392,6 +398,7 @@ export async function sendWelcomeEmail(to: string, magicLink: string) {
 export async function sendCoHostInviteEmail(
   to: string,
   opts: {
+    locale: Locale;
     hostName: string;
     eventTitle: string;
     eventSlug: string;
@@ -403,17 +410,22 @@ export async function sendCoHostInviteEmail(
 ) {
   if (!(await isChannelEnabled("email"))) return;
   const event = eventDetails(opts);
-  const { subject } = await templateCopy("coHostInvite", {
-    hostName: opts.hostName,
-    eventTitle: opts.eventTitle,
-  });
+  const { subject } = await templateCopy(
+    "coHostInvite",
+    {
+      hostName: opts.hostName,
+      eventTitle: opts.eventTitle,
+    },
+    opts.locale
+  );
   const { html, text } = await renderEmail(
     createElement(CoHostInviteEmail, {
       theme: resolveEmailTheme(opts.theme),
       event,
       hostName: opts.hostName,
       inviteUrl: opts.inviteUrl,
-    })
+    }),
+    opts.locale
   );
   return send({ to, subject, html, text, replyTo: opts.replyTo });
 }
@@ -453,6 +465,7 @@ function eventDetails(
 export async function sendEventInviteEmail(
   to: string,
   opts: {
+    locale: Locale;
     guestName: string;
     hostName: string;
     eventTitle: string;
@@ -469,13 +482,17 @@ export async function sendEventInviteEmail(
   const token = new URL(opts.rsvpBaseUrl).searchParams.get("token");
   if (token) eventUrl.searchParams.set("token", token);
   const event = eventDetails(opts);
-  const { subject, body, toggles } = await templateCopy("invite", {
-    guestName: opts.guestName,
-    hostName: opts.hostName,
-    eventTitle: opts.eventTitle,
-    eventDate: formatEventDateTime(opts.startAt, opts.endAt, opts.timezone).date,
-    location: opts.locationName ?? "",
-  });
+  const { subject, body, toggles } = await templateCopy(
+    "invite",
+    {
+      guestName: opts.guestName,
+      hostName: opts.hostName,
+      eventTitle: opts.eventTitle,
+      eventDate: formatEventDateTime(opts.startAt, opts.endAt, opts.timezone, opts.locale).date,
+      location: opts.locationName ?? "",
+    },
+    opts.locale
+  );
   const { html, text } = await renderEmail(
     createElement(InviteEmail, {
       theme: resolveEmailTheme(opts.theme),
@@ -486,7 +503,8 @@ export async function sendEventInviteEmail(
       rsvpBaseUrl: opts.rsvpBaseUrl,
       maybeEnabled: opts.maybeEnabled,
       eventUrl: eventUrl.toString(),
-    })
+    }),
+    opts.locale
   );
   return send({ to, subject, html, text, replyTo: opts.replyTo });
 }
@@ -494,6 +512,7 @@ export async function sendEventInviteEmail(
 export async function sendApprovalEmail(
   to: string,
   opts: {
+    locale: Locale;
     guestName: string;
     eventTitle: string;
     eventSlug: string;
@@ -505,11 +524,17 @@ export async function sendApprovalEmail(
 ) {
   if (!(await isChannelEnabled("email"))) return;
   const eventUrl = `${APP_URL}/e/${opts.eventSlug}`;
-  const { subject, toggles } = await templateCopy("approval", {
-    guestName: opts.guestName,
-    eventTitle: opts.eventTitle,
-    decision: opts.approved ? "Approved" : "Declined",
-  });
+  const { subject, toggles } = await templateCopy(
+    "approval",
+    {
+      guestName: opts.guestName,
+      eventTitle: opts.eventTitle,
+      decision: (await getTranslator(opts.locale))(
+        opts.approved ? "Email.decision.approved" : "Email.decision.declined"
+      ),
+    },
+    opts.locale
+  );
   const { html, text } = await renderEmail(
     createElement(ApprovalEmail, {
       theme: resolveEmailTheme(opts.theme),
@@ -518,7 +543,8 @@ export async function sendApprovalEmail(
       approved: opts.approved,
       hostMessage: opts.message,
       eventUrl,
-    })
+    }),
+    opts.locale
   );
   return send({ to, subject, html, text, replyTo: opts.replyTo });
 }
@@ -526,6 +552,7 @@ export async function sendApprovalEmail(
 export async function sendBlastEmail(
   to: string[],
   opts: {
+    locale: Locale;
     eventTitle: string;
     eventSlug: string;
     message: string;
@@ -536,10 +563,14 @@ export async function sendBlastEmail(
 ) {
   if (!(await isChannelEnabled("email"))) return;
   const eventUrl = `${APP_URL}/e/${opts.eventSlug}`;
-  const { subject, toggles } = await templateCopy("blast", {
-    hostName: opts.hostName,
-    eventTitle: opts.eventTitle,
-  });
+  const { subject, toggles } = await templateCopy(
+    "blast",
+    {
+      hostName: opts.hostName,
+      eventTitle: opts.eventTitle,
+    },
+    opts.locale
+  );
   const { html, text } = await renderEmail(
     createElement(BlastEmail, {
       theme: resolveEmailTheme(opts.theme),
@@ -548,7 +579,8 @@ export async function sendBlastEmail(
       hostName: opts.hostName,
       message: opts.message,
       eventUrl,
-    })
+    }),
+    opts.locale
   );
   return send({ to: "FROM", bcc: to, subject, html, text, replyTo: opts.replyTo });
 }
@@ -556,6 +588,7 @@ export async function sendBlastEmail(
 export async function sendRsvpConfirmationEmail(
   to: string,
   opts: {
+    locale: Locale;
     guestName: string;
     eventTitle: string;
     eventSlug: string;
@@ -569,25 +602,31 @@ export async function sendRsvpConfirmationEmail(
   if (!(await isChannelEnabled("email"))) return;
   const eventUrl = `${APP_URL}/e/${opts.eventSlug}`;
   const editUrl = `${APP_URL}/e/${opts.eventSlug}/rsvp?token=${opts.editToken}`;
-  const label = statusLabel(opts.status);
+  const t = await getTranslator(opts.locale);
+  const label = t(`Email.status.${opts.status}`);
   const event = eventDetails(opts);
-  const { subject, body, toggles } = await templateCopy("rsvpConfirmation", {
-    guestName: opts.guestName,
-    eventTitle: opts.eventTitle,
-    eventDate: formatEventDateTime(opts.startAt, opts.endAt, opts.timezone).date,
-    location: opts.locationName ?? "",
-    status: label,
-  });
+  const { subject, body, toggles } = await templateCopy(
+    "rsvpConfirmation",
+    {
+      guestName: opts.guestName,
+      eventTitle: opts.eventTitle,
+      eventDate: formatEventDateTime(opts.startAt, opts.endAt, opts.timezone, opts.locale).date,
+      location: opts.locationName ?? "",
+      status: label,
+    },
+    opts.locale
+  );
   const { html, text } = await renderEmail(
     createElement(RsvpConfirmationEmail, {
       theme: resolveEmailTheme(opts.theme),
       body,
       toggles,
       event,
-      statusLabel: label,
+      status: opts.status,
       eventUrl,
       editUrl,
-    })
+    }),
+    opts.locale
   );
   return send({ to, subject, html, text, replyTo: opts.replyTo });
 }
@@ -595,6 +634,7 @@ export async function sendRsvpConfirmationEmail(
 export async function sendHostRsvpAlertEmail(
   to: string,
   opts: {
+    locale: Locale;
     guestName: string;
     status: "GOING" | "MAYBE" | "NO";
     plusOneCount: number;
@@ -608,17 +648,22 @@ export async function sendHostRsvpAlertEmail(
   }
 ) {
   const guestListUrl = `${APP_URL}/e/${opts.eventSlug}#guests`;
-  const label = statusLabel(opts.status);
-  const { subject } = await templateCopy("hostRsvpAlert", {
-    guestName: opts.guestName,
-    status: label,
-    eventTitle: opts.eventTitle,
-  });
+  const t = await getTranslator(opts.locale);
+  const label = t(`Email.status.${opts.status}`);
+  const { subject } = await templateCopy(
+    "hostRsvpAlert",
+    {
+      guestName: opts.guestName,
+      status: label,
+      eventTitle: opts.eventTitle,
+    },
+    opts.locale
+  );
   const { html, text } = await renderEmail(
     createElement(HostRsvpAlertEmail, {
       theme: resolveEmailTheme(opts.theme),
       guestName: opts.guestName,
-      statusLabel: label,
+      status: opts.status,
       plusOneCount: opts.plusOneCount,
       note: opts.note,
       eventTitle: opts.eventTitle,
@@ -626,7 +671,8 @@ export async function sendHostRsvpAlertEmail(
       maybeCount: opts.maybeCount,
       noCount: opts.noCount,
       guestListUrl,
-    })
+    }),
+    opts.locale
   );
   return send({ to, subject, html, text });
 }
@@ -649,11 +695,13 @@ export async function testEmailConfig(
       accountId?: string;
       apiToken?: string;
     };
-  }
+  },
+  locale: Locale = DEFAULT_LOCALE
 ): Promise<{ success: boolean; error?: string }> {
-  const { subject, body } = await templateCopy("test", {});
+  const { subject, body } = await templateCopy("test", {}, locale);
   const { html, text } = await renderEmail(
-    createElement(TestEmail, { theme: appShellEmailTheme(), body })
+    createElement(TestEmail, { theme: appShellEmailTheme(), body }),
+    locale
   );
 
   if (config.provider === "cloudflare_api") {

@@ -1,18 +1,9 @@
 "use client";
+import { useLocale, useTranslations } from "next-intl";
 
 import { APP_SHELL } from "@/lib/theme";
 import { appCardStyle } from "@/components/ui/AppPrimitives";
 import type { BackupFile } from "./types";
-
-const BACKUP_PRESETS = [
-  { label: "Disabled", value: "disabled" },
-  { label: "Every hour", value: "0 * * * *" },
-  { label: "Every 6 hours", value: "0 */6 * * *" },
-  { label: "Daily at midnight", value: "0 0 * * *" },
-  { label: "Every 3 days", value: "0 0 */3 * *" },
-  { label: "Weekly (Sundays at midnight)", value: "0 0 * * 0" },
-  { label: "Custom", value: "custom" },
-] as const;
 
 export function BackupsTab({
   handleSaveBackupConfig,
@@ -39,6 +30,18 @@ export function BackupsTab({
   backups: BackupFile[];
   handleDeleteBackup: (filename: string) => Promise<void>;
 }) {
+  const tr = useTranslations("Ui.Admin");
+  const locale = useLocale();
+  const BACKUP_PRESETS = [
+    { label: tr("backupPreset0"), value: "disabled" },
+    { label: tr("backupPreset1"), value: "0 * * * *" },
+    { label: tr("backupPreset2"), value: "0 */6 * * *" },
+    { label: tr("backupPreset3"), value: "0 0 * * *" },
+    { label: tr("backupPreset4"), value: "0 0 */3 * *" },
+    { label: tr("backupPreset5"), value: "0 0 * * 0" },
+    { label: tr("backupPreset6"), value: "custom" },
+  ] as const;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Section 1: Backup settings */}
@@ -60,11 +63,10 @@ export function BackupsTab({
               margin: 0,
             }}
           >
-            Backup Configuration
+            {tr("backupConfiguration")}
           </h3>
           <p style={{ color: APP_SHELL.textSecondary, fontSize: "13px", marginTop: "4px" }}>
-            Configure scheduled database backups. Backups are stored in the persistent application
-            volume.
+            {tr("configureScheduledDatabaseBackupsBackupsAreStoredInThe")}
           </p>
         </div>
 
@@ -83,7 +85,7 @@ export function BackupsTab({
                   color: APP_SHELL.textSecondary,
                 }}
               >
-                BACKUP SCHEDULE
+                {tr("backupSchedule")}
               </label>
               {(() => {
                 const isCustom = !BACKUP_PRESETS.some(
@@ -118,7 +120,7 @@ export function BackupsTab({
                         type="text"
                         value={backupSchedule}
                         onChange={(e) => setBackupSchedule(e.target.value)}
-                        placeholder="e.g. 0 0 * * * (or 'disabled')"
+                        placeholder={tr("eG00OrDisabled")}
                         required
                         style={{
                           backgroundColor: APP_SHELL.inputBg,
@@ -133,10 +135,10 @@ export function BackupsTab({
                     )}
                     <span style={{ fontSize: "11px", color: APP_SHELL.textMuted }}>
                       {isCustom
-                        ? "Standard 5-field cron syntax (Minute Hour Day-of-Month Month Day-of-Week)."
+                        ? tr("standard5FieldCronSyntaxMinuteHourDayOf")
                         : backupSchedule === "disabled"
-                          ? "Automated backups are off."
-                          : `Cron: ${backupSchedule}`}
+                          ? tr("automatedBackupsOff")
+                          : tr("cronSchedule", { schedule: backupSchedule })}
                     </span>
                   </>
                 );
@@ -151,7 +153,7 @@ export function BackupsTab({
                   color: APP_SHELL.textSecondary,
                 }}
               >
-                BACKUPS TO RETAIN (ROTATION LIMIT)
+                {tr("backupsToRetainRotationLimit")}
               </label>
               <input
                 type="number"
@@ -171,8 +173,7 @@ export function BackupsTab({
                 }}
               />
               <span style={{ fontSize: "11px", color: APP_SHELL.textMuted }}>
-                Maximum number of backup files to keep. Older backups will be automatically deleted
-                on new backup runs.
+                {tr("maximumNumberOfBackupFilesToKeepOlderBackups")}
               </span>
             </div>
           </div>
@@ -186,8 +187,8 @@ export function BackupsTab({
             }}
           >
             <div style={{ fontSize: "12px", color: APP_SHELL.textSecondary }}>
-              <strong>Last Backup Completed:</strong>{" "}
-              {lastBackupTime ? new Date(lastBackupTime).toLocaleString() : "Never"}
+              <strong>{tr("lastBackupCompleted")}</strong>{" "}
+              {lastBackupTime ? new Date(lastBackupTime).toLocaleString(locale) : tr("never")}
             </div>
 
             <button
@@ -205,7 +206,7 @@ export function BackupsTab({
                 opacity: isSavingBackupConfig ? 0.6 : 1,
               }}
             >
-              {isSavingBackupConfig ? "Saving..." : "Save Backup Settings"}
+              {isSavingBackupConfig ? tr("saving2") : tr("saveBackupSettings")}
             </button>
           </div>
         </form>
@@ -230,7 +231,7 @@ export function BackupsTab({
               margin: 0,
             }}
           >
-            Manual Database Backup
+            {tr("manualDatabaseBackup")}
           </h3>
           <p
             style={{
@@ -240,8 +241,9 @@ export function BackupsTab({
               margin: 0,
             }}
           >
-            Instantly trigger a database snapshot using <code>pg_dump</code>, saved to the backups
-            volume.
+            {tr.rich("instantlyTriggerADatabaseSnapshotUsingPgDumpMessage", {
+              part0: (chunks) => <code>{chunks}</code>,
+            })}
           </p>
         </div>
 
@@ -262,7 +264,7 @@ export function BackupsTab({
             whiteSpace: "nowrap",
           }}
         >
-          {isBackupRunning ? "Backing up..." : "Create Backup Now"}
+          {isBackupRunning ? tr("backingUp") : tr("createBackupNow")}
         </button>
       </div>
 
@@ -285,10 +287,10 @@ export function BackupsTab({
               margin: 0,
             }}
           >
-            Backup Archives
+            {tr("backupArchives")}
           </h3>
           <p style={{ color: APP_SHELL.textSecondary, fontSize: "13px", marginTop: "4px" }}>
-            List of stored backups on this server.
+            {tr("listOfStoredBackupsOnThisServer")}
           </p>
         </div>
 
@@ -305,10 +307,10 @@ export function BackupsTab({
                   fontWeight: 700,
                 }}
               >
-                <th style={{ padding: "12px" }}>FILENAME</th>
-                <th style={{ padding: "12px" }}>CREATED AT</th>
-                <th style={{ padding: "12px" }}>FILE SIZE</th>
-                <th style={{ padding: "12px", textAlign: "right" }}>ACTIONS</th>
+                <th style={{ padding: "12px" }}>{tr("filename")}</th>
+                <th style={{ padding: "12px" }}>{tr("createdAt")}</th>
+                <th style={{ padding: "12px" }}>{tr("fileSize")}</th>
+                <th style={{ padding: "12px", textAlign: "right" }}>{tr("actions2")}</th>
               </tr>
             </thead>
             <tbody>
@@ -322,7 +324,7 @@ export function BackupsTab({
                       color: APP_SHELL.textMuted,
                     }}
                   >
-                    No backup archives found. Create one manually or configure a schedule.
+                    {tr("noBackupArchivesFoundCreateOneManuallyOrConfigure")}
                   </td>
                 </tr>
               ) : (
@@ -344,7 +346,7 @@ export function BackupsTab({
                       {b.filename}
                     </td>
                     <td style={{ padding: "14px 12px", color: APP_SHELL.textSecondary }}>
-                      {new Date(b.createdAt).toLocaleString()}
+                      {new Date(b.createdAt).toLocaleString(locale)}
                     </td>
                     <td style={{ padding: "14px 12px", color: APP_SHELL.textSecondary }}>
                       {b.sizeBytes >= 1024 * 1024
@@ -363,7 +365,7 @@ export function BackupsTab({
                             fontSize: "13px",
                           }}
                         >
-                          Download
+                          {tr("download")}
                         </a>
                         <button
                           onClick={() => handleDeleteBackup(b.filename)}
@@ -377,7 +379,7 @@ export function BackupsTab({
                             padding: 0,
                           }}
                         >
-                          Delete
+                          {tr("delete")}
                         </button>
                       </div>
                     </td>

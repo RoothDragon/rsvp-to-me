@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import type { ResolvedTheme } from "@/lib/theme";
 import type { SettingsSection } from "./types";
 
@@ -14,52 +16,54 @@ export function SettingsMenu({
   t: ResolvedTheme;
   emailEnabled?: boolean;
 }) {
+  const translate = useTranslations("Ui.Event.SettingsMenu");
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       {(
         [
           {
             id: "hosts" as const,
-            title: "👥 Hosts & Co-hosts",
+            title: translate("hostsCoHosts"),
             desc: isOwner
-              ? "Manage who can edit this event"
-              : "View hosts and manage your co-host profile",
+              ? translate("manageWhoCanEditEvent")
+              : translate("viewHostsManageCoHostProfile"),
           },
           {
             id: "privacy",
-            title: "🔒 Display Options",
-            desc: "Guest list access, guest RSVP display, and event privacy",
+            title: translate("displayOptions"),
+            desc: translate("guestListAccessGuestRsvpDisplay"),
           },
           {
             id: "rsvp",
-            title: "✉️ RSVP Options",
-            desc: "+1 settings, RSVP approval, and maybe options",
+            title: translate("rsvpOptions"),
+            desc: translate("1SettingsRsvpApprovalMaybeOptions"),
           },
-          { id: "theme", title: "🎨 Theme", desc: "Change base theme and accent color" },
+          { id: "theme", title: translate("theme"), desc: translate("changeBaseThemeAccentColor") },
           {
             id: "reminders",
-            title: "🔔 Auto-Reminders",
-            desc: "Set up automatic emails and texts before/after event",
+            title: translate("autoReminders"),
+            desc: translate("setUpAutomaticEmailsTextsBefore"),
           },
           ...(emailEnabled
             ? [
                 {
                   id: "emails" as const,
-                  title: "💌 Emails",
-                  desc: "Preview this event's themed emails and send yourself a test",
+                  title: translate("emails"),
+                  desc: translate("previewEventSThemedEmailsSend"),
                 },
               ]
             : []),
-          { id: "polls", title: "📊 Polls", desc: "Create and manage polls for guests" },
+          { id: "polls", title: translate("polls"), desc: translate("createManagePollsGuests") },
           {
             id: "questionnaire",
-            title: "📋 Questionnaire",
-            desc: "Ask custom questions to guests during RSVP",
+            title: translate("questionnaire"),
+            desc: translate("askCustomQuestionsGuestsDuringRsvp"),
           },
           {
             id: "potluck",
-            title: "🍽️ Potluck",
-            desc: "Manage items guests can sign up to bring",
+            title: translate("potluck"),
+            desc: translate("manageItemsGuestsCanSignUp"),
           },
         ] as {
           id: SettingsSection;

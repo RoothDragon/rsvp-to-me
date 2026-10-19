@@ -1,3 +1,4 @@
+import { requireEmailI18n } from "../i18n";
 import { EmailLayout } from "../components/EmailLayout";
 import { Hero } from "../components/Hero";
 import { EmailButton } from "../components/EmailButton";
@@ -8,6 +9,7 @@ import { formatEventDateTime } from "@/lib/calendar";
 import type { InviteEmailProps } from "../types";
 
 export function InviteEmail({
+  i18n,
   theme,
   body,
   toggles,
@@ -17,13 +19,18 @@ export function InviteEmail({
   maybeEnabled,
   eventUrl,
 }: InviteEmailProps) {
-  const { date } = formatEventDateTime(event.startAt, event.endAt, event.timezone);
+  const { t, locale } = requireEmailI18n(i18n);
+  const { date } = formatEventDateTime(event.startAt, event.endAt, event.timezone, locale);
   const subtitle = event.locationName ? `${date} · ${event.locationName}` : date;
   return (
-    <EmailLayout theme={theme} preview={`${hostName} invited you to ${event.title}`}>
+    <EmailLayout
+      i18n={i18n}
+      theme={theme}
+      preview={t("Email.invite.preview", { hostName, eventTitle: event.title })}
+    >
       <Hero
         theme={theme}
-        kicker="You're invited"
+        kicker={t("Email.invite.kicker")}
         title={event.title}
         subtitle={subtitle}
         showCoverImage={toggles.showCoverImage}
@@ -56,9 +63,12 @@ export function InviteEmail({
                 </p>
               ))}
 
-              {toggles.showHostFlourish ? <HostFlourish theme={theme} hostName={hostName} /> : null}
+              {toggles.showHostFlourish ? (
+                <HostFlourish i18n={i18n} theme={theme} hostName={hostName} />
+              ) : null}
 
               <DetailsCard
+                i18n={i18n}
                 theme={theme}
                 event={event}
                 showMapLink={toggles.showMapLink}
@@ -82,7 +92,7 @@ export function InviteEmail({
                         href={`${rsvpBaseUrl}&status=GOING`}
                         variant="primary"
                       >
-                        {"I'm going 🎉"}
+                        {t("Email.invite.going")}
                       </EmailButton>
                       <p style={{ margin: "14px 0 0" }}>
                         {maybeEnabled ? (
@@ -96,7 +106,7 @@ export function InviteEmail({
                                 textDecoration: "underline",
                               }}
                             >
-                              Maybe
+                              {t("Email.invite.maybe")}
                             </a>
                             <span className="dm-text-muted" style={{ color: theme.textMuted }}>
                               {"   ·   "}
@@ -112,7 +122,7 @@ export function InviteEmail({
                             textDecoration: "underline",
                           }}
                         >
-                          {"Can't go"}
+                          {t("Email.invite.no")}
                         </a>
                       </p>
                     </td>
@@ -127,7 +137,7 @@ export function InviteEmail({
                   rel="noopener noreferrer"
                   style={{ color: theme.accent, fontSize: "14px" }}
                 >
-                  View event details →
+                  {t("Email.invite.details")}
                 </a>
               </p>
             </td>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useRef } from "react";
 
 // ── Inline editable text ───────────────────────────────────────────────────────
@@ -23,6 +25,8 @@ export function InlineEdit({
   isHost: boolean;
   outerRef?: React.RefObject<HTMLSpanElement | null>;
 }) {
+  const translate = useTranslations("Ui.Event.InlineEdit");
+
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const ref = useRef<HTMLTextAreaElement & HTMLInputElement>(null);
@@ -96,7 +100,7 @@ export function InlineEdit({
         setDraft(value);
         setEditing(true);
       }}
-      title="Click to edit"
+      title={translate("clickEdit")}
     >
       {value || <span style={{ opacity: 0.35 }}>{placeholder}</span>}
     </span>

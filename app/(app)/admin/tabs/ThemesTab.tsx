@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { APP_SHELL } from "@/lib/theme";
 import { appCardStyle } from "@/components/ui/AppPrimitives";
@@ -17,6 +18,8 @@ export function ThemesTab({
   handleTogglePresetActive: (preset: AdminThemePreset) => Promise<void>;
   handleDeleteThemePreset: (id: string) => Promise<void>;
 }) {
+  const tr = useTranslations("Ui.Admin");
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Header card */}
@@ -43,7 +46,7 @@ export function ThemesTab({
                 margin: 0,
               }}
             >
-              Theme Presets
+              {tr("themePresets")}
             </h3>
             <p
               style={{
@@ -53,8 +56,7 @@ export function ThemesTab({
                 marginBottom: 0,
               }}
             >
-              Manage the preset themes hosts can pick from in the event settings. Inactive presets
-              are hidden from hosts.
+              {tr("manageThePresetThemesHostsCanPickFromIn")}
             </p>
           </div>
           <button
@@ -84,7 +86,7 @@ export function ThemesTab({
               whiteSpace: "nowrap",
             }}
           >
-            + New Preset
+            {tr("newPreset")}
           </button>
         </div>
 
@@ -106,7 +108,7 @@ export function ThemesTab({
               padding: "40px 0",
             }}
           >
-            No theme presets yet. Click &quot;+ New Preset&quot; to add one.
+            {tr("noThemePresetsYetClickNewPresetToAdd")}
           </p>
         ) : (
           <div
@@ -185,7 +187,7 @@ export function ThemesTab({
                     }}
                   >
                     {preset.base}
-                    {preset.seasonal ? " · Seasonal" : ""}
+                    {preset.seasonal ? tr("seasonal") : ""}
                   </div>
                   <div style={{ display: "flex", gap: "6px" }}>
                     <button
@@ -218,7 +220,7 @@ export function ThemesTab({
                         cursor: "pointer",
                       }}
                     >
-                      Edit
+                      {tr("edit")}
                     </button>
                     <button
                       onClick={() => handleTogglePresetActive(preset)}
@@ -234,7 +236,7 @@ export function ThemesTab({
                         cursor: "pointer",
                       }}
                     >
-                      {preset.active ? "Active" : "Inactive"}
+                      {preset.active ? tr("active") : tr("inactive")}
                     </button>
                     <button
                       onClick={() => handleDeleteThemePreset(preset.id)}

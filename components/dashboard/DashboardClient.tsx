@@ -1,4 +1,5 @@
 "use client";
+import { useLocale, useTranslations } from "next-intl";
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -72,6 +73,9 @@ export function DashboardClient({
   userRole,
   openRegistration,
 }: DashboardClientProps) {
+  const tr = useTranslations("Ui.Dashboard");
+  const locale = useLocale();
+
   // Filter state: "upcoming" | "hosting" | "invites" | "attended" | "past"
   const [activeFilter, setActiveFilter] = useState<
     "upcoming" | "hosting" | "invites" | "attended" | "past"
@@ -97,13 +101,13 @@ export function DashboardClient({
       const actDate = new Date(act.createdAt);
       actDate.setHours(0, 0, 0, 0);
 
-      let key = "Older";
+      let key = tr("older");
       if (actDate.getTime() === today.getTime()) {
-        key = "Today";
+        key = tr("today");
       } else if (actDate.getTime() === yesterday.getTime()) {
-        key = "Yesterday";
+        key = tr("yesterday");
       } else {
-        key = actDate.toLocaleDateString(undefined, {
+        key = actDate.toLocaleDateString(locale, {
           month: "short",
           day: "numeric",
           year: "numeric",
@@ -205,14 +209,13 @@ export function DashboardClient({
   // Helper to format date Partiful-style: "Sat 11/15 at 4pm"
   const formatPartifulDate = (dateVal: Date | string) => {
     const d = new Date(dateVal);
-    const weekday = d.toLocaleDateString("en-US", { weekday: "short" });
-    const dateStr = d.toLocaleDateString("en-US", { month: "numeric", day: "numeric" });
-    const hour = d.getHours();
-    const minute = d.getMinutes();
-    const ampm = hour >= 12 ? "pm" : "am";
-    const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
-    const formattedMin = minute === 0 ? "" : `:${minute.toString().padStart(2, "0")}`;
-    return `${weekday} ${dateStr} at ${formattedHour}${formattedMin}${ampm}`;
+    return new Intl.DateTimeFormat(locale, {
+      weekday: "short",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(d);
   };
 
   // Relative time helper for activity log
@@ -225,11 +228,11 @@ export function DashboardClient({
     const diffHr = Math.floor(diffMin / 60);
     const diffDays = Math.floor(diffHr / 24);
 
-    if (diffSec < 60) return "just now";
-    if (diffMin < 60) return `${diffMin}m ago`;
-    if (diffHr < 24) return `${diffHr}h ago`;
-    if (diffDays === 1) return "yesterday";
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    if (diffSec < 60) return tr("justNow");
+    if (diffMin < 60) return tr("minutesAgo", { count: diffMin });
+    if (diffHr < 24) return tr("hoursAgo", { count: diffHr });
+    if (diffDays === 1) return tr("yesterday");
+    return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
   };
 
   // Activity type icon lookup
@@ -286,23 +289,23 @@ export function DashboardClient({
             letterSpacing: "-0.03em",
           }}
         >
-          Welcome back {userName}!
+          {tr("welcome", { name: userName })}
         </h1>
         <p style={{ color: APP_SHELL.textSecondary, fontSize: "15px", margin: 0 }}>
           {counts.upcoming === 0 ? (
             <>
-              {"You don't have any upcoming events right now. "}
+              {tr("noUpcomingEvents")}{" "}
               {showNewEventCard && (
                 <Link
                   href={userRole === "GUEST" ? "/auth/register" : "/dashboard/events/new"}
                   style={{ color: APP_SHELL.accent, fontWeight: 800, textDecoration: "none" }}
                 >
-                  Host one!
+                  {tr("hostOne")}
                 </Link>
               )}
             </>
           ) : (
-            `You have ${counts.upcoming} upcoming event${counts.upcoming > 1 ? "s" : ""} scheduled.`
+            tr("upcomingEventCount", { count: counts.upcoming })
           )}
         </p>
       </div>
@@ -339,14 +342,14 @@ export function DashboardClient({
           }}
         >
           <Search size={14} strokeWidth={2.5} />
-          Search
+          {tr("search")}
         </button>
 
         {/* Filter Tab Pills */}
         <PillTab
           filter="upcoming"
           active={activeFilter}
-          label="Upcoming"
+          label={tr("upcoming")}
           count={counts.upcoming}
           onClick={setActiveFilter}
         />
@@ -354,7 +357,7 @@ export function DashboardClient({
           <PillTab
             filter="hosting"
             active={activeFilter}
-            label="Hosting"
+            label={tr("hosting")}
             count={counts.hosting}
             onClick={setActiveFilter}
           />
@@ -362,21 +365,21 @@ export function DashboardClient({
         <PillTab
           filter="invites"
           active={activeFilter}
-          label="Open invite"
+          label={tr("openInvite")}
           count={counts.invites}
           onClick={setActiveFilter}
         />
         <PillTab
           filter="attended"
           active={activeFilter}
-          label="Attended"
+          label={tr("attended")}
           count={counts.attended}
           onClick={setActiveFilter}
         />
         <PillTab
           filter="past"
           active={activeFilter}
-          label="All past events"
+          label={tr("allPastEvents")}
           count={counts.past}
           onClick={setActiveFilter}
         />
@@ -387,7 +390,7 @@ export function DashboardClient({
         <div style={{ marginBottom: "28px", animation: "slideDown 0.2s ease-out" }}>
           <input
             type="text"
-            placeholder="Search events by title..."
+            placeholder={tr("searchEventsByTitle")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             autoFocus
@@ -421,12 +424,12 @@ export function DashboardClient({
             >
               <div style={{ fontSize: "36px", marginBottom: "12px" }}>🎉</div>
               <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#fff", marginBottom: "6px" }}>
-                No events found
+                {tr("noEventsFound")}
               </h3>
               <p style={{ color: APP_SHELL.textSecondary, fontSize: "14px", margin: 0 }}>
                 {searchQuery
-                  ? "Try a different search query."
-                  : "When you host or get invited, they will show up here!"}
+                  ? tr("tryADifferentSearchQuery")
+                  : tr("whenYouHostOrGetInvitedTheyWillShow")}
               </p>
             </div>
           ) : (
@@ -471,7 +474,7 @@ export function DashboardClient({
                     }}
                   >
                     <Plus size={24} strokeWidth={2.5} />
-                    <span style={{ fontSize: "14px", fontWeight: 800 }}>New event</span>
+                    <span style={{ fontSize: "14px", fontWeight: 800 }}>{tr("newEvent")}</span>
                   </div>
                 </Link>
               )}
@@ -511,7 +514,7 @@ export function DashboardClient({
             >
               <Clock size={16} color={APP_SHELL.accent} />
               <h3 style={{ fontSize: "14px", fontWeight: 800, color: APP_SHELL.textPrimary }}>
-                Recent Activity
+                {tr("recentActivity")}
               </h3>
             </div>
             {recentActivities.length === 0 ? (
@@ -527,8 +530,7 @@ export function DashboardClient({
                   size={24}
                   style={{ display: "block", margin: "0 auto 8px", opacity: 0.5 }}
                 />
-                No activity logged yet. When guests RSVP or comments are posted, they will appear
-                here!
+                {tr("noActivityLoggedYetWhenGuestsRsvpOrComments")}
               </div>
             ) : (
               (() => {
@@ -609,19 +611,19 @@ export function DashboardClient({
                         }}
                       >
                         <option value="all" style={{ background: "#12121c" }}>
-                          All Activity Types
+                          {tr("allActivityTypes")}
                         </option>
                         <option value="rsvp" style={{ background: "#12121c" }}>
-                          RSVPs Only
+                          {tr("rsvpsOnly")}
                         </option>
                         <option value="potluck" style={{ background: "#12121c" }}>
-                          Potluck Sign-ups
+                          {tr("potluckSignUps")}
                         </option>
                         <option value="comment" style={{ background: "#12121c" }}>
-                          Comments Only
+                          {tr("commentsOnly")}
                         </option>
                         <option value="event" style={{ background: "#12121c" }}>
-                          Event Updates
+                          {tr("eventUpdates")}
                         </option>
                       </select>
 
@@ -645,7 +647,7 @@ export function DashboardClient({
                         }}
                       >
                         <option value="all" style={{ background: "#12121c" }}>
-                          All Events
+                          {tr("allEvents")}
                         </option>
                         {activityEventsList.map((e) => (
                           <option key={e.id} value={e.id} style={{ background: "#12121c" }}>
@@ -664,7 +666,7 @@ export function DashboardClient({
                           fontSize: "12px",
                         }}
                       >
-                        No matching activities found.
+                        {tr("noMatchingActivitiesFound")}
                       </div>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -689,7 +691,7 @@ export function DashboardClient({
                             </div>
                             {items.map((act) => {
                               const { Icon, color } = getActivityMeta(act.type);
-                              const actorDisplayName = act.actorName || "Someone";
+                              const actorDisplayName = act.actorName || tr("someone");
                               const actorInitials = actorDisplayName.slice(0, 2).toUpperCase();
                               return (
                                 <div
@@ -826,10 +828,10 @@ export function DashboardClient({
                             transition: "all 0.2s",
                           }}
                         >
-                          Prev
+                          {tr("prev")}
                         </button>
                         <span style={{ color: APP_SHELL.textSecondary, fontSize: "11px" }}>
-                          Page {currentPage} of {totalPages}
+                          {tr("pageOfMessage", { value0: currentPage, value1: totalPages })}
                         </span>
                         <button
                           onClick={() => setActivityPage((prev) => Math.min(prev + 1, totalPages))}
@@ -852,7 +854,7 @@ export function DashboardClient({
                             transition: "all 0.2s",
                           }}
                         >
-                          Next
+                          {tr("next")}
                         </button>
                       </div>
                     )}
@@ -929,6 +931,9 @@ function EventCard({
   onToggleDropdown,
   dropdownRef,
 }: EventCardProps) {
+  const tr = useTranslations("Ui.Dashboard");
+  const locale = useLocale();
+
   const accent = item.theme?.accentColor ?? APP_SHELL.accent;
   const coverUrl = item.theme?.coverImageUrl;
   const isInvite = item.isInvite;
@@ -938,22 +943,25 @@ function EventCard({
   let overlayColor = "rgba(0,0,0,0.75)";
 
   if (!isInvite) {
-    overlayText = item.isCohost ? "👑 CO-HOST" : "👑 HOSTING";
+    overlayText = item.isCohost ? tr("cohostBadge") : tr("hostingBadge");
   } else {
     if (item.userRsvpStatus === "GOING") {
-      overlayText = "✅ GOING";
+      overlayText = tr("goingBadge");
       overlayColor = "rgba(16,185,129,0.9)"; // green
     } else if (item.userRsvpStatus === "MAYBE") {
-      overlayText = "❓ MAYBE";
+      overlayText = tr("maybeBadge");
       overlayColor = "rgba(245,158,11,0.9)"; // amber
     } else if (item.userRsvpStatus === "NO") {
-      overlayText = "❌ DECLINED";
+      overlayText = tr("declinedBadge");
       overlayColor = "rgba(239,68,68,0.9)"; // red
     }
   }
 
   const hostName =
-    item.hostDisplayName || item.host?.name || item.host?.email?.split("@")[0] || "Host";
+    item.hostDisplayName ||
+    item.host?.name ||
+    item.host?.email?.split("@")[0] ||
+    tr("hostFallback");
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
@@ -1046,6 +1054,7 @@ function EventCard({
         {/* Dots Menu Button (Top-Right) */}
         <div style={{ position: "absolute", top: "12px", right: "12px", zIndex: 3 }}>
           <button
+            aria-label={tr("eventMenu", { title: item.title })}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation(); // prevent navigating to event page
@@ -1090,16 +1099,16 @@ function EventCard({
             >
               {!isInvite ? (
                 <>
-                  <DropdownLink href={`/e/${item.slug}`}>View Page</DropdownLink>
-                  <DropdownLink href={`/e/${item.slug}/guests`}>Guests List</DropdownLink>
-                  <DropdownLink href={`/e/${item.slug}/settings`}>Settings</DropdownLink>
+                  <DropdownLink href={`/e/${item.slug}`}>{tr("viewPage")}</DropdownLink>
+                  <DropdownLink href={`/e/${item.slug}/guests`}>{tr("guestsList")}</DropdownLink>
+                  <DropdownLink href={`/e/${item.slug}/settings`}>{tr("settings")}</DropdownLink>
                 </>
               ) : (
                 <>
-                  <DropdownLink href={`/e/${item.slug}`}>View Invite</DropdownLink>
+                  <DropdownLink href={`/e/${item.slug}`}>{tr("viewInvite")}</DropdownLink>
                   {item.userRsvpEditToken && (
                     <DropdownLink href={`/e/${item.slug}/rsvp?token=${item.userRsvpEditToken}`}>
-                      Edit RSVP
+                      {tr("editRsvp")}
                     </DropdownLink>
                   )}
                 </>
@@ -1156,7 +1165,7 @@ function EventCard({
 
         {/* Hosted By & Avatars */}
         <div style={{ display: "flex", alignItems: "center", marginTop: "4px", gap: "6px" }}>
-          <span style={{ color: APP_SHELL.textSecondary, fontSize: "11px" }}>Hosted by</span>
+          <span style={{ color: APP_SHELL.textSecondary, fontSize: "11px" }}>{tr("hostedBy")}</span>
           <div style={{ display: "flex", alignItems: "center" }}>
             {/* Host avatar */}
             <AvatarBubble name={hostName} avatarUrl={item.host?.avatarUrl} accentColor={accent} />
@@ -1165,7 +1174,7 @@ function EventCard({
               item.coHosts.map((ch: CoHostProfile) => (
                 <AvatarBubble
                   key={ch.id}
-                  name={ch.name || ch.email?.split("@")[0] || "Co-host"}
+                  name={ch.name || ch.email?.split("@")[0] || tr("cohostFallback")}
                   avatarUrl={ch.avatarUrl}
                   accentColor={accent}
                   isSibling
@@ -1185,7 +1194,7 @@ function EventCard({
             fontSize: "11px",
           }}
         >
-          <span>{item.going} going</span>
+          <span>{tr("goingMessage", { value0: item.going })}</span>
           {item.commentCount > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: "3px" }}>
               <span>·</span>
@@ -1198,7 +1207,7 @@ function EventCard({
               const deadline = new Date(item.rsvpDeadline);
               const now = new Date();
               const hasPassed = deadline < now;
-              const formatted = deadline.toLocaleDateString("en-US", {
+              const formatted = deadline.toLocaleDateString(locale, {
                 month: "short",
                 day: "numeric",
               });
@@ -1214,7 +1223,7 @@ function EventCard({
                 >
                   <span>·</span>
                   <Clock size={10} />
-                  <span>RSVPs {hasPassed ? "closed" : `by ${formatted}`}</span>
+                  <span>{hasPassed ? tr("rsvpsClosed") : tr("rsvpsBy", { date: formatted })}</span>
                 </div>
               );
             })()}

@@ -1,3 +1,4 @@
+import { getRequestTranslator, getRequestLocale } from "@/i18n/server";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session-user";
 import { loadDocs } from "@/lib/docs";
@@ -5,16 +6,20 @@ import { AppShell } from "@/components/ui/AppShell";
 import { APP_SHELL } from "@/lib/theme";
 import DocsPanel from "@/components/docs/DocsPanel";
 
-export const metadata = {
-  title: "Help & Guides",
-  description: "Guides for hosting events on RSVP to Me",
-};
+export async function generateMetadata() {
+  const tr = await getRequestTranslator();
+  return {
+    title: tr("Ui.Dashboard.helpMetadataTitle"),
+    description: tr("Ui.Dashboard.helpMetadataDescription"),
+  };
+}
 
 export default async function HelpPage() {
+  const tr = await getRequestTranslator();
   const sessionUser = await getSessionUser();
   if (!sessionUser || sessionUser.role === "GUEST") redirect("/dashboard");
 
-  const docs = await loadDocs("host");
+  const docs = await loadDocs("host", await getRequestLocale());
 
   return (
     <AppShell>
@@ -27,7 +32,7 @@ export default async function HelpPage() {
             margin: "0 0 24px",
           }}
         >
-          📖 Help &amp; Guides
+          📖 {tr("Ui.Dashboard.helpMetadataTitle")}
         </h1>
         <DocsPanel docs={docs} />
       </div>

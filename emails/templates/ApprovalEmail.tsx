@@ -1,9 +1,11 @@
+import { requireEmailI18n } from "../i18n";
 import { EmailLayout } from "../components/EmailLayout";
 import { Hero } from "../components/Hero";
 import { EmailButton } from "../components/EmailButton";
 import type { ApprovalEmailProps } from "../types";
 
 export function ApprovalEmail({
+  i18n,
   theme,
   toggles,
   eventTitle,
@@ -11,16 +13,18 @@ export function ApprovalEmail({
   hostMessage,
   eventUrl,
 }: ApprovalEmailProps) {
+  const { t } = requireEmailI18n(i18n);
   return (
     <EmailLayout
+      i18n={i18n}
       theme={theme}
-      preview={
-        approved ? `Your RSVP for ${eventTitle} is approved` : `About your RSVP for ${eventTitle}`
-      }
+      preview={t(approved ? "Email.approval.previewApproved" : "Email.approval.previewDeclined", {
+        eventTitle,
+      })}
     >
       <Hero
         theme={theme}
-        kicker={approved ? "You're on the list" : "RSVP update"}
+        kicker={t(approved ? "Email.approval.kickerApproved" : "Email.approval.kickerDeclined")}
         title={eventTitle}
         showCoverImage={toggles.showCoverImage}
       />
@@ -48,7 +52,7 @@ export function ApprovalEmail({
                   color: theme.textPrimary,
                 }}
               >
-                {approved ? "Your RSVP is approved! 🎉" : "Your RSVP was declined"}
+                {t(approved ? "Email.approval.headingApproved" : "Email.approval.headingDeclined")}
               </h2>
               <p
                 className="dm-text-secondary"
@@ -59,9 +63,9 @@ export function ApprovalEmail({
                   color: theme.textSecondary,
                 }}
               >
-                {approved
-                  ? `You are officially on the guest list for ${eventTitle}.`
-                  : `We're sorry, but the host has declined your RSVP for ${eventTitle}.`}
+                {t(approved ? "Email.approval.bodyApproved" : "Email.approval.bodyDeclined", {
+                  eventTitle,
+                })}
               </p>
 
               {hostMessage ? (
@@ -94,7 +98,7 @@ export function ApprovalEmail({
                             color: theme.textSecondary,
                           }}
                         >
-                          Message from the host: “{hostMessage}”
+                          {t("Email.approval.hostMessage", { message: hostMessage })}
                         </p>
                       </td>
                     </tr>
@@ -116,7 +120,7 @@ export function ApprovalEmail({
                     <tr>
                       <td>
                         <EmailButton theme={theme} href={eventUrl} variant="primary">
-                          View event
+                          {t("Email.viewEvent")}
                         </EmailButton>
                       </td>
                     </tr>

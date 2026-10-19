@@ -1,5 +1,10 @@
 "use server";
 
+import { eventActionMessage } from "./localization";
+
+import { resolveLocale } from "@/i18n/config";
+import { getTranslator } from "@/i18n/server";
+
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
@@ -19,7 +24,7 @@ export async function inviteGuest(
   captchaToken?: string | null
 ) {
   const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
+  if (!session) throw new Error(await eventActionMessage("unauthorized"));
   await assertCaptcha("host_invite", captchaToken);
   const event = await assertHostOrCohost(eventId);
 
@@ -29,7 +34,7 @@ export async function inviteGuest(
     .filter((s) => s.length > 0);
 
   if (entries.length === 0) {
-    throw new Error("No valid emails or phone numbers provided.");
+    throw new Error(await eventActionMessage("noInviteTargets"));
   }
 
   // SEC-29: inviteGuest fans out email/SMS per recipient with no bound. Even
@@ -39,16 +44,16 @@ export async function inviteGuest(
   // per-recipient duplicate-invitation guard below further limits repeats.
   const MAX_INVITE_BATCH = 200;
   if (entries.length > MAX_INVITE_BATCH) {
-    throw new Error(`Too many recipients in one request (max ${MAX_INVITE_BATCH}).`);
+    throw new Error(await eventActionMessage("inviteBatchTooLarge", { max: MAX_INVITE_BATCH }));
   }
   const ip = await getClientIp();
   const ipLimit = await rateLimit(`host-invite:ip:${ip}`, 15, 3600);
   if (!ipLimit.success) {
-    throw new Error("Too many invites sent. Please try again later.");
+    throw new Error(await eventActionMessage("inviteRateLimited"));
   }
   const eventLimit = await rateLimit(`host-invite:${session.userId}:${eventId}`, 10, 3600);
   if (!eventLimit.success) {
-    throw new Error("Too many invites sent for this event. Please try again later.");
+    throw new Error(await eventActionMessage("eventInviteRateLimited"));
   }
 
   const invited: string[] = [];
@@ -61,11 +66,11 @@ export async function inviteGuest(
       // Basic input validation
       if (isEmail) {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(entry)) {
-          throw new Error(`Invalid email: ${entry}`);
+          throw new Error(await eventActionMessage("invalidInviteEmail", { entry }));
         }
       } else {
         if (!/^\+?[0-9\s\-()]{7,}$/.test(entry)) {
-          throw new Error(`Invalid phone: ${entry}`);
+          throw new Error(await eventActionMessage("invalidInvitePhone", { entry }));
         }
       }
 
@@ -138,13 +143,16 @@ export async function inviteGuest(
           },
         });
         await sendEventInviteEmail(entry, {
+          locale: resolveLocale(user.preferredLocale),
           guestName: rsvp.guestName,
           hostName:
             eventDetails?.hostDisplayName ??
             eventDetails?.host?.name ??
             session.email?.split("@")[0] ??
-            "Your Host",
-          eventTitle: eventDetails?.title ?? "Event",
+            (await getTranslator(resolveLocale(user.preferredLocale)))("Email.yourHostCapital"),
+          eventTitle:
+            eventDetails?.title ??
+            (await getTranslator(resolveLocale(user.preferredLocale)))("Email.eventFallback"),
           eventSlug: event.slug,
           eventId,
           startAt: eventDetails?.startAt ?? new Date(),
@@ -170,12 +178,15 @@ export async function inviteGuest(
           },
         });
         await sendEventInviteSms(target, {
+          locale: resolveLocale(user.preferredLocale),
           hostName:
             eventDetails?.hostDisplayName ??
             eventDetails?.host?.name ??
             session.email?.split("@")[0] ??
-            "Your Host",
-          eventTitle: eventDetails?.title ?? "Event",
+            (await getTranslator(resolveLocale(user.preferredLocale)))("Email.yourHostCapital"),
+          eventTitle:
+            eventDetails?.title ??
+            (await getTranslator(resolveLocale(user.preferredLocale)))("Email.eventFallback"),
           rsvpBaseUrl,
           maybeEnabled: eventDetails?.maybeEnabled ?? true,
         });
@@ -189,7 +200,7 @@ export async function inviteGuest(
   }
 
   if (invited.length === 0) {
-    throw new Error(`Failed to send invites: ${errors.join("; ")}`);
+    throw new Error(await eventActionMessage("inviteSendFailed", { errors: errors.join("; ") }));
   }
 
   // SEC-46: attribute host/co-host invite issuance in the activity log. Without
@@ -215,14 +226,14 @@ export async function deleteInvitationAsHost(invitationId: string) {
   // Match RSVP deletion's SEC-42 pattern: authenticate before looking up the
   // caller-supplied id, then make missing and unauthorized records indistinct.
   const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
+  if (!session) throw new Error(await eventActionMessage("unauthorized"));
   const invitation = await db.invitation.findUnique({
     where: { id: invitationId },
     include: { event: { select: { id: true, slug: true } } },
   });
-  if (!invitation) throw new Error("Forbidden");
+  if (!invitation) throw new Error(await eventActionMessage("forbidden"));
   await assertHostOrCohost(invitation.event.id);
-  if (invitation.rsvpId) throw new Error("Forbidden");
+  if (invitation.rsvpId) throw new Error(await eventActionMessage("forbidden"));
 
   await db.invitation.delete({ where: { id: invitation.id } });
   revalidatePath(`/e/${invitation.event.slug}/guests`);
@@ -247,7 +258,7 @@ export async function inviteFriendAsGuest(
   const ip = await getClientIp();
   const ipLimit = await rateLimit(`guest-invite:ip:${ip}`, 30, 3600);
   if (!ipLimit.success) {
-    return { success: false, error: "Too many invites sent. Please try again later." };
+    return { success: false, error: await eventActionMessage("inviteRateLimited") };
   }
 
   const invitingRsvp = await db.rSVP.findUnique({
@@ -255,33 +266,33 @@ export async function inviteFriendAsGuest(
     include: { event: { include: { theme: true } } },
   });
   if (!invitingRsvp || invitingRsvp.eventId !== eventId) {
-    return { success: false, error: "Invalid guest token" };
+    return { success: false, error: await eventActionMessage("invalidGuestToken") };
   }
   if (invitingRsvp.status !== "GOING" && invitingRsvp.status !== "MAYBE") {
-    return { success: false, error: "Only attending guests can invite friends" };
+    return { success: false, error: await eventActionMessage("attendingInviteRequired") };
   }
 
   const event = invitingRsvp.event;
   if (event.visibility !== "PRIVATE") {
-    return { success: false, error: "This feature is only for private events" };
+    return { success: false, error: await eventActionMessage("privateEventRequired") };
   }
   if (!event.guestsCanInvite) {
-    return { success: false, error: "Guests are not allowed to invite others to this event" };
+    return { success: false, error: await eventActionMessage("guestInvitesDisabled") };
   }
 
   const entry = emailOrPhone.trim();
   if (!entry) {
-    return { success: false, error: "No invite target provided" };
+    return { success: false, error: await eventActionMessage("noInviteTarget") };
   }
 
   const isEmail = entry.includes("@");
   if (isEmail) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(entry)) {
-      return { success: false, error: `Invalid email: ${entry}` };
+      return { success: false, error: await eventActionMessage("invalidInviteEmail", { entry }) };
     }
   } else {
     if (!/^\+?[0-9\s\-()]{7,}$/.test(entry)) {
-      return { success: false, error: `Invalid phone: ${entry}` };
+      return { success: false, error: await eventActionMessage("invalidInvitePhone", { entry }) };
     }
   }
 
@@ -292,14 +303,14 @@ export async function inviteFriendAsGuest(
   if (!tokenLimit.success) {
     return {
       success: false,
-      error: "Too many invites sent. Please slow down and try again later.",
+      error: await eventActionMessage("inviteBurstLimited"),
     };
   }
   const rsvpCap = await rateLimit(`guest-invite:rsvp:${invitingRsvp.id}`, 20, 86400);
   if (!rsvpCap.success) {
     return {
       success: false,
-      error: "You've reached the maximum number of invites you can send for this event.",
+      error: await eventActionMessage("inviteDailyLimited"),
     };
   }
 
@@ -352,6 +363,7 @@ export async function inviteFriendAsGuest(
 
   if (isEmail) {
     await sendEventInviteEmail(entry, {
+      locale: resolveLocale(user.preferredLocale),
       guestName: rsvp.guestName,
       hostName: invitingRsvp.guestName,
       eventTitle: event.title,
@@ -371,6 +383,7 @@ export async function inviteFriendAsGuest(
     });
   } else {
     await sendEventInviteSms(target, {
+      locale: resolveLocale(user.preferredLocale),
       hostName: invitingRsvp.guestName,
       eventTitle: event.title,
       rsvpBaseUrl,

@@ -1,3 +1,4 @@
+import { getRequestTranslator } from "@/i18n/server";
 import type { Metadata } from "next";
 import RegisterForm from "./RegisterForm";
 import { isOpenRegistrationActive } from "@/lib/auth";
@@ -6,7 +7,10 @@ import { getCaptchaSiteKey } from "@/lib/captcha";
 import { getSessionUser } from "@/lib/session-user";
 import { headers } from "next/headers";
 
-export const metadata: Metadata = { title: "Create Account" };
+export async function generateMetadata(): Promise<Metadata> {
+  const tr = await getRequestTranslator();
+  return { title: tr("Ui.Auth.registerMetadataTitle") };
+}
 
 export const dynamic = "force-dynamic";
 

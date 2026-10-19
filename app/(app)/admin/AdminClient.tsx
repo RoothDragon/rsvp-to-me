@@ -1,4 +1,5 @@
 "use client";
+import { useLocale, useTranslations } from "next-intl";
 
 import { useState, useEffect, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -88,6 +89,9 @@ export default function AdminClient({
   initialDocs,
   sessionUser,
 }: AdminClientProps) {
+  const tr = useTranslations("Ui.Admin");
+  const locale = useLocale();
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
@@ -213,13 +217,16 @@ export default function AdminClient({
     try {
       const res = await createBackupAction();
       if (res.success) {
-        setFeedback({ type: "success", message: `Backup created: ${res.filename}` });
+        setFeedback({
+          type: "success",
+          message: tr("backupCreatedValue0Message", { value0: res.filename }),
+        });
         const updated = await listBackupsAction();
         setBackups(updated);
         setLastBackupTime(new Date().toISOString());
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to create backup.";
+      const msg = err instanceof Error ? err.message : tr("failedToCreateBackup");
       setFeedback({ type: "error", message: msg });
     } finally {
       setIsBackupRunning(false);
@@ -227,19 +234,19 @@ export default function AdminClient({
   };
 
   const handleDeleteBackup = async (filename: string) => {
-    if (!confirm(`Are you sure you want to delete backup ${filename}?`)) return;
+    if (!confirm(tr("areYouSureYouWantToDeleteBackupValue0Message", { value0: filename }))) return;
     setFeedback(null);
     try {
       const res = await deleteBackupAction(filename);
       if (res.success) {
-        setFeedback({ type: "success", message: "Backup deleted successfully." });
+        setFeedback({ type: "success", message: tr("backupDeletedSuccessfully") });
         const updated = await listBackupsAction();
         setBackups(updated);
       } else {
-        setFeedback({ type: "error", message: "Failed to delete backup." });
+        setFeedback({ type: "error", message: tr("failedToDeleteBackup") });
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to delete backup.";
+      const msg = err instanceof Error ? err.message : tr("failedToDeleteBackup");
       setFeedback({ type: "error", message: msg });
     }
   };
@@ -251,10 +258,10 @@ export default function AdminClient({
     try {
       const res = await updateBackupConfigAction(backupSchedule, backupKeepCount);
       if (res.success) {
-        setFeedback({ type: "success", message: "Backup configuration updated successfully." });
+        setFeedback({ type: "success", message: tr("backupConfigurationUpdatedSuccessfully") });
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to update backup configuration.";
+      const msg = err instanceof Error ? err.message : tr("failedToUpdateBackupConfiguration");
       setFeedback({ type: "error", message: msg });
     } finally {
       setIsSavingBackupConfig(false);
@@ -292,16 +299,20 @@ export default function AdminClient({
       if (res.success) {
         setFeedback({
           type: "success",
-          message: `Test email sent successfully to ${sessionUser?.email ?? "your email"}. Please check your inbox (and spam folder)!`,
+          message: tr("testEmailSentSuccessfullyToValue0PleaseCheckYourMessage", {
+            value0: sessionUser?.email ?? tr("yourEmail"),
+          }),
         });
       } else {
         setFeedback({
           type: "error",
-          message: `Test connection failed: ${res.error || "Unknown error"}`,
+          message: tr("testConnectionFailedValue0Message", {
+            value0: res.error || tr("unknownError"),
+          }),
         });
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to test connection.";
+      const message = err instanceof Error ? err.message : tr("failedToTestConnection");
       setFeedback({ type: "error", message });
     } finally {
       setIsTestingEmail(false);
@@ -344,10 +355,10 @@ export default function AdminClient({
         }));
         setFeedback({
           type: "success",
-          message: "Email delivery configuration saved successfully.",
+          message: tr("emailDeliveryConfigurationSavedSuccessfully"),
         });
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to save configuration.";
+        const message = err instanceof Error ? err.message : tr("failedToSaveConfiguration");
         setFeedback({ type: "error", message });
       }
     });
@@ -355,7 +366,7 @@ export default function AdminClient({
 
   const handleTestSmsConfig = async () => {
     if (!smsTestTo.trim()) {
-      setFeedback({ type: "error", message: "Please enter a test phone number." });
+      setFeedback({ type: "error", message: tr("pleaseEnterATestPhoneNumber") });
       return;
     }
     setFeedback(null);
@@ -371,16 +382,16 @@ export default function AdminClient({
       if (res.success) {
         setFeedback({
           type: "success",
-          message: "Test SMS sent successfully! Check the destination device or console logs.",
+          message: tr("testSmsSentSuccessfullyCheckTheDestinationDeviceOr"),
         });
       } else {
         setFeedback({
           type: "error",
-          message: `Test SMS failed: ${res.error || "Unknown error"}`,
+          message: tr("testSmsFailedValue0Message", { value0: res.error || tr("unknownError") }),
         });
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to test Twilio connection.";
+      const message = err instanceof Error ? err.message : tr("failedToTestTwilioConnection");
       setFeedback({ type: "error", message });
     } finally {
       setIsTestingSms(false);
@@ -402,9 +413,9 @@ export default function AdminClient({
           twilio_auth_token: twilioAuthToken.trim(),
           twilio_phone_number: twilioPhoneNumber.trim(),
         }));
-        setFeedback({ type: "success", message: "SMS configuration saved successfully." });
+        setFeedback({ type: "success", message: tr("smsConfigurationSavedSuccessfully") });
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to save SMS configuration.";
+        const message = err instanceof Error ? err.message : tr("failedToSaveSmsConfiguration");
         setFeedback({ type: "error", message });
       }
     });
@@ -439,21 +450,17 @@ export default function AdminClient({
         const res = await updateUserRole(userId, newRole);
         if (res.success) {
           setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
-          setFeedback({ type: "success", message: "User role updated successfully!" });
+          setFeedback({ type: "success", message: tr("userRoleUpdatedSuccessfully") });
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to update role.";
+        const message = err instanceof Error ? err.message : tr("failedToUpdateRole");
         setFeedback({ type: "error", message });
       }
     });
   };
 
   const handleUserDelete = (userId: string, name: string) => {
-    if (
-      !confirm(
-        `Schedule ${name}'s account for deletion? They will be signed out immediately and their data anonymized after a 30-day grace period. You can restore the account before that window closes.`
-      )
-    ) {
+    if (!confirm(tr("scheduleValue0SAccountForDeletionTheyWillBeMessage", { value0: name }))) {
       return;
     }
     setFeedback(null);
@@ -464,7 +471,10 @@ export default function AdminClient({
           const titles = res.events.map((e) => `"${e.title}"`).join(", ");
           setFeedback({
             type: "error",
-            message: `Cannot schedule deletion — ${name} has upcoming published events: ${titles}. Delete those events first.`,
+            message: tr("cannotScheduleDeletionValue0HasUpcomingPublishedEventsValue1Message", {
+              value0: name,
+              value1: titles,
+            }),
           });
           return;
         }
@@ -479,11 +489,14 @@ export default function AdminClient({
           );
           setFeedback({
             type: "success",
-            message: `${name}'s account scheduled for deletion on ${scheduledAt.toLocaleDateString()}.`,
+            message: tr("value0SAccountScheduledForDeletionOnValue1Message", {
+              value0: name,
+              value1: scheduledAt.toLocaleDateString(locale),
+            }),
           });
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to schedule deletion.";
+        const message = err instanceof Error ? err.message : tr("failedToScheduleDeletion");
         setFeedback({ type: "error", message });
       }
     });
@@ -500,21 +513,20 @@ export default function AdminClient({
               u.id === userId ? { ...u, deletionRequestedAt: null, deletionScheduledAt: null } : u
             )
           );
-          setFeedback({ type: "success", message: `${name}'s account has been restored.` });
+          setFeedback({
+            type: "success",
+            message: tr("value0SAccountHasBeenRestoredMessage", { value0: name }),
+          });
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to cancel deletion.";
+        const message = err instanceof Error ? err.message : tr("failedToCancelDeletion");
         setFeedback({ type: "error", message });
       }
     });
   };
 
   const handleUserDeleteImmediately = (userId: string, name: string) => {
-    if (
-      !confirm(
-        `WARNING: Are you absolutely sure you want to permanently delete and anonymize ${name}'s account immediately? This will bypass the 30-day grace period, reassign all hosted events to the System, and cannot be undone.`
-      )
-    ) {
+    if (!confirm(tr("warningAreYouAbsolutelySureYouWantToPermanentlyMessage", { value0: name }))) {
       return;
     }
     setFeedback(null);
@@ -527,7 +539,7 @@ export default function AdminClient({
               u.id === userId
                 ? {
                     ...u,
-                    name: "Deleted User",
+                    name: tr("deletedUser"),
                     email: null,
                     phone: null,
                     role: "GUEST",
@@ -539,11 +551,13 @@ export default function AdminClient({
           );
           setFeedback({
             type: "success",
-            message: `${name}'s account has been permanently deleted/anonymized.`,
+            message: tr("value0SAccountHasBeenPermanentlyDeletedAnonymizedMessage", {
+              value0: name,
+            }),
           });
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to delete immediately.";
+        const message = err instanceof Error ? err.message : tr("failedToDeleteImmediately");
         setFeedback({ type: "error", message });
       }
     });
@@ -559,7 +573,7 @@ export default function AdminClient({
         role: createUserRole,
       });
       if (res.success) {
-        setFeedback({ type: "success", message: "User created and welcome email sent." });
+        setFeedback({ type: "success", message: tr("userCreatedAndWelcomeEmailSent") });
         setCreateUserOpen(false);
         setCreateUserName("");
         setCreateUserEmail("");
@@ -574,9 +588,7 @@ export default function AdminClient({
   };
 
   const handleEventDelete = (eventId: string, title: string) => {
-    if (
-      !confirm(`Are you sure you want to moderate/delete the event "${title}"? This is permanent.`)
-    ) {
+    if (!confirm(tr("areYouSureYouWantToModerateDeleteTheMessage", { value0: title }))) {
       return;
     }
     setFeedback(null);
@@ -585,10 +597,10 @@ export default function AdminClient({
         const res = await deleteEventAdmin(eventId);
         if (res.success) {
           setEvents((prev) => prev.filter((e) => e.id !== eventId));
-          setFeedback({ type: "success", message: "Event moderated and deleted." });
+          setFeedback({ type: "success", message: tr("eventModeratedAndDeleted") });
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to delete event.";
+        const message = err instanceof Error ? err.message : tr("failedToDeleteEvent");
         setFeedback({ type: "error", message });
       }
     });
@@ -611,10 +623,10 @@ export default function AdminClient({
           setMaxUses("");
           setExpiresAt("");
           setNote("");
-          setFeedback({ type: "success", message: "Invite code created successfully." });
+          setFeedback({ type: "success", message: tr("inviteCodeCreatedSuccessfully") });
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to create code.";
+        const message = err instanceof Error ? err.message : tr("failedToCreateCode");
         setFeedback({ type: "error", message });
       }
     });
@@ -627,10 +639,10 @@ export default function AdminClient({
         const res = await revokeInviteCode(id);
         if (res.success) {
           setInviteCodes((prev) => prev.filter((c) => c.id !== id));
-          setFeedback({ type: "success", message: "Invite code revoked." });
+          setFeedback({ type: "success", message: tr("inviteCodeRevoked") });
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to revoke code.";
+        const message = err instanceof Error ? err.message : tr("failedToRevokeCode");
         setFeedback({ type: "error", message });
       }
     });
@@ -645,14 +657,16 @@ export default function AdminClient({
         await updateSystemConfig("open_registration", nextVal);
         setFeedback({
           type: "success",
-          message: `Open registration toggled to ${nextVal === "true" ? "Active" : "Inactive"}.`,
+          message: tr("openRegistrationToggledToValue0Message", {
+            value0: nextVal === "true" ? tr("active") : tr("inactive"),
+          }),
         });
       } catch (err) {
         setConfig((prev) => ({
           ...prev,
           open_registration: nextVal === "true" ? "false" : "true",
         })); // Revert
-        const message = err instanceof Error ? err.message : "Failed to update configuration.";
+        const message = err instanceof Error ? err.message : tr("failedToUpdateConfiguration");
         setFeedback({ type: "error", message });
       }
     });
@@ -667,14 +681,16 @@ export default function AdminClient({
         await updateSystemConfig("email_enabled", nextVal);
         setFeedback({
           type: "success",
-          message: `Guest email notifications ${nextVal === "true" ? "enabled" : "disabled"}.`,
+          message: tr("guestEmailNotificationsValue0Message", {
+            value0: nextVal === "true" ? tr("enabled") : tr("disabled"),
+          }),
         });
       } catch (err) {
         setConfig((prev) => ({
           ...prev,
           email_enabled: nextVal === "true" ? "false" : "true",
         }));
-        const message = err instanceof Error ? err.message : "Failed to update configuration.";
+        const message = err instanceof Error ? err.message : tr("failedToUpdateConfiguration");
         setFeedback({ type: "error", message });
       }
     });
@@ -689,14 +705,16 @@ export default function AdminClient({
         await updateSystemConfig("sms_enabled", nextVal);
         setFeedback({
           type: "success",
-          message: `SMS notifications ${nextVal === "true" ? "enabled" : "disabled"}.`,
+          message: tr("smsNotificationsValue0Message", {
+            value0: nextVal === "true" ? tr("enabled") : tr("disabled"),
+          }),
         });
       } catch (err) {
         setConfig((prev) => ({
           ...prev,
           sms_enabled: nextVal === "true" ? "false" : "true",
         }));
-        const message = err instanceof Error ? err.message : "Failed to update configuration.";
+        const message = err instanceof Error ? err.message : tr("failedToUpdateConfiguration");
         setFeedback({ type: "error", message });
       }
     });
@@ -721,7 +739,7 @@ export default function AdminClient({
         setThemePresets((prev) =>
           prev.map((p) => (p.id === themePresetForm.id ? { ...p, ...themePresetForm } : p))
         );
-        setFeedback({ type: "success", message: "Preset updated." });
+        setFeedback({ type: "success", message: tr("presetUpdated") });
       } else {
         const created = await createThemePreset({
           name: themePresetForm.name,
@@ -736,13 +754,13 @@ export default function AdminClient({
           fontId: themePresetForm.fontId ?? null,
         });
         setThemePresets((prev) => [...prev, created as AdminThemePreset]);
-        setFeedback({ type: "success", message: "Preset created." });
+        setFeedback({ type: "success", message: tr("presetCreated") });
       }
       return true;
     } catch (err) {
       setFeedback({
         type: "error",
-        message: err instanceof Error ? err.message : "Failed to save preset.",
+        message: err instanceof Error ? err.message : tr("failedToSavePreset"),
       });
       return false;
     }
@@ -777,23 +795,22 @@ export default function AdminClient({
       setThemePresets((prev) =>
         prev.map((p) => (p.id === themePresetForm.id ? { ...p, defaultSnapshot: snap } : p))
       );
-      setFeedback({ type: "success", message: "Preset saved and set as new default." });
+      setFeedback({ type: "success", message: tr("presetSavedAndSetAsNewDefault") });
       setThemePresetForm(null);
     }
     setIsSavingPreset(false);
   };
 
   const handleDeleteThemePreset = async (id: string) => {
-    if (!confirm("Delete this theme preset? Events using it will keep their current colors."))
-      return;
+    if (!confirm(tr("deleteThisThemePresetEventsUsingItWillKeep"))) return;
     try {
       await deleteThemePreset(id);
       setThemePresets((prev) => prev.filter((p) => p.id !== id));
-      setFeedback({ type: "success", message: "Preset deleted." });
+      setFeedback({ type: "success", message: tr("presetDeleted") });
     } catch (err) {
       setFeedback({
         type: "error",
-        message: err instanceof Error ? err.message : "Failed to delete preset.",
+        message: err instanceof Error ? err.message : tr("failedToDeletePreset"),
       });
     }
   };
@@ -807,50 +824,47 @@ export default function AdminClient({
     } catch (err) {
       setFeedback({
         type: "error",
-        message: err instanceof Error ? err.message : "Failed to update preset.",
+        message: err instanceof Error ? err.message : tr("failedToUpdatePreset"),
       });
     }
   };
 
   const TAB_META: Record<TabId, { title: string; description: string }> = {
     overview: {
-      title: "📊 Overview",
-      description: "A snapshot of users, events, and RSVPs across your platform.",
+      title: tr("overview2"),
+      description: tr("aSnapshotOfUsersEventsAndRsvpsAcrossYour"),
     },
     users: {
-      title: "👥 User Management",
-      description:
-        "View, search, and manage all registered users. Adjust roles and remove accounts.",
+      title: tr("userManagement"),
+      description: tr("viewSearchAndManageAllRegisteredUsersAdjustRoles"),
     },
     events: {
-      title: "🎈 Event Moderation",
-      description: "Review and moderate active events. Delete events that violate platform rules.",
+      title: tr("eventModeration"),
+      description: tr("reviewAndModerateActiveEventsDeleteEventsThatViolate"),
     },
     invites: {
-      title: "🔑 Host Settings",
-      description:
-        "Control how new hosts access the platform — via invite codes or open registration.",
+      title: tr("hostSettings"),
+      description: tr("controlHowNewHostsAccessThePlatformViaInvite"),
     },
     email: {
-      title: "📧 Email Settings",
-      description: "Choose your email provider and configure delivery settings.",
+      title: tr("emailSettings"),
+      description: tr("chooseYourEmailProviderAndConfigureDeliverySettings"),
     },
     sms: {
-      title: "💬 SMS Settings",
-      description: "Configure Twilio for SMS notifications and alerts.",
+      title: tr("smsSettings"),
+      description: tr("configureTwilioForSmsNotificationsAndAlerts"),
     },
     themes: {
-      title: "🎨 Theme Presets",
-      description:
-        "Manage the preset themes hosts can pick from in the event settings. Inactive presets are hidden from hosts.",
+      title: tr("themePresets2"),
+      description: tr("manageThePresetThemesHostsCanPickFromIn"),
     },
     backups: {
-      title: "💾 Database Backups",
-      description: "Schedule automated backups and manage your database snapshot history.",
+      title: tr("databaseBackups"),
+      description: tr("scheduleAutomatedBackupsAndManageYourDatabaseSnapshotHistory"),
     },
     docs: {
-      title: "📚 Documentation",
-      description: "Setup, configuration, and operations guides for self-hosting RSVP to Me.",
+      title: tr("documentation"),
+      description: tr("setupConfigurationAndOperationsGuidesForSelfHostingRsvp"),
     },
   };
 
@@ -885,7 +899,7 @@ export default function AdminClient({
           {/* Hamburger trigger for the mobile drawer — sidebar is hidden below lg */}
           <button
             type="button"
-            aria-label="Open admin navigation"
+            aria-label={tr("openAdminNavigation")}
             className="lg:hidden"
             onClick={() => setIsDrawerOpen(true)}
             style={{

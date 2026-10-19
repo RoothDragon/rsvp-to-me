@@ -21,12 +21,15 @@ describe("lib/docs.ts", () => {
       "email",
       "installation",
       "local-development",
+      "localization",
       "sample-data",
       "sms",
       "upgrading",
     ]);
     for (const doc of docs) {
       expect(doc.audience).toBe("admin");
+      expect(doc.locale).toBe("en-US");
+      expect(doc.dir).toBe("ltr");
       expect(doc.title.length).toBeGreaterThan(0);
       expect(doc.category.length).toBeGreaterThan(0);
       expect(doc.content.length).toBeGreaterThan(0);
@@ -59,6 +62,29 @@ describe("lib/docs.ts", () => {
     const docs = await loadDocs("admin");
     const slugs = docs.map((d) => d.slug);
     expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it("overlays complete Dutch articles without changing canonical identity or order", async () => {
+    const english = await loadDocs("host", "en-US");
+    const dutch = await loadDocs("host", "nl-NL");
+    expect(dutch.map(({ slug, order, audience }) => ({ slug, order, audience }))).toEqual(
+      english.map(({ slug, order, audience }) => ({ slug, order, audience }))
+    );
+    const translated = dutch.find((doc) => doc.slug === "getting-started")!;
+    expect(translated.title).toBe("Aan de slag als organisator");
+    expect(translated.locale).toBe("nl-NL");
+    expect(translated.dir).toBe("ltr");
+    const fallback = dutch.find((doc) => doc.slug === "creating-an-event")!;
+    expect(fallback).toEqual(english.find((doc) => doc.slug === "creating-an-event"));
+  });
+
+  it("keeps locale calls independent and rejects unregistered overlay paths", async () => {
+    const dutch = await loadDocs("admin", "nl-NL");
+    const english = await loadDocs("admin", "en-US");
+    expect(dutch.find((doc) => doc.slug === "sample-data")?.locale).toBe("nl-NL");
+    expect(english.every((doc) => doc.locale === "en-US")).toBe(true);
+    // Runtime inputs are still allowlisted before any filesystem path is built.
+    expect(await loadDocs("admin", "../../host" as "en-US")).toEqual(english);
   });
 
   // Convention guard: every markdown guide must live in an audience subfolder,

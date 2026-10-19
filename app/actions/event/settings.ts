@@ -1,5 +1,7 @@
 "use server";
 
+import { eventActionMessage } from "./localization";
+
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import type { BaseTheme } from "@/lib/theme";
@@ -36,7 +38,7 @@ export async function saveEventField(
   value: string,
   captchaToken?: string | null
 ) {
-  if (!ALLOWED_FIELDS.has(field)) throw new Error("Field not allowed");
+  if (!ALLOWED_FIELDS.has(field)) throw new Error(await eventActionMessage("fieldNotAllowed"));
   // SEC-36: the virtual link renders into a guest-facing <a href> — only
   // http(s) may be persisted (blocks javascript:/data: URIs).
   if (field === "virtualUrl" && value) value = HttpUrlSchema.parse(value);
@@ -122,11 +124,15 @@ export async function saveEventTheme(
   const event = await assertHostOrCohost(eventId);
   await assertCaptcha("event_theme", captchaToken);
   if (extras) {
-    if (!isValidFontId(extras.fontId)) throw new Error("Unknown font");
-    if (!isValidEffectId(extras.effectId)) throw new Error("Unknown effect");
-    if (!isValidEffectDensity(extras.effectDensity)) throw new Error("Invalid effect density");
-    if (!isValidEffectSpeed(extras.effectSpeed)) throw new Error("Invalid effect speed");
-    if (!isValidEffectSize(extras.effectSize)) throw new Error("Invalid effect size");
+    if (!isValidFontId(extras.fontId)) throw new Error(await eventActionMessage("unknownFont"));
+    if (!isValidEffectId(extras.effectId))
+      throw new Error(await eventActionMessage("unknownEffect"));
+    if (!isValidEffectDensity(extras.effectDensity))
+      throw new Error(await eventActionMessage("invalidDensity"));
+    if (!isValidEffectSpeed(extras.effectSpeed))
+      throw new Error(await eventActionMessage("invalidSpeed"));
+    if (!isValidEffectSize(extras.effectSize))
+      throw new Error(await eventActionMessage("invalidSize"));
   }
   await db.eventTheme.upsert({
     where: { eventId },
@@ -201,7 +207,7 @@ export async function saveEventSettings(
       select: { hostDisplayName: true },
     });
     if (settings.hostDisplayName !== currentEvent?.hostDisplayName) {
-      throw new Error("Forbidden: Only the host can change host display name");
+      throw new Error(await eventActionMessage("hostDisplayNameDenied"));
     }
   }
 
@@ -243,7 +249,7 @@ export async function saveEventDates(
   const event = await assertHostOrCohost(eventId);
   await assertCaptcha("event_edit", captchaToken);
   const evt = await db.event.findUnique({ where: { id: eventId }, select: { timezone: true } });
-  if (!evt) throw new Error("Event not found");
+  if (!evt) throw new Error(await eventActionMessage("eventNotFound"));
   await db.event.update({
     where: { id: eventId },
     data: {
@@ -338,9 +344,9 @@ export async function deleteEvent(eventId: string) {
     where: { id: eventId },
     select: { id: true, slug: true, status: true },
   });
-  if (!event) throw new Error("Event not found");
+  if (!event) throw new Error(await eventActionMessage("eventNotFound"));
   await assertHost(eventId);
-  if (event.status === "DELETED") throw new Error("Event is already deleted");
+  if (event.status === "DELETED") throw new Error(await eventActionMessage("alreadyDeleted"));
 
   // Hard-delete all guest data before tombstoning (GDPR: purpose no longer exists)
   await db.$transaction([

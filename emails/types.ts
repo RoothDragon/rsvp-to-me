@@ -1,3 +1,4 @@
+import type { EmailI18nProps } from "./i18n";
 import type { EmailTheme } from "@/lib/email-theme";
 import type { EventEmailDetails } from "./components/DetailsCard";
 
@@ -13,9 +14,9 @@ export const DEFAULT_TOGGLES: TemplateToggles = {
   showCoverImage: true,
 };
 
-export type RsvpStatusLabel = "Going" | "Maybe" | "Can't Go";
+export type RsvpStatus = "GOING" | "MAYBE" | "NO";
 
-export interface InviteEmailProps {
+export interface InviteEmailProps extends EmailI18nProps {
   theme: EmailTheme;
   body: string;
   toggles: TemplateToggles;
@@ -26,17 +27,17 @@ export interface InviteEmailProps {
   eventUrl: string;
 }
 
-export interface RsvpConfirmationEmailProps {
+export interface RsvpConfirmationEmailProps extends EmailI18nProps {
   theme: EmailTheme;
   body: string;
   toggles: TemplateToggles;
   event: EventEmailDetails;
-  statusLabel: RsvpStatusLabel;
+  status: RsvpStatus;
   eventUrl: string;
   editUrl: string;
 }
 
-export interface ApprovalEmailProps {
+export interface ApprovalEmailProps extends EmailI18nProps {
   theme: EmailTheme;
   toggles: TemplateToggles;
   eventTitle: string;
@@ -45,7 +46,7 @@ export interface ApprovalEmailProps {
   eventUrl: string;
 }
 
-export interface BlastEmailProps {
+export interface BlastEmailProps extends EmailI18nProps {
   theme: EmailTheme;
   toggles: TemplateToggles;
   eventTitle: string;
@@ -54,10 +55,10 @@ export interface BlastEmailProps {
   eventUrl: string;
 }
 
-export interface HostRsvpAlertEmailProps {
+export interface HostRsvpAlertEmailProps extends EmailI18nProps {
   theme: EmailTheme;
   guestName: string;
-  statusLabel: RsvpStatusLabel;
+  status: RsvpStatus;
   plusOneCount: number;
   note?: string | null;
   eventTitle: string;
@@ -67,19 +68,19 @@ export interface HostRsvpAlertEmailProps {
   guestListUrl: string;
 }
 
-export interface MagicLinkEmailProps {
+export interface MagicLinkEmailProps extends EmailI18nProps {
   theme: EmailTheme;
   body: string;
   magicLink: string;
 }
 
-export interface WelcomeEmailProps {
+export interface WelcomeEmailProps extends EmailI18nProps {
   theme: EmailTheme;
   body: string;
   magicLink: string;
 }
 
-export interface TestEmailProps {
+export interface TestEmailProps extends EmailI18nProps {
   theme: EmailTheme;
   body: string;
 }

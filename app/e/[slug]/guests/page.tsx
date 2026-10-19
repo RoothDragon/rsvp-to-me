@@ -1,3 +1,4 @@
+import { getRequestTranslator } from "@/i18n/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
@@ -5,7 +6,6 @@ import { resolveEventAccess } from "@/lib/eventAccess";
 import { serializeGuestRsvp, canViewGuestListPage } from "@/lib/guestList";
 import { resolveTheme } from "@/lib/theme";
 import { GuestListFilter } from "@/components/event/GuestListFilter";
-import { AppTopNav } from "@/components/ui/AppNav";
 import { EventAtmosphere } from "@/components/event/EventAtmosphere";
 import { getChannelConfig } from "@/lib/config";
 import { resolveEffectConfig } from "@/lib/effects";
@@ -17,6 +17,7 @@ import {
 } from "@/lib/guestRsvpDisplay";
 
 export default async function GuestListPage(props: PageProps<"/e/[slug]/guests">) {
+  const translate = await getRequestTranslator();
   const { slug } = await props.params;
   const token =
     typeof (await props.searchParams).token === "string"
@@ -47,8 +48,11 @@ export default async function GuestListPage(props: PageProps<"/e/[slug]/guests">
 
   // Enforce the same visibility/password gate as the event page — a PRIVATE or
   // password-protected event must not expose its guest list to anonymous visitors.
-  const { sessionUser, isHost, isLoggedInGuest, hasValidToken, decision } =
-    await resolveEventAccess(event, slug, { token });
+  const { isHost, isLoggedInGuest, hasValidToken, decision } = await resolveEventAccess(
+    event,
+    slug,
+    { token }
+  );
   if (decision !== "granted") redirect(`/e/${slug}`);
 
   // SEC-33: layer the guest-list-visibility setting on top of the access gate.
@@ -90,19 +94,25 @@ export default async function GuestListPage(props: PageProps<"/e/[slug]/guests">
   const display = resolveGuestRsvpDisplay(event, isHost);
   const countSummary = [
     showGuestResponseTotal(display)
-      ? `${approvedRsvps.length + (isHost ? pendingRsvps.length : 0)} ${approvedRsvps.length + (isHost ? pendingRsvps.length : 0) === 1 ? "response" : "responses"}`
+      ? translate("Ui.Event.GuestsRoute.responses", {
+          count: approvedRsvps.length + (isHost ? pendingRsvps.length : 0),
+        })
       : null,
     ...(
       [
         ["GOING", totalGoing, "going"],
         ["MAYBE", maybe.length, "maybe"],
-        ["NO", no.length, "can't make it"],
+        ["NO", no.length, "declined"],
       ] as const
     ).map(([status, count, label]) => {
       const value = guestCountLabel(count, display[status]);
-      return value !== null && (status === "GOING" || count > 0) ? `${value} ${label}` : null;
+      return value !== null && (status === "GOING" || count > 0)
+        ? translate(`Ui.Event.GuestsRoute.${label}`, { count: value })
+        : null;
     }),
-    isHost && pendingRsvps.length > 0 ? `${pendingRsvps.length} pending approval` : null,
+    isHost && pendingRsvps.length > 0
+      ? translate("Ui.Event.GuestsRoute.pending", { count: pendingRsvps.length })
+      : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -122,7 +132,6 @@ export default async function GuestListPage(props: PageProps<"/e/[slug]/guests">
         overflowX: "hidden",
       }}
     >
-      <AppTopNav user={sessionUser} variant="fixed" />
       <EventAtmosphere theme={t} effect={effect} />
 
       <div
@@ -148,15 +157,17 @@ export default async function GuestListPage(props: PageProps<"/e/[slug]/guests">
               marginBottom: "16px",
             }}
           >
-            ← Back to event
+            {translate("Ui.Event.GuestsRoute.back")}
           </Link>
           <h1 style={{ fontSize: "22px", fontWeight: 800, marginBottom: "4px" }}>{event.title}</h1>
-          <p style={{ color: t.textMuted, fontSize: "14px" }}>{countSummary || "Guest list"}</p>
+          <p style={{ color: t.textMuted, fontSize: "14px" }}>
+            {countSummary || translate("Ui.Event.GuestsRoute.title")}
+          </p>
         </div>
 
         {event.rsvps.length === 0 && pendingInvitations.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 20px", color: t.textMuted }}>
-            No RSVPs yet.
+            {translate("Ui.Event.GuestsRoute.empty")}
           </div>
         ) : (
           <GuestListFilter

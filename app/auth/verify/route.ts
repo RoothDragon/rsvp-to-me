@@ -1,3 +1,5 @@
+import { LOCALE_COOKIE } from "@/i18n/config";
+import { adoptLoginLocale, localeCookieOptions } from "@/i18n/preferences";
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sealSession, COOKIE_NAME, SESSION_TTL } from "@/lib/session";
@@ -101,5 +103,7 @@ export async function GET(request: NextRequest) {
     maxAge: SESSION_TTL,
   });
 
+  const locale = await adoptLoginLocale(user, request.cookies.get(LOCALE_COOKIE)?.value);
+  if (locale) response.cookies.set(LOCALE_COOKIE, locale, localeCookieOptions);
   return response;
 }
