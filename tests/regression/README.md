@@ -79,3 +79,4 @@ For every bug fix merged to main:
 | `event-locales.test.ts`                              | Event/RSVP validation, throttling, deadline, and capacity errors ignored the selected request language                       | 01a150ee                       |
 | `auth-localization-spacing.test.tsx`                 | Extracted sign-in footer prompts lost the space before the account-creation link in English and Dutch                        | 01a150ee                       |
 | `admin-email-localization-spacing.test.tsx`          | Extracted email setup fragments lost spaces before inline provider labels in English and Dutch                               | 01a150ee                       |
+| `playwright-docker-parity.test.ts`                   | CI-only Docker browser validation let the pinned image drift from Playwright and pass local preflight                        | #733 / 01a150ee                |

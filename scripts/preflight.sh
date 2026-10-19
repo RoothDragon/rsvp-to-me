@@ -97,6 +97,9 @@ step "Install dependencies (npm ci)"
 [ -d node_modules ] || npm ci
 ok "deps ready"
 
+step "Verify Playwright Docker browser"
+scripts/check-playwright-docker.sh
+
 step "Audit production dependencies"
 npm audit --omit=dev --audit-level=high
 

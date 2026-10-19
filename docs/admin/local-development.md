@@ -170,16 +170,18 @@ across tracked files before merging and review any resulting rewrites. A
 formatter patch can change Markdown or embedded template-literal output.
 
 Keep `@playwright/test` and `PLAYWRIGHT_IMAGE` in `scripts/run-e2e-docker.sh`
-on the same release. Playwright 1.63 uses the `v1.63.0-noble` image, based on
+on the same release. Playwright 1.64 uses the `v1.64.0-noble` image, based on
 Ubuntu 24.04. Native Playwright runs no longer support Ubuntu 20.04; use a
 supported WSL distribution such as Ubuntu 22.04 or 24.04. The application
 continues to use the Node version in `.nvmrc`.
 
-After a Playwright update, run the full preflight and browser suite. CI also
-checks the Docker image version against the installed package and launches its
-bundled Chromium to verify rendering, clicks, and screenshots. This image check
-runs without network access or a database; the full application flows run in
-the separate E2E step. Linux ARM64 uses Chrome for Testing starting in 1.63.
+After a Playwright update, run the full preflight and browser suite. CI and both
+preflight modes run `scripts/check-playwright-docker.sh`, which checks the Docker
+image version against the installed package and launches its bundled Chromium
+to verify rendering, clicks, and screenshots. The shared check reads the pinned
+image from `scripts/run-e2e-docker.sh` and mounts the repository read-only. This
+image check runs without network access or a database; the full application
+flows run in the separate E2E step. Linux ARM64 uses Chrome for Testing starting in 1.63.
 
 Changes to `jsdom` or `tailwind-merge` also need the component and browser
 suites. Check form validation, dialog interactions, and guest-list behavior;
