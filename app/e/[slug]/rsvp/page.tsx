@@ -1,3 +1,4 @@
+import { getRequestTranslator } from "@/i18n/server";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/session-user";
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export default async function RsvpPage({ params, searchParams }: Props) {
+  const translate = await getRequestTranslator();
   const { slug } = await params;
   const { token, status, return: returnTo } = await searchParams;
 
@@ -126,9 +128,7 @@ export default async function RsvpPage({ params, searchParams }: Props) {
         channelConfig={channelConfig}
         organizerOverride={isOrganizer}
         readOnlyReason={
-          eventStarted && !isOrganizer
-            ? "This event has started, so guests can no longer change their RSVP. Contact the host if your response needs to be updated."
-            : undefined
+          eventStarted && !isOrganizer ? translate("Ui.Rsvp.Route.editingClosed") : undefined
         }
       />
     );

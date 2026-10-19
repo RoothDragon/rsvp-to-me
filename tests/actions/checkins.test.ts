@@ -1,3 +1,4 @@
+import "@/tests/helpers/english-request-locale";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({

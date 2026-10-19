@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen } from "@/tests/components/render";
 
 const mocks = vi.hoisted(() => ({
+  locale: "en-US" as "en-US" | "nl-NL",
   find: vi.fn(),
   access: vi.fn(),
   filter: vi.fn<(props: { guestRsvpDisplay: unknown }) => null>(() => null),
@@ -20,6 +21,18 @@ vi.mock("@/components/ui/AppNav", () => ({ AppTopNav: () => null }));
 vi.mock("@/components/event/EventAtmosphere", () => ({ EventAtmosphere: () => null }));
 vi.mock("@/components/event/GuestListFilter", () => ({ GuestListFilter: mocks.filter }));
 
+vi.mock("@/i18n/server", async () => {
+  const { createTranslator } = await import("next-intl");
+  const english = (await import("@/messages/en-US.json")).default;
+  const dutch = (await import("@/messages/nl-NL.json")).default;
+  return {
+    getRequestTranslator: async () =>
+      createTranslator({
+        locale: mocks.locale,
+        messages: mocks.locale === "nl-NL" ? dutch : english,
+      }),
+  };
+});
 import GuestListPage from "@/app/e/[slug]/guests/page";
 
 const rsvp = {
@@ -60,6 +73,7 @@ const event = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.locale = "en-US";
   mocks.find.mockResolvedValue(event);
   mocks.access.mockResolvedValue({
     decision: "granted",
@@ -80,6 +94,12 @@ async function renderPage() {
 }
 
 describe("guest list page summary", () => {
+  it("localizes summary labels without exposing hidden exact counts", async () => {
+    mocks.locale = "nl-NL";
+    await renderPage();
+    expect(screen.getByText("2 aanwezig · 3+ afwezig")).toBeVisible();
+    expect(screen.queryByText(/13 afwezig|14 aanmeldingen/)).not.toBeInTheDocument();
+  });
   it("caps guest counts and omits the aggregate response total", async () => {
     await renderPage();
     expect(screen.getByText("2 going · 3+ can't make it")).toBeVisible();

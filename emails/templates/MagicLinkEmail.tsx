@@ -1,13 +1,20 @@
+import { requireEmailI18n } from "../i18n";
 import { EmailLayout } from "../components/EmailLayout";
 import { Hero } from "../components/Hero";
 import { EmailButton } from "../components/EmailButton";
 import { splitParagraphs } from "../render";
 import type { MagicLinkEmailProps } from "../types";
 
-export function MagicLinkEmail({ theme, body, magicLink }: MagicLinkEmailProps) {
+export function MagicLinkEmail({ i18n, theme, body, magicLink }: MagicLinkEmailProps) {
+  const { t } = requireEmailI18n(i18n);
   return (
-    <EmailLayout theme={theme} preview="Your sign-in link for RSVP to Me">
-      <Hero theme={theme} kicker="RSVP to Me" title="Sign in" showCoverImage={false} />
+    <EmailLayout i18n={i18n} theme={theme} preview={t("Email.magicLink.preview")}>
+      <Hero
+        theme={theme}
+        kicker="RSVP to Me"
+        title={t("Email.magicLink.title")}
+        showCoverImage={false}
+      />
       <table
         align="center"
         width="100%"
@@ -48,7 +55,7 @@ export function MagicLinkEmail({ theme, body, magicLink }: MagicLinkEmailProps) 
                   <tr>
                     <td>
                       <EmailButton theme={theme} href={magicLink} variant="primary">
-                        Sign in
+                        {t("Email.magicLink.title")}
                       </EmailButton>
                     </td>
                   </tr>
@@ -58,7 +65,7 @@ export function MagicLinkEmail({ theme, body, magicLink }: MagicLinkEmailProps) 
                 className="dm-text-muted"
                 style={{ margin: "24px 0 0", fontSize: "12px", color: theme.textMuted }}
               >
-                {"If you didn't request this, you can safely ignore this email."}
+                {t("Email.magicLink.ignore")}
               </p>
             </td>
           </tr>

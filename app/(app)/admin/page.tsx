@@ -1,3 +1,4 @@
+import { getRequestTranslator, getRequestLocale } from "@/i18n/server";
 import { redirect } from "next/navigation";
 import {
   getAdminStats,
@@ -13,10 +14,10 @@ import AdminClient from "./AdminClient";
 import { getSessionUser } from "@/lib/session-user";
 import { loadDocs } from "@/lib/docs";
 
-export const metadata = {
-  title: "Admin Panel | RSVP",
-  description: "RSVP to Me System Administration Panel",
-};
+export async function generateMetadata() {
+  const tr = await getRequestTranslator();
+  return { title: tr("Ui.Admin.metadataTitle"), description: tr("Ui.Admin.metadataDescription") };
+}
 
 export default async function AdminPage() {
   const sessionUser = await getSessionUser();
@@ -41,7 +42,7 @@ export default async function AdminPage() {
     getBackupConfig(),
     listBackupsAction(),
     getThemePresets(),
-    loadDocs("admin"),
+    loadDocs("admin", await getRequestLocale()),
   ]);
 
   return (

@@ -1,8 +1,14 @@
+import type { NotificationTranslator } from "@/emails/i18n";
 import { cache } from "react";
 import { z } from "zod";
 import { maxCodeUnits } from "@/lib/string-length";
 import { db } from "@/lib/db";
-import { EMAIL_TEMPLATE_META, type TemplateId, type TemplateOverrides } from "@/emails/registry";
+import {
+  EMAIL_TEMPLATE_META,
+  getEmailTemplateMeta,
+  type TemplateId,
+  type TemplateOverrides,
+} from "@/emails/registry";
 
 // Admin-editable template copy + structural toggles, stored as one
 // SystemConfig row per template (key email_template_<id>) holding a JSON
@@ -47,8 +53,13 @@ export const getEmailTemplateSettings = cache(
 );
 
 /** Overrides merged over registry defaults — what the editor UI displays. */
-export function mergeWithDefaults(id: TemplateId, overrides: TemplateOverrides) {
-  const meta = EMAIL_TEMPLATE_META[id];
+export function mergeWithDefaults(
+  id: TemplateId,
+  overrides: TemplateOverrides,
+  t?: NotificationTranslator,
+  vars?: Record<string, string | undefined>
+) {
+  const meta = t ? getEmailTemplateMeta(t, vars)[id] : EMAIL_TEMPLATE_META[id];
   return {
     subject: overrides.subject || meta.defaultSubject,
     body: (meta.bodyEditable && overrides.body) || meta.defaultBody,

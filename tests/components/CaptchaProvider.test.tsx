@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "./render";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CaptchaProvider, useCaptcha } from "@/components/ui/CaptchaProvider";
+import dutch from "@/messages/nl-NL.json";
 import { CAPTCHA_ERROR_MESSAGE } from "@/lib/captcha-types";
 
 vi.mock("next/script", async () => {
@@ -41,6 +42,78 @@ describe("CaptchaProvider", () => {
     delete window.turnstile;
   });
 
+  it("uses selected Dutch for widget UI and client verification errors", async () => {
+    let options: Record<string, unknown> = {};
+    window.turnstile = {
+      render: vi.fn((_container, renderOptions) => {
+        options = renderOptions;
+        return "localized-widget";
+      }),
+      execute: vi.fn(() => {
+        (options["error-callback"] as () => void)();
+      }),
+      remove: vi.fn(),
+    };
+    const submit = vi.fn(async () => undefined);
+    render(
+      <CaptchaProvider siteKey="site-key">
+        <SubmitButton onSubmit={submit} />
+      </CaptchaProvider>,
+      { locale: "nl-NL", messages: dutch }
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      dutch.Ui.Errors.Captcha.humanVerification
+    );
+    expect(options.language).toBe("nl-nl");
+    expect(options.action).toBe("comment");
+    expect(submit).not.toHaveBeenCalled();
+  });
+  it.each(["name", "message"])("localizes known server CAPTCHA rejection by %s", async (match) => {
+    const error = Object.assign(
+      new Error(match === "message" ? CAPTCHA_ERROR_MESSAGE : "server verification failure"),
+      { name: match === "name" ? "CaptchaVerificationError" : "Error", code: "captcha_failed" }
+    );
+    const submit = vi.fn(async () => {
+      throw error;
+    });
+    render(
+      <CaptchaProvider siteKey={null}>
+        <SubmitButton onSubmit={submit} />
+      </CaptchaProvider>,
+      { locale: "nl-NL", messages: dutch }
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      dutch.Ui.Errors.Captcha.humanVerification
+    );
+  });
+  it("rethrows unrelated mutation errors unchanged", async () => {
+    const mutationError = new Error("Existing mutation failure");
+    const caught = vi.fn();
+    function Probe() {
+      const { runWithCaptcha } = useCaptcha();
+      return (
+        <button
+          onClick={() => {
+            void runWithCaptcha("comment", async () => {
+              throw mutationError;
+            }).catch(caught);
+          }}
+        >
+          Probe
+        </button>
+      );
+    }
+    render(
+      <CaptchaProvider siteKey={null}>
+        <Probe />
+      </CaptchaProvider>,
+      { locale: "nl-NL", messages: dutch }
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Probe" }));
+    await waitFor(() => expect(caught).toHaveBeenCalledWith(mutationError));
+  });
   it("forwards the document nonce to the Turnstile script", () => {
     render(
       <CaptchaProvider siteKey="site-key" nonce="request-nonce">

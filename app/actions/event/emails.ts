@@ -1,13 +1,16 @@
 "use server";
 
+import { eventActionMessage } from "./localization";
+
 import { createElement } from "react";
+import { getRequestLocale, getTranslator } from "@/i18n/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { rateLimit } from "@/lib/rateLimit";
 import { resolveEmailTheme } from "@/lib/email-theme";
 import { getEmailTemplateSettings, mergeWithDefaults } from "@/lib/email-settings";
 import { renderEmail, substitutePlaceholders } from "@/emails/render";
-import { EMAIL_TEMPLATE_META, mergedToggles, type TemplateId } from "@/emails/registry";
+import { getEmailTemplateMeta, mergedToggles, type TemplateId } from "@/emails/registry";
 import type { EventEmailDetails } from "@/emails/components/DetailsCard";
 import { InviteEmail } from "@/emails/templates/InviteEmail";
 import { RsvpConfirmationEmail } from "@/emails/templates/RsvpConfirmationEmail";
@@ -34,7 +37,7 @@ const SAMPLE_GUEST = "Alex Sample";
 
 async function renderEventEmail(eventId: string, templateId: TemplateId) {
   if (!EVENT_TEMPLATE_IDS.includes(templateId)) {
-    throw new Error("Unknown event email template");
+    throw new Error(await eventActionMessage("unknownTemplate"));
   }
   await assertHostOrCohost(eventId);
 
@@ -42,11 +45,14 @@ async function renderEventEmail(eventId: string, templateId: TemplateId) {
     where: { id: eventId },
     include: { theme: true, host: { select: { name: true } } },
   });
-  if (!event) throw new Error("Forbidden");
+  if (!event) throw new Error(await eventActionMessage("forbidden"));
+
+  const locale = await getRequestLocale();
+  const t = await getTranslator(locale);
 
   // Real event data + the event's real current theme, with a sample guest.
   const theme = resolveEmailTheme(event.theme);
-  const hostName = event.host.name ?? "Your host";
+  const hostName = event.host.name ?? t("Email.yourHost");
   const eventUrl = `${APP_URL}/e/${event.slug}`;
   const details: EventEmailDetails = {
     id: event.id,
@@ -63,19 +69,21 @@ async function renderEventEmail(eventId: string, templateId: TemplateId) {
   };
 
   const overrides = await getEmailTemplateSettings(templateId);
-  const merged = mergeWithDefaults(templateId, overrides);
   const toggles = mergedToggles(templateId, overrides);
   const vars: Record<string, string> = {
     guestName: SAMPLE_GUEST,
     hostName,
     eventTitle: event.title,
-    eventDate: formatEventDateTime(event.startAt, event.endAt, event.timezone).date,
+    eventDate: formatEventDateTime(event.startAt, event.endAt, event.timezone, locale).date,
     location: event.locationName ?? "",
-    status: "Going",
-    decision: "Approved",
+    status: t("Email.status.GOING"),
+    decision: t("Email.decision.approved"),
   };
-  const subject = substitutePlaceholders(merged.subject, vars);
-  const body = substitutePlaceholders(merged.body, vars);
+  const merged = mergeWithDefaults(templateId, overrides, t, vars);
+  const subject = overrides.subject
+    ? substitutePlaceholders(overrides.subject, vars)
+    : merged.subject;
+  const body = overrides.body ? substitutePlaceholders(merged.body, vars) : merged.body;
 
   let element: React.ReactElement;
   switch (templateId) {
@@ -97,7 +105,7 @@ async function renderEventEmail(eventId: string, templateId: TemplateId) {
         body,
         toggles,
         event: details,
-        statusLabel: "Going",
+        status: "GOING",
         eventUrl,
         editUrl: `${eventUrl}/rsvp?token=sample-token`,
       });
@@ -108,7 +116,7 @@ async function renderEventEmail(eventId: string, templateId: TemplateId) {
         toggles,
         eventTitle: event.title,
         approved: true,
-        hostMessage: "Can't wait to see you there!",
+        hostMessage: t("Email.sample.hostMessage"),
         eventUrl,
       });
       break;
@@ -118,7 +126,7 @@ async function renderEventEmail(eventId: string, templateId: TemplateId) {
         toggles,
         eventTitle: event.title,
         hostName,
-        message: "Quick update from your host — see the event page for details.",
+        message: t("Email.sample.eventBlast"),
         eventUrl,
       });
       break;
@@ -126,9 +134,9 @@ async function renderEventEmail(eventId: string, templateId: TemplateId) {
       element = createElement(HostRsvpAlertEmail, {
         theme,
         guestName: SAMPLE_GUEST,
-        statusLabel: "Going",
+        status: "GOING",
         plusOneCount: 1,
-        note: "So excited!",
+        note: t("Email.sample.note"),
         eventTitle: event.title,
         goingCount: 12,
         maybeCount: 3,
@@ -137,7 +145,7 @@ async function renderEventEmail(eventId: string, templateId: TemplateId) {
       });
   }
 
-  const { html, text } = await renderEmail(element);
+  const { html, text } = await renderEmail(element, locale);
   return { subject, html, text };
 }
 
@@ -155,12 +163,12 @@ export async function sendEventEmailTest(
 ) {
   const session = await getSession();
   if (!session?.email) {
-    return { success: false as const, error: "Your account has no email address." };
+    return { success: false as const, error: await eventActionMessage("accountNoEmail") };
   }
   await assertCaptcha("email_test", captchaToken);
   const limit = await rateLimit(`event-email-test:${session.userId}`, 10, 3600);
   if (!limit.success) {
-    return { success: false as const, error: "Too many test emails. Try again later." };
+    return { success: false as const, error: await eventActionMessage("testEmailRateLimited") };
   }
   const { subject, html, text } = await renderEventEmail(eventId, templateId);
   // Send the real subject (no prefix) so the host previews exactly what guests
@@ -171,9 +179,10 @@ export async function sendEventEmailTest(
 
 /** Metadata for the event settings Emails panel dropdown. */
 export async function getEventEmailTemplates() {
+  const meta = getEmailTemplateMeta(await getTranslator(await getRequestLocale()));
   return EVENT_TEMPLATE_IDS.map((id) => ({
     id,
-    label: EMAIL_TEMPLATE_META[id].label,
-    description: EMAIL_TEMPLATE_META[id].description,
+    label: meta[id].label,
+    description: meta[id].description,
   }));
 }

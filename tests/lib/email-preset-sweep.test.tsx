@@ -31,7 +31,7 @@ describe("email preset sweep", () => {
     async ({ baseTheme, gradientFrom, gradientTo, accentColor }) => {
       const theme = resolveEmailTheme({ baseTheme, gradientFrom, gradientTo, accentColor });
       for (const id of ["invite", "blast"] as const) {
-        const { element } = buildSampleEmail(id, theme);
+        const { element } = await buildSampleEmail(id, theme);
         const { html, text } = await renderEmail(element);
         expect(html.toLowerCase()).toContain(accentColor.toLowerCase());
         expect(Buffer.byteLength(html, "utf8")).toBeLessThan(100_000);

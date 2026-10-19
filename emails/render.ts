@@ -1,12 +1,22 @@
 import { convert } from "html-to-text";
-import type * as React from "react";
+import { cloneElement, type ReactElement } from "react";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/config";
+import { getTranslator } from "@/i18n/server";
+import type { EmailI18nProps } from "./i18n";
 
 /** Render a template to both HTML and a plain-text alternative part. */
 export async function renderEmail(
-  element: React.ReactElement
+  element: ReactElement,
+  locale?: Locale
 ): Promise<{ html: string; text: string }> {
   const { renderToStaticMarkup } = await import("react-dom/server");
-  const rawHtml = renderToStaticMarkup(element);
+  const root = element as ReactElement<EmailI18nProps>;
+  const selectedLocale = locale ?? root.props.i18n?.locale ?? DEFAULT_LOCALE;
+  const t =
+    root.props.i18n?.locale === selectedLocale
+      ? root.props.i18n.t
+      : await getTranslator(selectedLocale);
+  const rawHtml = renderToStaticMarkup(cloneElement(root, { i18n: { locale: selectedLocale, t } }));
   const html = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">${rawHtml}`;
 
   const text = convert(rawHtml, {

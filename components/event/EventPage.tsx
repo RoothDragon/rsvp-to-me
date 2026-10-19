@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useRef, useEffect, useTransition } from "react";
 import NextImage from "next/image";
 import type { ResolvedTheme } from "@/lib/theme";
@@ -24,7 +26,6 @@ import {
 } from "@/app/actions/event";
 import { HostBar } from "./HostBar";
 import QRCode from "qrcode";
-import { AppTopNav } from "@/components/ui/AppNav";
 import type { EventData, GuestRsvp } from "./event-page/types";
 import { resolveIconKey, ICON_SET } from "./event-page/helpers";
 import { compressImage } from "@/lib/client-image";
@@ -71,6 +72,8 @@ export function EventPage({
   } | null;
   channelConfig?: { email: boolean; sms: boolean };
 }) {
+  const translate = useTranslations("Ui.Event.EventPage");
+
   const [event, setEvent] = useState(initial);
   const { runWithCaptcha } = useCaptcha();
   const [prevInitial, setPrevInitial] = useState(initial);
@@ -425,7 +428,7 @@ export function EventPage({
         }));
         setFeedPage(1);
       } else {
-        alert(result.error || "Failed to add reply");
+        alert(result.error || translate("failedAddReply"));
       }
     });
   };
@@ -696,7 +699,7 @@ export function EventPage({
     try {
       await castVote(pollId, pollOptionId, voter, isVoted, guestEditToken ?? undefined);
     } catch (err) {
-      console.error("Failed to cast vote", err);
+      console.error(translate("failedCastVote"), err);
     }
   };
 
@@ -736,14 +739,16 @@ export function EventPage({
           setNewPollOptionTexts((prev) => ({ ...prev, [pollId]: "" }));
         }
       } catch (err) {
-        console.error("Failed to add option", err);
+        console.error(translate("failedAddOption"), err);
       }
     });
   };
 
   const removeActivityEvent = (id: string) => {
     setEvent((e) => ({ ...e, activityEvents: e.activityEvents.filter((a) => a.id !== id) }));
-    deleteActivityEvent(id).catch((err) => console.error("Failed to delete activity event", err));
+    deleteActivityEvent(id).catch((err) =>
+      console.error(translate("failedDeleteActivityEvent"), err)
+    );
   };
 
   const handleApprove = (rsvpId: string, message?: string) => {
@@ -806,7 +811,6 @@ export function EventPage({
         }
       `}</style>
       {/* ── Top nav ── */}
-      <AppTopNav user={sessionUser} variant="event-overlay" />
 
       <EventAtmosphere theme={t} effect={effect} />
 

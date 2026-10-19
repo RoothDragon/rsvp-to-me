@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { act, render } from "@testing-library/react";
+import { act, render } from "@/tests/components/render";
 import React from "react";
 import { ParticleLayer } from "@/components/event/event-page/ParticleLayer";
 import { EFFECT_DENSITIES, getEffectById } from "@/lib/effects";

@@ -1,3 +1,4 @@
+import "@/tests/helpers/english-request-locale";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const {
@@ -35,7 +36,12 @@ vi.mock("@/lib/db", () => {
   return {
     db: {
       event: { findUnique: mockEventFindUnique },
-      user: { findUnique: mockUserFindUnique, create: vi.fn(), update: vi.fn() },
+      user: {
+        findUnique: mockUserFindUnique,
+        findMany: vi.fn().mockResolvedValue([]),
+        create: vi.fn(),
+        update: vi.fn(),
+      },
       coHostInvitation: {
         create: mockCoHostInviteCreate,
         delete: mockCoHostInviteDelete,

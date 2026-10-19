@@ -1,5 +1,4 @@
 import { APP_SHELL } from "@/lib/theme";
-import { AppTopNav } from "@/components/ui/AppNav";
 import { getSessionUser } from "@/lib/session-user";
 import { CaptchaProvider } from "@/components/ui/CaptchaProvider";
 import { getCaptchaSiteKey } from "@/lib/captcha";
@@ -23,7 +22,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           fontFamily: "inherit",
         }}
       >
-        <AppTopNav user={sessionUser} />
         {children}
       </div>
     </CaptchaProvider>

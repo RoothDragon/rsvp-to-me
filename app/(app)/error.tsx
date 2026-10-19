@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 export default function AppError({
@@ -8,6 +9,7 @@ export default function AppError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("Ui.Errors.Common");
   return (
     <div
       style={{
@@ -38,7 +40,7 @@ export default function AppError({
             margin: "0 0 8px",
           }}
         >
-          Something went wrong
+          {t("title")}
         </h2>
         <p
           style={{
@@ -48,7 +50,7 @@ export default function AppError({
             marginBottom: "24px",
           }}
         >
-          An unexpected error occurred on this page.
+          {t("description")}
         </p>
         <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
           <button
@@ -65,7 +67,7 @@ export default function AppError({
               fontFamily: "inherit",
             }}
           >
-            Try again
+            {t("retry")}
           </button>
           <Link
             href="/dashboard"
@@ -81,7 +83,7 @@ export default function AppError({
               display: "inline-block",
             }}
           >
-            Go to dashboard
+            {t("dashboard")}
           </Link>
         </div>
       </div>

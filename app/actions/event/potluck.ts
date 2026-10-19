@@ -1,5 +1,7 @@
 "use server";
 
+import { eventActionMessage } from "./localization";
+
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
@@ -28,7 +30,7 @@ export async function removePotluckItem(itemId: string) {
     where: { id: itemId },
     select: { eventId: true, event: { select: { slug: true } } },
   });
-  if (!item) throw new Error("Forbidden");
+  if (!item) throw new Error(await eventActionMessage("forbidden"));
   await assertHostOrCohost(item.eventId);
   await db.potluckItem.delete({ where: { id: itemId } });
   revalidatePath(`/e/${item.event.slug}`);
@@ -47,7 +49,7 @@ export async function claimPotluckItem(
       event: { select: { slug: true, hostId: true, coHosts: { select: { userId: true } } } },
     },
   });
-  if (!item) return { success: false, error: "Item not found" };
+  if (!item) return { success: false, error: await eventActionMessage("itemNotFound") };
 
   // SEC-4 / SEC-24: host/cohost session, OR an approved RSVP proven by its
   // secret editToken. The claimant name is taken from that RSVP, never the
@@ -58,7 +60,7 @@ export async function claimPotluckItem(
   if (!isHost && !isCohost) {
     const rsvp = await findApprovedGuestByToken(guestEditToken, item.eventId);
     if (!rsvp) {
-      return { success: false, error: "A valid approved RSVP is required to claim items." };
+      return { success: false, error: await eventActionMessage("claimRsvpRequired") };
     }
     guestName = rsvp.guestName;
   }
@@ -66,7 +68,7 @@ export async function claimPotluckItem(
   const totalClaimed = item.claims.reduce((sum, c) => sum + c.quantity, 0);
   const remaining = item.quantity - totalClaimed;
   if (claimedQty > remaining) {
-    return { success: false, error: `Only ${remaining} remaining` };
+    return { success: false, error: await eventActionMessage("itemsRemaining", { remaining }) };
   }
 
   const claim = await db.potluckClaim.create({
@@ -100,7 +102,7 @@ export async function unclaimPotluckItem(
       event: { select: { hostId: true, slug: true, coHosts: { select: { userId: true } } } },
     },
   });
-  if (!item) return { success: false, error: "Item not found" };
+  if (!item) return { success: false, error: await eventActionMessage("itemNotFound") };
 
   const session = await getSession();
   const isHost = item.event.hostId === session?.userId || session?.role === "ADMIN";
@@ -114,14 +116,14 @@ export async function unclaimPotluckItem(
   if (!isHost && !isCohost) {
     const rsvp = await findApprovedGuestByToken(guestEditToken, item.eventId);
     if (!rsvp) {
-      return { success: false, error: "A valid approved RSVP is required to unclaim items." };
+      return { success: false, error: await eventActionMessage("unclaimRsvpRequired") };
     }
     guestName = rsvp.guestName;
   }
 
   const claim = item.claims.find((c) => c.guestName === guestName);
   if (!claim) {
-    return { success: false, error: "Claim not found" };
+    return { success: false, error: await eventActionMessage("claimNotFound") };
   }
 
   await db.potluckClaim.delete({

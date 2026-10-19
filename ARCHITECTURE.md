@@ -58,7 +58,19 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
 
 ### Application shell and pages
 
-- `app/layout.tsx` is the root HTML/layout boundary.
+- `app/layout.tsx` is the root HTML/layout boundary. It resolves the request's UI
+  locale and direction and supplies the selected `Ui` catalog to the client.
+- The global header is rendered once at the root, including authentication and
+  public access screens. Its language selector shares the profile preference
+  action; event settings do not define a UI language.
+- `messages/locales.json` is the supported-language registry (native names,
+  direction, and locally hosted flags); `messages/en-US.json` defines catalog
+  keys. `i18n/` owns safe English fallback, request resolution, and explicit-locale
+  translators for background work. Only UI messages cross the client boundary.
+- `User.preferredLocale` stores an optional account preference. Request resolution
+  uses account, then validated browser cookie, then English. Preference writes
+  use the authenticated user's identity. Only successful LOGIN verification can
+  conditionally adopt an explicit browser choice for an account with no setting.
 - `app/layout.tsx` waits for `connection()` so every document that passes
   through `proxy.ts` is rendered per request and can receive that request's
   CSP nonce.
@@ -86,6 +98,12 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
 - `app/e/[slug]/page.tsx` is the main public event page.
 - `app/(app)/dashboard/page.tsx` is the host dashboard.
 - `app/(app)/admin/page.tsx` is the administrator entry point.
+- `lib/docs.ts` loads English help articles as the canonical slug/order/audience
+  registry and overlays complete articles from `docs/locales/<locale>/<audience>/`.
+  Missing articles fall back wholly to English with their actual language and
+  direction. `lib/remark-canonical-headings.ts` safely preserves explicit English
+  heading IDs in translated Markdown without enabling raw HTML. The Dockerfile
+  packages the complete documentation tree.
 - Documentation screenshots live in `public/docs/images/`. `components/docs/DocsPanel.tsx`
   maps repository-relative Markdown image paths to local `/docs/images/` URLs so
   GitHub and the in-app guides use the same assets without external image requests.
@@ -167,7 +185,10 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
   previews; `emails/templates/` contains the renderable templates.
 - `lib/email-settings.ts` merges saved template overrides.
 - `lib/email.ts` selects SMTP, Cloudflare, or development delivery and renders
-  through `emails/render.ts`.
+  through `emails/render.ts`. Notification call sites resolve recipient locales
+  explicitly; background work does not depend on request cookies. Default copy
+  is localized before existing administrator overrides are applied. Host-written
+  content and administrator overrides remain verbatim.
 - `lib/sms.ts` owns Twilio delivery. The webhook boundary is
   `app/api/webhooks/twilio/route.ts`.
 - `worker/worker.ts` is a separately deployed optional Cloudflare worker; keep
@@ -241,6 +262,7 @@ load nvm, and select `.nvmrc` so they work from noninteractive Codex shells.
 | `tests/e2e/`, `playwright.config.ts`                        | End-to-end public/auth/host flows.                                                                             |
 | `tests/regression/`                                         | Root-cause-specific bug and security regression guards.                                                        |
 | `scripts/preflight.sh`                                      | Local CI orchestration with isolated PostgreSQL/Redis.                                                         |
+| `scripts/check-playwright-docker.sh`                        | Shared CI/preflight version guard and Chromium smoke test; image pin lives in `scripts/run-e2e-docker.sh`.     |
 | `.github/workflows/container-qc.yml`                        | Builds and smoke-tests production images on AMD64 and ARM64 without publishing.                                |
 | `scripts/container-smoke.sh`, `scripts/container-smoke.cjs` | Disposable PostgreSQL/Redis startup, permissions, health, seed, backup restore, and native image-codec checks. |
 

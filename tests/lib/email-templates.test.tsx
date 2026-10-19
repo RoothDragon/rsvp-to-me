@@ -28,7 +28,7 @@ describe("emails/render.ts helpers", () => {
 describe("email templates", () => {
   it("renders every template with html, plain text, and color-scheme metas", async () => {
     for (const id of TEMPLATE_IDS) {
-      const { subject, element } = buildSampleEmail(id, theme);
+      const { subject, element } = await buildSampleEmail(id, theme);
       const { html, text } = await renderEmail(element);
       expect(subject.length, id).toBeGreaterThan(0);
       expect(subject, id).not.toContain("{");
@@ -39,7 +39,7 @@ describe("email templates", () => {
   });
 
   it("invite contains RSVP status links, event link, and calendar/map links", async () => {
-    const { element } = buildSampleEmail("invite", theme);
+    const { element } = await buildSampleEmail("invite", theme);
     const { html, text } = await renderEmail(element);
     expect(html).toContain("status=GOING");
     expect(html).toContain("status=MAYBE");
@@ -77,7 +77,7 @@ describe("email templates", () => {
       showHostFlourish: false,
       showCoverImage: false,
     };
-    const { element } = buildSampleEmail("invite", theme, off);
+    const { element } = await buildSampleEmail("invite", theme, off);
     const { html } = await renderEmail(element);
     expect(html).not.toContain("calendar.google.com");
     expect(html).not.toContain("google.com/maps/search");
@@ -92,16 +92,16 @@ describe("email templates", () => {
       accentColor: "#a855f7",
       coverImageUrl: "/api/uploads/cover.jpg",
     });
-    const on = await renderEmail(buildSampleEmail("invite", themed).element);
+    const on = await renderEmail((await buildSampleEmail("invite", themed)).element);
     expect(on.html).toContain("http://localhost:3000/api/uploads/cover.jpg");
     const off = await renderEmail(
-      buildSampleEmail("invite", themed, { showCoverImage: false }).element
+      (await buildSampleEmail("invite", themed, { showCoverImage: false })).element
     );
     expect(off.html).not.toContain("/api/uploads/cover.jpg");
   });
 
   it("escapes HTML in admin-provided copy (structural XSS protection)", async () => {
-    const { element } = buildSampleEmail("invite", theme, {
+    const { element } = await buildSampleEmail("invite", theme, {
       body: 'Hey {guestName} <script>alert("x")</script>',
     });
     const { html } = await renderEmail(element);
@@ -110,7 +110,7 @@ describe("email templates", () => {
   });
 
   it("confirmation contains the edit-token link and status heading", async () => {
-    const { element } = buildSampleEmail("rsvpConfirmation", theme);
+    const { element } = await buildSampleEmail("rsvpConfirmation", theme);
     const { html, text } = await renderEmail(element);
     expect(html).toContain("rsvp?token=sample-token");
     // html-to-text uppercases headings in the plain-text part
@@ -119,7 +119,7 @@ describe("email templates", () => {
 
   it("magic link and welcome render the sign-in URL in html and text parts", async () => {
     for (const id of ["magicLink", "welcome"] as const) {
-      const { element } = buildSampleEmail(id, appShellEmailTheme());
+      const { element } = await buildSampleEmail(id, appShellEmailTheme());
       const { html, text } = await renderEmail(element);
       expect(html, id).toContain("/auth/verify?token=sample-token");
       expect(text, id).toContain("/auth/verify?token=sample-token");

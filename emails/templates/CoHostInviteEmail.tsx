@@ -1,3 +1,4 @@
+import { requireEmailI18n, type EmailI18nProps } from "../i18n";
 import { EmailLayout } from "../components/EmailLayout";
 import { Hero } from "../components/Hero";
 import { EmailButton } from "../components/EmailButton";
@@ -6,21 +7,32 @@ import { formatEventDateTime } from "@/lib/calendar";
 import type { EventEmailDetails } from "../components/DetailsCard";
 import type { EmailTheme } from "@/lib/email-theme";
 
-interface CoHostInviteEmailProps {
+interface CoHostInviteEmailProps extends EmailI18nProps {
   theme: EmailTheme;
   event: EventEmailDetails;
   hostName: string;
   inviteUrl: string;
 }
 
-export function CoHostInviteEmail({ theme, event, hostName, inviteUrl }: CoHostInviteEmailProps) {
-  const { date } = formatEventDateTime(event.startAt, event.endAt, event.timezone);
+export function CoHostInviteEmail({
+  i18n,
+  theme,
+  event,
+  hostName,
+  inviteUrl,
+}: CoHostInviteEmailProps) {
+  const { t, locale } = requireEmailI18n(i18n);
+  const { date } = formatEventDateTime(event.startAt, event.endAt, event.timezone, locale);
   const subtitle = event.locationName ? `${date} · ${event.locationName}` : date;
   return (
-    <EmailLayout theme={theme} preview={`${hostName} invited you to co-host ${event.title}`}>
+    <EmailLayout
+      i18n={i18n}
+      theme={theme}
+      preview={t("Email.cohost.preview", { hostName, eventTitle: event.title })}
+    >
       <Hero
         theme={theme}
-        kicker="Co-host Invitation"
+        kicker={t("Email.cohost.kicker")}
         title={event.title}
         subtitle={subtitle}
         showCoverImage={false}
@@ -47,10 +59,11 @@ export function CoHostInviteEmail({ theme, event, hostName, inviteUrl }: CoHostI
                   color: theme.textPrimary,
                 }}
               >
-                {`${hostName} has invited you to co-host their event, ${event.title}. As a co-host, you will be able to edit the event page, manage the guest list, and send updates.`}
+                {t("Email.cohost.body", { hostName, eventTitle: event.title })}
               </p>
 
               <DetailsCard
+                i18n={i18n}
                 theme={theme}
                 event={event}
                 showMapLink={true}
@@ -70,7 +83,7 @@ export function CoHostInviteEmail({ theme, event, hostName, inviteUrl }: CoHostI
                   <tr>
                     <td>
                       <EmailButton theme={theme} href={inviteUrl} variant="primary">
-                        Co-Host This Event
+                        {t("Email.cohost.button")}
                       </EmailButton>
                     </td>
                   </tr>
@@ -86,7 +99,7 @@ export function CoHostInviteEmail({ theme, event, hostName, inviteUrl }: CoHostI
                   textAlign: "center" as const,
                 }}
               >
-                If you weren&apos;t expecting this, you can safely ignore or delete this email.
+                {t("Email.cohost.ignore")}
               </p>
             </td>
           </tr>

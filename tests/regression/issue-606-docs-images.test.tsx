@@ -7,12 +7,16 @@ import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import DocsPanel from "@/components/docs/DocsPanel";
+import { NextIntlClientProvider } from "next-intl";
+import english from "@/messages/en-US.json";
 
 function renderDoc(content: string) {
   return renderToStaticMarkup(
-    <DocsPanel
-      docs={[{ slug: "example", title: "Example", description: "", category: "Guides", content }]}
-    />
+    <NextIntlClientProvider locale="en-US" messages={{ Ui: english.Ui }} timeZone="UTC">
+      <DocsPanel
+        docs={[{ slug: "example", title: "Example", description: "", category: "Guides", content }]}
+      />
+    </NextIntlClientProvider>
   );
 }
 

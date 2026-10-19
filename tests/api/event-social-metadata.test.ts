@@ -1,3 +1,4 @@
+import "@/tests/helpers/english-request-locale";
 import { describe, expect, it } from "vitest";
 import { generateMetadata } from "@/app/e/[slug]/layout";
 

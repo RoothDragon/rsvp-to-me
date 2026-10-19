@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { X } from "lucide-react";
 import { APP_SHELL } from "@/lib/theme";
@@ -32,6 +33,8 @@ export function CreateUserModal({
   handleCreateUser: () => void;
   isPending: boolean;
 }) {
+  const tr = useTranslations("Ui.Admin");
+
   return (
     <Dialog
       open={createUserOpen}
@@ -58,11 +61,11 @@ export function CreateUserModal({
           id="create-user-dialog-title"
           style={{ margin: 0, color: APP_SHELL.textPrimary, fontSize: "18px" }}
         >
-          Create User
+          {tr("createUser2")}
         </h3>
         <button
           onClick={() => setCreateUserOpen(false)}
-          aria-label="Close create user dialog"
+          aria-label={tr("closeCreateUserDialog")}
           style={{
             background: "transparent",
             border: "none",
@@ -90,13 +93,15 @@ export function CreateUserModal({
               letterSpacing: "0.05em",
             }}
           >
-            Name <span style={{ color: APP_SHELL.textMuted }}>(optional)</span>
+            {tr.rich("nameOptionalMessage", {
+              part0: (chunks) => <span style={{ color: APP_SHELL.textMuted }}>{chunks}</span>,
+            })}
           </label>
           <AppInput
             type="text"
             value={createUserName}
             onChange={(e) => setCreateUserName(e.target.value)}
-            placeholder="Jane Smith"
+            placeholder={tr("janeSmith")}
           />
         </div>
 
@@ -112,13 +117,13 @@ export function CreateUserModal({
               letterSpacing: "0.05em",
             }}
           >
-            Email
+            {tr("email2")}
           </label>
           <AppInput
             type="email"
             value={createUserEmail}
             onChange={(e) => setCreateUserEmail(e.target.value)}
-            placeholder="jane@example.com"
+            placeholder={tr("janeExampleCom")}
             required
           />
         </div>
@@ -135,7 +140,9 @@ export function CreateUserModal({
               letterSpacing: "0.05em",
             }}
           >
-            Phone <span style={{ color: APP_SHELL.textMuted }}>(optional)</span>
+            {tr.rich("phoneOptionalMessage", {
+              part0: (chunks) => <span style={{ color: APP_SHELL.textMuted }}>{chunks}</span>,
+            })}
           </label>
           <AppInput
             type="tel"
@@ -157,7 +164,7 @@ export function CreateUserModal({
               letterSpacing: "0.05em",
             }}
           >
-            Role
+            {tr("role")}
           </label>
           <select
             value={createUserRole}
@@ -165,13 +172,13 @@ export function CreateUserModal({
             style={appInputStyle}
           >
             <option value="GUEST" style={{ backgroundColor: "#12091f" }}>
-              Guest
+              {tr("guest2")}
             </option>
             <option value="HOST" style={{ backgroundColor: "#12091f" }}>
-              Host
+              {tr("host2")}
             </option>
             <option value="ADMIN" style={{ backgroundColor: "#12091f" }}>
-              Admin
+              {tr("admin2")}
             </option>
           </select>
         </div>
@@ -188,7 +195,7 @@ export function CreateUserModal({
             marginTop: "4px",
           }}
         >
-          {isPending ? "Creating…" : "Create User"}
+          {isPending ? tr("creating") : tr("createUser2")}
         </AppButton>
       </div>
     </Dialog>

@@ -1,12 +1,19 @@
+import { requireEmailI18n } from "../i18n";
 import { EmailLayout } from "../components/EmailLayout";
 import { Hero } from "../components/Hero";
 import { splitParagraphs } from "../render";
 import type { TestEmailProps } from "../types";
 
-export function TestEmail({ theme, body }: TestEmailProps) {
+export function TestEmail({ i18n, theme, body }: TestEmailProps) {
+  const { t } = requireEmailI18n(i18n);
   return (
-    <EmailLayout theme={theme} preview="Test email from RSVP to Me">
-      <Hero theme={theme} kicker="RSVP to Me" title="It works! ✨" showCoverImage={false} />
+    <EmailLayout i18n={i18n} theme={theme} preview={t("Email.test.preview")}>
+      <Hero
+        theme={theme}
+        kicker="RSVP to Me"
+        title={t("Email.test.title")}
+        showCoverImage={false}
+      />
       <table
         align="center"
         width="100%"

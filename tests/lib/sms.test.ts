@@ -51,6 +51,7 @@ describe("lib/sms.ts", () => {
       const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
       const { sendRsvpConfirmationSms } = await loadModule();
       await sendRsvpConfirmationSms("+15550001111", {
+        locale: "en-US",
         guestName: "Alice",
         eventTitle: "Wine Night",
         eventSlug: "wine-night",
@@ -82,6 +83,7 @@ describe("lib/sms.ts", () => {
     it("posts the expected authenticated form to the Twilio Messages API", async () => {
       const { sendRsvpConfirmationSms } = await loadModule();
       await sendRsvpConfirmationSms("+15550001111", {
+        locale: "en-US",
         guestName: "Alice",
         eventTitle: "Wine Night",
         eventSlug: "wine-night",
@@ -102,9 +104,33 @@ describe("lib/sms.ts", () => {
       expect(form.get("Body")).toContain("Wine Night");
     });
 
+    it("renders Dutch invitation instructions with stable reply tokens and preserves authored messages", async () => {
+      const { sendEventInviteSms, sendApprovalSms } = await loadModule();
+      await sendEventInviteSms("+15550001111", {
+        locale: "nl-NL",
+        hostName: "O'Brien",
+        eventTitle: "Own title {name}",
+        rsvpBaseUrl: "https://example.com/rsvp?token=one",
+        maybeEnabled: true,
+      });
+      const body = getTwilioRequest().form.get("Body");
+      expect(body).toContain("O'Brien nodigt je uit");
+      expect(body).toContain("Own title {name}");
+      for (const token of ["YES", "NO", "MAYBE", "status=GOING"]) expect(body).toContain(token);
+      await sendApprovalSms("+15550001111", {
+        locale: "nl-NL",
+        eventTitle: "Own title",
+        approved: false,
+        message: "Host's {custom} text",
+      });
+      expect(getTwilioRequest(1).form.get("Body")).toContain("is afgewezen");
+      expect(getTwilioRequest(1).form.get("Body")).toContain("Host's {custom} text");
+    });
+
     it("sendSmsBlast sends to all numbers and returns count", async () => {
       const { sendSmsBlast } = await loadModule();
       const count = await sendSmsBlast(["+15550001111", "+15550002222"], {
+        locale: "en-US",
         eventTitle: "Wine Night",
         eventSlug: "wine-night",
         message: "See you there!",
@@ -120,6 +146,7 @@ describe("lib/sms.ts", () => {
         .mockResolvedValueOnce(new Response("Unauthorized", { status: 401 }))
         .mockResolvedValueOnce(successfulTwilioResponse());
       const count = await sendSmsBlast(["+15550001111", "+15550002222"], {
+        locale: "en-US",
         eventTitle: "Wine Night",
         eventSlug: "wine-night",
         message: "Still happening!",
@@ -169,7 +196,7 @@ describe("lib/sms.ts", () => {
 
     it("sendMagicLinkSms sends correct body", async () => {
       const { sendMagicLinkSms } = await loadModule();
-      await sendMagicLinkSms("+15551112222", "http://magic-link");
+      await sendMagicLinkSms("+15551112222", "http://magic-link", "en-US");
       const { form } = getTwilioRequest();
       expect(form.get("To")).toBe("+15551112222");
       expect(form.get("Body")).toContain("http://magic-link");
@@ -178,6 +205,7 @@ describe("lib/sms.ts", () => {
     it("sendApprovalSms sends approved or declined message", async () => {
       const { sendApprovalSms } = await loadModule();
       await sendApprovalSms("+15551112222", {
+        locale: "en-US",
         eventTitle: "Wine Night",
         approved: true,
         message: "Welcome!",
@@ -185,7 +213,11 @@ describe("lib/sms.ts", () => {
       expect(getTwilioRequest().form.get("To")).toBe("+15551112222");
       expect(getTwilioRequest().form.get("Body")).toContain("approved");
 
-      await sendApprovalSms("+15551112222", { eventTitle: "Wine Night", approved: false });
+      await sendApprovalSms("+15551112222", {
+        locale: "en-US",
+        eventTitle: "Wine Night",
+        approved: false,
+      });
       expect(getTwilioRequest(1).form.get("To")).toBe("+15551112222");
       expect(getTwilioRequest(1).form.get("Body")).toContain("declined");
     });

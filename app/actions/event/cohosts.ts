@@ -1,5 +1,11 @@
 "use server";
 
+import { eventActionMessage } from "./localization";
+
+import { resolveRecipientGroups } from "@/emails/recipients";
+import { DEFAULT_LOCALE } from "@/i18n/config";
+import { getTranslator } from "@/i18n/server";
+
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "crypto";
 import { db } from "@/lib/db";
@@ -20,7 +26,7 @@ export async function addCoHost(eventId: string, email: string, captchaToken?: s
 
   // Check if they are inviting themselves
   if (normalizedEmail === session?.email?.toLowerCase().trim()) {
-    return { success: false, error: "You are already the host" };
+    return { success: false, error: await eventActionMessage("alreadyHost") };
   }
 
   // Fetch full event info for sending email
@@ -32,14 +38,14 @@ export async function addCoHost(eventId: string, email: string, captchaToken?: s
       coHosts: { include: { user: { select: { email: true } } } },
     },
   });
-  if (!event) return { success: false, error: "Event not found" };
+  if (!event) return { success: false, error: await eventActionMessage("eventNotFound") };
 
   // Check if already a co-host
   const alreadyCohost = event.coHosts.some(
     (ch) => ch.user.email?.toLowerCase().trim() === normalizedEmail
   );
   if (alreadyCohost) {
-    return { success: false, error: "Already a co-host" };
+    return { success: false, error: await eventActionMessage("alreadyCohost") };
   }
 
   // Check if already invited
@@ -47,7 +53,7 @@ export async function addCoHost(eventId: string, email: string, captchaToken?: s
     where: { eventId, email: normalizedEmail },
   });
   if (existingInvite) {
-    return { success: false, error: "Already invited" };
+    return { success: false, error: await eventActionMessage("alreadyInvited") };
   }
 
   // Create co-host invitation
@@ -67,8 +73,12 @@ export async function addCoHost(eventId: string, email: string, captchaToken?: s
   const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const inviteUrl = `${APP_URL}/auth/verify-cohost?token=${token}`;
 
+  const groups = await resolveRecipientGroups([normalizedEmail], "email");
+  const locale = groups.keys().next().value ?? DEFAULT_LOCALE;
+  const t = await getTranslator(locale);
   await sendCoHostInviteEmail(normalizedEmail, {
-    hostName: event.host.name ?? "Your host",
+    locale,
+    hostName: event.host.name ?? t("Email.yourHost"),
     eventTitle: event.title,
     eventSlug: event.slug,
     startAt: event.startAt,
@@ -91,7 +101,7 @@ export async function removeCoHost(cohostId: string) {
     where: { id: cohostId },
     select: { userId: true, eventId: true, event: { select: { slug: true } } },
   });
-  if (!cohost) throw new Error("Forbidden");
+  if (!cohost) throw new Error(await eventActionMessage("forbidden"));
 
   const session = await getSession();
   const isRemovingSelf = session && session.userId === cohost.userId;
@@ -111,7 +121,7 @@ export async function updateCoHostDisplayName(
     where: { id: cohostId },
     select: { userId: true, eventId: true, event: { select: { slug: true } } },
   });
-  if (!cohost) throw new Error("Forbidden");
+  if (!cohost) throw new Error(await eventActionMessage("forbidden"));
   await assertCaptcha("cohost_manage", captchaToken);
 
   const session = await getSession();
@@ -132,7 +142,7 @@ export async function cancelCoHostInvitation(invitationId: string) {
     where: { id: invitationId },
     include: { event: { select: { slug: true } } },
   });
-  if (!invite) throw new Error("Forbidden");
+  if (!invite) throw new Error(await eventActionMessage("forbidden"));
   await assertHost(invite.eventId);
   await db.coHostInvitation.delete({ where: { id: invitationId } });
   revalidatePath(`/e/${invite.event.slug}/settings`);

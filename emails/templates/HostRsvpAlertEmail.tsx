@@ -1,3 +1,4 @@
+import { requireEmailI18n } from "../i18n";
 import { EmailLayout } from "../components/EmailLayout";
 import { Hero } from "../components/Hero";
 import { EmailButton } from "../components/EmailButton";
@@ -5,9 +6,10 @@ import type { HostRsvpAlertEmailProps } from "../types";
 
 /** Compact host-facing alert for a new guest RSVP with the live headcount. */
 export function HostRsvpAlertEmail({
+  i18n,
   theme,
   guestName,
-  statusLabel,
+  status,
   plusOneCount,
   note,
   eventTitle,
@@ -16,10 +18,21 @@ export function HostRsvpAlertEmail({
   noCount,
   guestListUrl,
 }: HostRsvpAlertEmailProps) {
+  const { t } = requireEmailI18n(i18n);
   const plusStr = plusOneCount > 0 ? ` +${plusOneCount}` : "";
+  const statusLabel = t(`Email.status.${status}`);
   return (
-    <EmailLayout theme={theme} preview={`${guestName} is ${statusLabel} — ${eventTitle}`}>
-      <Hero theme={theme} kicker="New RSVP" title={eventTitle} showCoverImage={false} />
+    <EmailLayout
+      i18n={i18n}
+      theme={theme}
+      preview={t("Email.hostAlert.preview", { guestName, status: statusLabel, eventTitle })}
+    >
+      <Hero
+        theme={theme}
+        kicker={t("Email.hostAlert.kicker")}
+        title={eventTitle}
+        showCoverImage={false}
+      />
       <table
         align="center"
         width="100%"
@@ -82,8 +95,7 @@ export function HostRsvpAlertEmail({
                 className="dm-text-muted"
                 style={{ margin: "16px 0 0", fontSize: "13px", color: theme.textMuted }}
               >
-                Current headcount: {goingCount} going · {maybeCount} maybe · {noCount}
-                {" can't go"}
+                {t("Email.hostAlert.counts", { goingCount, maybeCount, noCount })}
               </p>
 
               <table
@@ -99,7 +111,7 @@ export function HostRsvpAlertEmail({
                   <tr>
                     <td>
                       <EmailButton theme={theme} href={guestListUrl} variant="primary">
-                        View guest list
+                        {t("Email.viewGuests")}
                       </EmailButton>
                     </td>
                   </tr>

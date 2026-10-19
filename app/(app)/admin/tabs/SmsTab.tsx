@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { Eye, EyeOff } from "lucide-react";
 import { APP_SHELL } from "@/lib/theme";
@@ -39,6 +40,8 @@ export function SmsTab({
   isTestingSms: boolean;
   handleTestSmsConfig: () => Promise<void>;
 }) {
+  const tr = useTranslations("Ui.Admin");
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Guest SMS Channel Toggle */}
@@ -57,7 +60,7 @@ export function SmsTab({
         >
           <div>
             <div style={{ fontWeight: 700, fontSize: "15px", color: APP_SHELL.textPrimary }}>
-              SMS Notifications
+              {tr("smsNotifications")}
             </div>
             <div
               style={{
@@ -67,8 +70,7 @@ export function SmsTab({
                 maxWidth: "420px",
               }}
             >
-              When on, guests receive SMS confirmations, blasts, reminders, and invites. Requires
-              Twilio credentials configured below.
+              {tr("whenOnGuestsReceiveSmsConfirmationsBlastsRemindersAnd")}
             </div>
           </div>
           <button
@@ -122,11 +124,10 @@ export function SmsTab({
               margin: 0,
             }}
           >
-            SMS Configuration (Twilio)
+            {tr("smsConfigurationTwilio")}
           </h3>
           <p style={{ color: APP_SHELL.textSecondary, fontSize: "13px", marginTop: "4px" }}>
-            Configure your Twilio account to enable SMS blasts, RSVP confirmation texts, and magic
-            links via SMS.
+            {tr("configureYourTwilioAccountToEnableSmsBlastsRsvp")}
           </p>
         </div>
 
@@ -146,11 +147,11 @@ export function SmsTab({
                 marginBottom: "6px",
               }}
             >
-              Twilio Account SID (TWILIO_ACCOUNT_SID)
+              {tr("twilioAccountSidTwilioAccountSid")}
             </label>
             <input
               type="text"
-              placeholder="e.g. ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+              placeholder={tr("eGAcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")}
               value={twilioAccountSid}
               onChange={(e) => setTwilioAccountSid(e.target.value)}
               style={{
@@ -177,13 +178,13 @@ export function SmsTab({
                 marginBottom: "6px",
               }}
             >
-              Twilio Auth Token (TWILIO_AUTH_TOKEN)
+              {tr("twilioAuthTokenTwilioAuthToken")}
             </label>
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               <div style={{ position: "relative", flex: 1 }}>
                 <input
                   type={showTwilioToken ? "text" : "password"}
-                  placeholder="Twilio Authentication Token"
+                  placeholder={tr("twilioAuthenticationToken")}
                   value={twilioAuthToken}
                   onChange={(e) => setTwilioAuthToken(e.target.value)}
                   style={{
@@ -215,7 +216,7 @@ export function SmsTab({
                     alignItems: "center",
                     justifyContent: "center",
                   }}
-                  title={showTwilioToken ? "Hide token" : "Show token"}
+                  title={showTwilioToken ? tr("hideToken") : tr("showToken")}
                 >
                   {showTwilioToken ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -233,11 +234,11 @@ export function SmsTab({
                 marginBottom: "6px",
               }}
             >
-              Twilio Phone Number (TWILIO_PHONE_NUMBER)
+              {tr("twilioPhoneNumberTwilioPhoneNumber")}
             </label>
             <input
               type="text"
-              placeholder="e.g. +1234567890"
+              placeholder={tr("eG1234567890")}
               value={twilioPhoneNumber}
               onChange={(e) => setTwilioPhoneNumber(e.target.value)}
               style={{
@@ -279,7 +280,7 @@ export function SmsTab({
                 margin: "0 0 6px 0",
               }}
             >
-              ⚡ Test SMS Configuration
+              {tr("testSmsConfiguration")}
             </h4>
             <p
               style={{
@@ -289,8 +290,7 @@ export function SmsTab({
                 lineHeight: "1.4",
               }}
             >
-              Verify your Twilio connection by sending a test SMS. Note: In development mode, if
-              Twilio is not configured, it will log the SMS details to the console instead.
+              {tr("verifyYourTwilioConnectionBySendingATestSms")}
             </p>
 
             <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
@@ -303,11 +303,11 @@ export function SmsTab({
                     marginBottom: "4px",
                   }}
                 >
-                  Test Recipient Phone Number
+                  {tr("testRecipientPhoneNumber")}
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. +15550199"
+                  placeholder={tr("eG15550199")}
                   value={smsTestTo}
                   onChange={(e) => setSmsTestTo(e.target.value)}
                   style={{
@@ -341,7 +341,7 @@ export function SmsTab({
                   height: "33px",
                 }}
               >
-                {isTestingSms ? "Sending..." : "Test Connection"}
+                {isTestingSms ? tr("sending") : tr("testConnection")}
               </button>
             </div>
           </div>
@@ -369,7 +369,7 @@ export function SmsTab({
                 opacity: isPending || isTestingSms ? 0.6 : 1,
               }}
             >
-              Save Settings
+              {tr("saveSettings")}
             </button>
           </div>
         </form>

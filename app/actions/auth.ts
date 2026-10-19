@@ -1,5 +1,9 @@
 "use server";
 
+import { db } from "@/lib/db";
+import { cookies } from "next/headers";
+import { resolveLocale, LOCALE_COOKIE } from "@/i18n/config";
+import { getRequestTranslator } from "@/i18n/server";
 import { createMagicLink, registerHost, isOpenRegistrationActive } from "@/lib/auth";
 import { sendMagicLinkEmail } from "@/lib/email";
 import { sendMagicLinkSms } from "@/lib/sms";
@@ -17,10 +21,11 @@ export async function sendMagicLinkAction(
   redirect?: string,
   captchaToken?: string | null
 ): Promise<{ success: boolean; error?: string }> {
+  const t = await getRequestTranslator();
   // Validate input
   const parseResult = SendMagicLinkSchema.safeParse({ identifier: rawIdentifier });
   if (!parseResult.success) {
-    return { success: false, error: "Invalid email or phone number format." };
+    return { success: false, error: t("Ui.Errors.Auth.invalidIdentifier") };
   }
   const identifier = parseResult.data.identifier;
   await assertCaptcha("signin", captchaToken);
@@ -37,7 +42,7 @@ export async function sendMagicLinkAction(
     if (!ipLimit.success) {
       return {
         success: false,
-        error: "Too many sign-in requests from this IP. Please try again later.",
+        error: t("Ui.Errors.Auth.ipLimit"),
       };
     }
   }
@@ -47,7 +52,7 @@ export async function sendMagicLinkAction(
   if (!idLimit.success) {
     return {
       success: false,
-      error: "Too many sign-in requests for this email/phone. Please try again later.",
+      error: t("Ui.Errors.Auth.identifierLimit"),
     };
   }
 
@@ -64,12 +69,22 @@ export async function sendMagicLinkAction(
     return { success: true };
   }
 
+  const recipient = await db.user.findUnique({
+    where: isPhone
+      ? { phone: identifier.trim().replace(/[\s\-().]/g, "") }
+      : { email: identifier.toLowerCase().trim() },
+    select: { preferredLocale: true },
+  });
+  const recipientLocale =
+    recipient?.preferredLocale != null
+      ? resolveLocale(recipient.preferredLocale)
+      : resolveLocale((await cookies()).get(LOCALE_COOKIE)?.value);
   try {
     if (isPhone) {
       const phone = identifier.trim().replace(/[\s\-().]/g, "");
-      await sendMagicLinkSms(phone, link);
+      await sendMagicLinkSms(phone, link, recipientLocale);
     } else {
-      await sendMagicLinkEmail(identifier.toLowerCase().trim(), link);
+      await sendMagicLinkEmail(identifier.toLowerCase().trim(), link, recipientLocale);
     }
   } catch (err) {
     console.error("[auth] Magic link delivery failed:", err);
@@ -85,6 +100,7 @@ export async function registerHostAction(
   rawInviteCode: string,
   captchaToken?: string | null
 ): Promise<{ success: boolean; error?: string }> {
+  const t = await getRequestTranslator();
   // Validate input
   const parseResult = RegisterHostSchema.safeParse({
     email: rawEmail,
@@ -92,7 +108,7 @@ export async function registerHostAction(
     inviteCode: rawInviteCode,
   });
   if (!parseResult.success) {
-    return { success: false, error: "Invalid registration fields." };
+    return { success: false, error: t("Ui.Errors.Auth.invalidRegistration") };
   }
 
   const { email, name, inviteCode } = parseResult.data;
@@ -104,13 +120,13 @@ export async function registerHostAction(
   if (!ipLimit.success) {
     return {
       success: false,
-      error: "Too many registration attempts. Please try again in an hour.",
+      error: t("Ui.Errors.Auth.registrationLimit"),
     };
   }
 
   const openReg = await isOpenRegistrationActive();
   if (!openReg && (!inviteCode || inviteCode.trim() === "")) {
-    return { success: false, error: "Invite code is required." };
+    return { success: false, error: t("Ui.Errors.Auth.inviteRequired") };
   }
 
   const result = await registerHost(email, name, inviteCode ?? "");
@@ -118,7 +134,15 @@ export async function registerHostAction(
   if (result.success) {
     const link = await createMagicLink(email);
     if (link) {
-      await sendMagicLinkEmail(email, link);
+      const recipient = await db.user.findUnique({
+        where: { email: email.toLowerCase().trim() },
+        select: { preferredLocale: true },
+      });
+      const locale =
+        recipient?.preferredLocale != null
+          ? resolveLocale(recipient.preferredLocale)
+          : resolveLocale((await cookies()).get(LOCALE_COOKIE)?.value);
+      await sendMagicLinkEmail(email, link, locale);
     }
   }
 

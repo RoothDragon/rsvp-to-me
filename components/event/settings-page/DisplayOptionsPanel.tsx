@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Eye, EyeOff } from "lucide-react";
 import type { ResolvedTheme } from "@/lib/theme";
 import type { EventInput, SettingsOverrides } from "./types";
@@ -57,16 +59,18 @@ export function DisplayOptionsPanel({
   t: ResolvedTheme;
   S: SettingsPageStyles;
 }) {
+  const translate = useTranslations("Ui.Event.DisplayOptionsPanel");
+
   return (
-    <Section title="Display Options" t={t}>
+    <Section title={translate("displayOptions")} t={t}>
       <div style={{ marginBottom: "16px" }}>
-        <Label t={t}>Event visibility</Label>
+        <Label t={t}>{translate("eventVisibility")}</Label>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {(
             [
-              ["PUBLIC", "Public — findable by anyone"],
-              ["UNLISTED", "Unlisted — only people with the link"],
-              ["PRIVATE", "Private — invite only"],
+              ["PUBLIC", translate("publicFindableByAnyone")],
+              ["UNLISTED", translate("unlistedOnlyPeopleLink")],
+              ["PRIVATE", translate("privateInviteOnly")],
             ] as const
           ).map(([val, label]) => (
             <label
@@ -94,7 +98,7 @@ export function DisplayOptionsPanel({
       </div>
       {visibility === "PRIVATE" && (
         <Toggle
-          label="Allow guests to invite friends"
+          label={translate("allowGuestsInviteFriends")}
           value={guestsCanInvite}
           onChange={(val) => {
             setGuestsCanInvite(val);
@@ -121,7 +125,7 @@ export function DisplayOptionsPanel({
                 color: t.textMuted,
               }}
             >
-              Event password (optional)
+              {translate("eventPasswordOptional")}
             </span>
             {effectivePasswordHash && !passwordDirty && (
               <span
@@ -136,7 +140,7 @@ export function DisplayOptionsPanel({
                   lineHeight: 1.4,
                 }}
               >
-                SET
+                {translate("set")}
               </span>
             )}
           </div>
@@ -144,7 +148,9 @@ export function DisplayOptionsPanel({
             <input
               type={showPassword ? "text" : "password"}
               placeholder={
-                effectivePasswordHash && !passwordDirty ? "••••••••" : "Leave blank for no password"
+                effectivePasswordHash && !passwordDirty
+                  ? "••••••••"
+                  : translate("leaveBlankNoPassword")
               }
               value={password}
               onChange={(e) => {
@@ -183,7 +189,7 @@ export function DisplayOptionsPanel({
                 display: "flex",
                 alignItems: "center",
               }}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? translate("hidePassword") : translate("showPassword")}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
@@ -209,8 +215,8 @@ export function DisplayOptionsPanel({
                 }}
               >
                 {password.trim()
-                  ? "⚠️ This will replace the current password."
-                  : "⚠️ Saving will remove the password requirement."}
+                  ? translate("replaceCurrentPassword")
+                  : translate("savingRemovePasswordRequirement")}
               </div>
               <div style={{ display: "flex", gap: "6px" }}>
                 <button
@@ -234,7 +240,7 @@ export function DisplayOptionsPanel({
                     fontFamily: "inherit",
                   }}
                 >
-                  {password.trim() ? "Save new password" : "Remove password"}
+                  {password.trim() ? translate("saveNewPassword") : translate("removePassword")}
                 </button>
                 <button
                   type="button"
@@ -255,7 +261,7 @@ export function DisplayOptionsPanel({
                     fontFamily: "inherit",
                   }}
                 >
-                  Cancel
+                  {translate("cancel")}
                 </button>
               </div>
             </div>
@@ -265,18 +271,18 @@ export function DisplayOptionsPanel({
           {!passwordDirty &&
             (effectivePasswordHash ? (
               <div style={{ fontSize: "12px", color: t.textMuted, marginTop: "6px" }}>
-                Type a new password to change it, or clear the field and save to remove it.
+                {translate("typeNewPasswordChangeOrClear")}
               </div>
             ) : password ? (
               <div style={{ fontSize: "12px", color: t.textMuted, marginTop: "6px" }}>
-                Guests must enter this password to view the event.
+                {translate("guestsMustEnterPasswordViewEvent")}
               </div>
             ) : null)}
         </div>
       )}
 
       <Toggle
-        label="Allow guest comments"
+        label={translate("allowGuestComments")}
         value={commentsEnabled}
         onChange={(val) => {
           setCommentsEnabled(val);
@@ -286,7 +292,7 @@ export function DisplayOptionsPanel({
       />
 
       <Toggle
-        label="Allow guest sharing (Copy link & QR code)"
+        label={translate("allowGuestSharingCopyLinkQr")}
         value={guestSharingEnabled}
         onChange={(val) => {
           setGuestSharingEnabled(val);
@@ -297,14 +303,14 @@ export function DisplayOptionsPanel({
 
       <div style={{ marginBottom: "16px" }}>
         <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "10px" }}>
-          Guest list visibility
+          {translate("guestListVisibility")}
         </h3>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {(
             [
-              ["ALL", "Everyone can see"],
-              ["GUESTS_ONLY", "Going guests only"],
-              ["HOST_ONLY", "Host only"],
+              ["ALL", translate("everyoneCanSee")],
+              ["GUESTS_ONLY", translate("goingGuestsOnly")],
+              ["HOST_ONLY", translate("hostOnly")],
             ] as const
           ).map(([val, label]) => (
             <label

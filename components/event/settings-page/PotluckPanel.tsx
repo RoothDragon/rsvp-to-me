@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import React, { useState } from "react";
 import { Plus } from "lucide-react";
 import type { ResolvedTheme } from "@/lib/theme";
@@ -32,10 +34,12 @@ export function PotluckPanel({
   t: ResolvedTheme;
   S: SettingsPageStyles;
 }) {
+  const translate = useTranslations("Ui.Event.PotluckPanel");
+
   const [addingPotluck, setAddingPotluck] = useState(false);
 
   return (
-    <Section title="Manage Potluck Items" t={t}>
+    <Section title={translate("managePotluckItems")} t={t}>
       {/* Add Potluck Item Form */}
       {addingPotluck ? (
         <div
@@ -55,12 +59,12 @@ export function PotluckPanel({
               marginBottom: "12px",
             }}
           >
-            Add a New Item
+            {translate("addNewItem")}
           </div>
           <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
             <input
               style={{ ...S.inp, flex: 1 }}
-              placeholder="Item name (e.g. Red wine, cups, chips)"
+              placeholder={translate("itemNameEGRedWine")}
               value={newPotluckLabel}
               onChange={(e) => setNewPotluckLabel(e.target.value)}
               onKeyDown={(e) => {
@@ -81,7 +85,7 @@ export function PotluckPanel({
                   setNewPotluckQty(isNaN(num) ? "" : Math.max(1, num));
                 }
               }}
-              placeholder="Qty"
+              placeholder={translate("qty")}
             />
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
@@ -100,7 +104,7 @@ export function PotluckPanel({
                 fontSize: "13px",
               }}
             >
-              Add Item
+              {translate("addItem")}
             </button>
             <button
               type="button"
@@ -120,7 +124,7 @@ export function PotluckPanel({
                 border: `1px solid ${t.inputBorder}`,
               }}
             >
-              Cancel
+              {translate("cancel")}
             </button>
           </div>
         </div>
@@ -143,7 +147,7 @@ export function PotluckPanel({
             width: "100%",
           }}
         >
-          <Plus size={14} /> Add Item
+          <Plus size={14} /> {translate("addItem")}
         </button>
       )}
 
@@ -157,11 +161,12 @@ export function PotluckPanel({
             marginBottom: "12px",
           }}
         >
-          Items Needed ({potluckItems.length})
+          {translate("itemsNeeded")}
+          {potluckItems.length})
         </div>
         {potluckItems.length === 0 ? (
           <div style={{ fontSize: "13px", color: t.textMuted, fontStyle: "italic" }}>
-            No potluck items added yet. Use the form above to add items for guests to claim.
+            {translate("noPotluckItemsAddedYetUse")}
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -189,11 +194,12 @@ export function PotluckPanel({
                   >
                     <div style={{ flex: 1 }}>
                       <span style={{ fontSize: "14px", fontWeight: 600, color: t.textPrimary }}>
-                        {item.label} {item.quantity > 1 && `(need ${item.quantity})`}
+                        {item.label}{" "}
+                        {item.quantity > 1 && translate("neededQuantity", { count: item.quantity })}
                       </span>
                       {totalClaimed > 0 && (
                         <span style={{ fontSize: "12px", color: t.textMuted, marginLeft: "8px" }}>
-                          ({remaining} remaining)
+                          {translate("remainingQuantity", { count: remaining })}
                         </span>
                       )}
                     </div>
@@ -210,7 +216,7 @@ export function PotluckPanel({
                         padding: "4px",
                       }}
                     >
-                      Remove
+                      {translate("remove")}
                     </button>
                   </div>
                   {item.claims && item.claims.length > 0 && (
@@ -237,7 +243,9 @@ export function PotluckPanel({
                         >
                           <span>
                             • {claim.guestName}{" "}
-                            <span style={{ color: t.textMuted }}>(bringing {claim.quantity})</span>
+                            <span style={{ color: t.textMuted }}>
+                              {translate("bringingQuantity", { count: claim.quantity })}
+                            </span>
                           </span>
                           <button
                             type="button"
@@ -251,9 +259,9 @@ export function PotluckPanel({
                               fontWeight: 600,
                               padding: "2px 4px",
                             }}
-                            title="Remove claim"
+                            title={translate("removeClaim")}
                           >
-                            Unclaim
+                            {translate("unclaim")}
                           </button>
                         </div>
                       ))}

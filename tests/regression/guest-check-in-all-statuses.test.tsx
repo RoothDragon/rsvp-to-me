@@ -8,7 +8,7 @@
 // resend unanswered invitations from the same guest card.
 
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@/tests/components/render";
 import { describe, expect, it, vi } from "vitest";
 import { testTheme } from "@/tests/components/helpers/theme";
 

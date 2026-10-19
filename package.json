@@ -48,6 +48,7 @@
     "iron-session": "^9.0.1",
     "lucide-react": "^1.55.0",
     "next": "16.4.0",
+    "next-intl": "^4.14.9",
     "node-cron": "^4.6.0",
     "nodemailer": "^10.1.0",
     "pg": "^8.23.1",
@@ -62,8 +63,8 @@
     "remark-gfm": "^4.0.1",
     "sharp": "0.35.5",
     "tailwind-merge": "^3.7.0",
-    "zod": "^4.6.6",
-    "tsx": "^4.23.15"
+    "tsx": "^4.23.15",
+    "zod": "^4.6.6"
   },
   "overrides": {
     "fast-uri": "^3.1.7",
@@ -93,6 +94,7 @@
     "*.{ts,tsx}": "prettier --write"
   },
   "devDependencies": {
+    "@formatjs/icu-messageformat-parser": "^3.5.21",
     "@playwright/test": "^1.64.0",
     "@react-email/ui": "^6.11.1",
     "@tailwindcss/postcss": "^4",

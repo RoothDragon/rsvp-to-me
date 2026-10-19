@@ -14,17 +14,23 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import crypto from "crypto";
 
-const { mockInvitationFindMany, mockRsvpFindUnique, mockRsvpCount, mockRsvpUpdate } = vi.hoisted(
-  () => ({
-    mockInvitationFindMany: vi.fn(),
-    mockRsvpFindUnique: vi.fn(),
-    mockRsvpCount: vi.fn(),
-    mockRsvpUpdate: vi.fn(),
-  })
-);
+const {
+  mockInvitationFindMany,
+  mockRsvpFindUnique,
+  mockRsvpCount,
+  mockRsvpUpdate,
+  mockUserFindUnique,
+} = vi.hoisted(() => ({
+  mockUserFindUnique: vi.fn(),
+  mockInvitationFindMany: vi.fn(),
+  mockRsvpFindUnique: vi.fn(),
+  mockRsvpCount: vi.fn(),
+  mockRsvpUpdate: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {
+    user: { findUnique: mockUserFindUnique },
     invitation: { findMany: mockInvitationFindMany },
     rSVP: {
       findUnique: mockRsvpFindUnique,
@@ -60,6 +66,7 @@ function signedRequest(fields: Record<string, string>): NextRequest {
 describe("SEC-11: Twilio webhook XML injection", () => {
   beforeEach(() => {
     process.env.TWILIO_AUTH_TOKEN = AUTH_TOKEN;
+    mockUserFindUnique.mockReset().mockResolvedValue(null);
     mockInvitationFindMany.mockReset();
     mockRsvpFindUnique.mockReset();
     mockRsvpCount.mockReset();
@@ -92,5 +99,24 @@ describe("SEC-11: Twilio webhook XML injection", () => {
     expect(xml).toContain("&lt;/Message&gt;&lt;Message&gt;INJECTED");
     // Exactly one real <Message> element in the response.
     expect(xml.match(/<Message>/g)?.length).toBe(1);
+  });
+  it("uses stored recipient language for invalid-command and no-invitation early replies", async () => {
+    mockUserFindUnique.mockResolvedValue({ preferredLocale: "nl-NL" });
+    const invalid = await POST(signedRequest({ From: "+15551234567", Body: "WHAT" }));
+    expect(await invalid.text()).toContain("Antwoord YES, NO of MAYBE");
+    expect(mockInvitationFindMany).not.toHaveBeenCalled();
+    mockInvitationFindMany.mockResolvedValue([]);
+    const none = await POST(signedRequest({ From: "+15551234567", Body: "YES" }));
+    expect(await none.text()).toContain("Geen openstaande uitnodigingen");
+    expect(mockUserFindUnique).toHaveBeenCalledWith({
+      where: { phone: "+15551234567" },
+      select: { preferredLocale: true },
+    });
+  });
+  it("does not look up recipient language before signature verification", async () => {
+    const req = signedRequest({ From: "+15551234567", Body: "YES" });
+    req.headers.set("x-twilio-signature", "invalid");
+    expect((await POST(req)).status).toBe(403);
+    expect(mockUserFindUnique).not.toHaveBeenCalled();
   });
 });

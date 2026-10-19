@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import { Check } from "lucide-react";
 import {
@@ -9,7 +11,7 @@ import {
   type BaseTheme,
   type ResolvedTheme,
 } from "@/lib/theme";
-import { FONT_OPTIONS, getFontById } from "@/lib/fonts";
+import { FONT_OPTIONS } from "@/lib/fonts";
 import {
   EFFECT_DENSITIES,
   EFFECT_SPEEDS,
@@ -104,18 +106,21 @@ export function ThemePanel({
   ) => void;
   t: ResolvedTheme;
 }) {
+  const shared = useTranslations("Ui.Event.shared");
+  const translate = useTranslations("Ui.Event.ThemePanel");
+
   const sortedEffectSets = getSortedEffectSets();
   // Sub-tab within the Theme section; purely visual, so plain local state (no URL sync)
   const [activeTab, setActiveTab] = useState<"theme" | "effects" | "font">("theme");
   return (
-    <Section title="Theme" t={t}>
+    <Section title={translate("theme")} t={t}>
       {/* Sub-tabs: color presets / animated effects / event-title font */}
       <div style={{ display: "flex", gap: "6px", marginBottom: "14px" }}>
         {(
           [
-            { id: "theme", label: "🎨 Theme" },
-            { id: "effects", label: "✨ Effects" },
-            { id: "font", label: "🔤 Font" },
+            { id: "theme", label: translate("theme2") },
+            { id: "effects", label: translate("effects") },
+            { id: "font", label: translate("font") },
           ] as const
         ).map((tab) => (
           <button
@@ -146,7 +151,7 @@ export function ThemePanel({
               type="text"
               value={themeSearch}
               onChange={(e) => setThemeSearch(e.target.value)}
-              placeholder="Search themes…"
+              placeholder={translate("searchThemes")}
               style={{
                 width: "100%",
                 boxSizing: "border-box",
@@ -226,14 +231,14 @@ export function ThemePanel({
                         }}
                       >
                         {f === "all"
-                          ? "All"
+                          ? translate("all")
                           : f === "seasonal"
-                            ? "🎉 Seasonal"
+                            ? translate("seasonal")
                             : f === "general"
-                              ? "🎨 General"
+                              ? translate("general")
                               : f === "light"
-                                ? "☀️ Light"
-                                : "🌙 Dark"}
+                                ? translate("light")
+                                : translate("dark")}
                       </button>
                     ))}
                   </div>
@@ -279,7 +284,7 @@ export function ThemePanel({
                         color: t.textMuted,
                       }}
                     >
-                      ↺ Reset
+                      {translate("reset")}
                     </button>
                   )}
                 </div>
@@ -320,7 +325,7 @@ export function ThemePanel({
                       textAlign: "center",
                     }}
                   >
-                    ↺ Restore to &ldquo;{appliedPreset.name}&rdquo; defaults
+                    {translate("restorePreset", { name: appliedPreset.name })}
                   </button>
                 )}
               </>
@@ -431,7 +436,7 @@ export function ThemePanel({
                   fontSize: "12px",
                 }}
               >
-                No themes match
+                {translate("noThemesMatch")}
               </div>
             )}
           </div>
@@ -461,7 +466,7 @@ export function ThemePanel({
                 fontWeight: 600,
               }}
             >
-              <span>Customize colors</span>
+              <span>{translate("customizeColors")}</span>
               <span
                 style={{
                   fontSize: "11px",
@@ -478,7 +483,7 @@ export function ThemePanel({
               <div style={{ padding: "14px", borderTop: `1px solid ${t.inputBorder}` }}>
                 {/* Style selector */}
                 <div style={{ marginBottom: "14px" }}>
-                  <Label t={t}>Style</Label>
+                  <Label t={t}>{translate("style")}</Label>
                   <div style={{ display: "flex", gap: "8px" }}>
                     {BASE_THEMES.map((bt) => (
                       <button
@@ -514,7 +519,7 @@ export function ThemePanel({
                             background: t.inputBg,
                           }}
                         >
-                          {bt.label}
+                          {shared("baseThemes." + bt.id)}
                         </div>
                       </button>
                     ))}
@@ -523,11 +528,11 @@ export function ThemePanel({
 
                 {/* Background colors */}
                 <div style={{ marginBottom: "14px" }}>
-                  <Label t={t}>Background Colors</Label>
+                  <Label t={t}>{translate("backgroundColors")}</Label>
                   <div style={{ display: "flex", gap: "10px" }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: "11px", color: t.textMuted, marginBottom: "5px" }}>
-                        Start
+                        {translate("start")}
                       </div>
                       <label
                         style={{
@@ -572,7 +577,7 @@ export function ThemePanel({
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: "11px", color: t.textMuted, marginBottom: "5px" }}>
-                        End
+                        {translate("end")}
                       </div>
                       <label
                         style={{
@@ -619,7 +624,7 @@ export function ThemePanel({
                 </div>
 
                 {/* Accent color */}
-                <Label t={t}>Accent Color</Label>
+                <Label t={t}>{translate("accentColor")}</Label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
                   {ACCENT_PRESETS.map((p) => (
                     <button
@@ -628,7 +633,7 @@ export function ThemePanel({
                         setAccent(p.value);
                         triggerSaveTheme(base, gradientFrom, gradientTo, p.value);
                       }}
-                      title={p.name}
+                      title={shared("accents." + p.name)}
                       style={{
                         width: "30px",
                         height: "30px",
@@ -676,7 +681,7 @@ export function ThemePanel({
 
                 {/* Card opacity */}
                 <div style={{ marginTop: "14px" }}>
-                  <Label t={t}>Card Opacity</Label>
+                  <Label t={t}>{translate("cardOpacity")}</Label>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <input
                       type="range"
@@ -712,10 +717,10 @@ export function ThemePanel({
                   </div>
                   <div style={{ fontSize: "11px", color: t.textMuted, marginTop: "4px" }}>
                     {cardOpacity < 0.65
-                      ? "Very frosted — bold gradient shows through"
+                      ? translate("veryFrostedBoldGradientShowsThrough")
                       : cardOpacity > 0.92
-                        ? "Near-solid cards"
-                        : "Balanced transparency"}
+                        ? translate("nearSolidCards")
+                        : translate("balancedTransparency")}
                   </div>
                 </div>
               </div>
@@ -727,10 +732,9 @@ export function ThemePanel({
       {/* ── Effect (animated background) ── */}
       {activeTab === "effects" && (
         <div style={{ marginBottom: "12px" }}>
-          <Label t={t}>Effect</Label>
+          <Label t={t}>{translate("effect")}</Label>
           <div style={{ fontSize: "11px", color: t.textMuted, marginBottom: "8px" }}>
-            Optional floating motifs behind your event page. Off by default — mix any effect with
-            any theme.
+            {translate("optionalFloatingMotifsBehindEventPage")}
           </div>
           <div
             style={{
@@ -762,7 +766,7 @@ export function ThemePanel({
               }}
             >
               <span style={{ fontSize: "18px" }}>🚫</span>
-              <span style={{ fontSize: "10px", fontWeight: 600 }}>None</span>
+              <span style={{ fontSize: "10px", fontWeight: 600 }}>{translate("none")}</span>
             </button>
             {sortedEffectSets.map((e) => (
               <button
@@ -773,7 +777,7 @@ export function ThemePanel({
                     effectId: e.id,
                   });
                 }}
-                title={e.name}
+                title={shared("effects." + e.id)}
                 style={{
                   padding: "10px 4px",
                   borderRadius: "10px",
@@ -798,7 +802,7 @@ export function ThemePanel({
                     maxWidth: "100%",
                   }}
                 >
-                  {e.name}
+                  {shared("effects." + e.id)}
                 </span>
               </button>
             ))}
@@ -810,7 +814,7 @@ export function ThemePanel({
             >
               <div>
                 <div style={{ fontSize: "11px", color: t.textMuted, marginBottom: "5px" }}>
-                  Density
+                  {translate("density")}
                 </div>
                 <div style={{ display: "flex", gap: "6px" }}>
                   {(Object.keys(EFFECT_DENSITIES) as EffectDensity[]).map((d) => (
@@ -839,14 +843,14 @@ export function ThemePanel({
                         color: effectDensity === d ? t.accent : t.textMuted,
                       }}
                     >
-                      {EFFECT_DENSITIES[d].label}
+                      {shared("density." + d)}
                     </button>
                   ))}
                 </div>
               </div>
               <div>
                 <div style={{ fontSize: "11px", color: t.textMuted, marginBottom: "5px" }}>
-                  Speed
+                  {translate("speed")}
                 </div>
                 <div style={{ display: "flex", gap: "6px" }}>
                   {(Object.keys(EFFECT_SPEEDS) as EffectSpeed[]).map((s) => (
@@ -875,14 +879,14 @@ export function ThemePanel({
                         color: effectSpeed === s ? t.accent : t.textMuted,
                       }}
                     >
-                      {EFFECT_SPEEDS[s].label}
+                      {shared("speed." + s)}
                     </button>
                   ))}
                 </div>
               </div>
               <div>
                 <div style={{ fontSize: "11px", color: t.textMuted, marginBottom: "5px" }}>
-                  Size
+                  {translate("size")}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <input
@@ -945,10 +949,9 @@ export function ThemePanel({
       {/* ── Event title font ── */}
       {activeTab === "font" && (
         <div style={{ marginBottom: "12px" }}>
-          <Label t={t}>Event Title Font</Label>
+          <Label t={t}>{translate("eventTitleFont")}</Label>
           <div style={{ fontSize: "11px", color: t.textMuted, marginBottom: "8px" }}>
-            Applied only to your main event title. Some theme presets pick a matching font
-            automatically — choose one here to override it.
+            {translate("appliedOnlyMainEventTitleSome")}
           </div>
           <div
             style={{
@@ -974,7 +977,7 @@ export function ThemePanel({
                 cursor: "pointer",
               }}
             >
-              Theme default
+              {translate("themeDefault")}
             </button>
             {FONT_OPTIONS.map((f) => (
               <button
@@ -1030,7 +1033,7 @@ export function ThemePanel({
                 wordBreak: "break-word",
               }}
             >
-              {event.title || "You\u2019re Invited!"}
+              {event.title || translate("reInvited")}
             </h1>
           </div>
         </div>

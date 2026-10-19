@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useState } from "react";
 import { ChevronDown, Eye, EyeOff } from "lucide-react";
@@ -143,6 +144,8 @@ export function EmailTab({
   isTestingEmail: boolean;
   handleTestEmailConfig: () => Promise<void>;
 }) {
+  const tr = useTranslations("Ui.Admin");
+
   const generateWorkerCode = () => {
     return `// WARNING: If you modify this template, make sure to also update the file
 // worker/worker.ts to keep them in sync.
@@ -212,10 +215,7 @@ function extractRawEmail(fromStr) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <CollapsibleSection
-        title="Email Setup"
-        subtitle="Guest notifications toggle, delivery provider, and connection test"
-      >
+      <CollapsibleSection title={tr("emailSetup")} subtitle={tr("EmailTab.setupSubtitle")}>
         {/* Guest Email Channel Toggle */}
         <div
           style={{
@@ -232,7 +232,7 @@ function extractRawEmail(fromStr) {
           >
             <div>
               <div style={{ fontWeight: 700, fontSize: "15px", color: APP_SHELL.textPrimary }}>
-                Guest Email Notifications
+                {tr("guestEmailNotifications")}
               </div>
               <div
                 style={{
@@ -242,8 +242,7 @@ function extractRawEmail(fromStr) {
                   maxWidth: "420px",
                 }}
               >
-                When off, no emails are sent to guests (RSVP confirmations, blasts, reminders,
-                invites). Host login links and admin emails are unaffected.
+                {tr("whenOffNoEmailsAreSentToGuestsRsvp")}
               </div>
             </div>
             <button
@@ -298,11 +297,10 @@ function extractRawEmail(fromStr) {
                 margin: 0,
               }}
             >
-              Server Configuration & Email Delivery
+              {tr("serverConfigurationEmailDelivery")}
             </h3>
             <p style={{ color: APP_SHELL.textSecondary, fontSize: "13px", marginTop: "4px" }}>
-              Choose your email provider and configure settings (database config overrides env
-              variables).
+              {tr("chooseYourEmailProviderAndConfigureSettingsDatabaseConfig")}
             </p>
           </div>
 
@@ -322,7 +320,7 @@ function extractRawEmail(fromStr) {
                   marginBottom: "6px",
                 }}
               >
-                Email Provider
+                {tr("emailProvider")}
               </label>
               <select
                 value={emailProvider}
@@ -341,19 +339,19 @@ function extractRawEmail(fromStr) {
                 }}
               >
                 <option value="console" style={{ backgroundColor: "#12091f", color: "#ffffff" }}>
-                  Console Fallback (Local Dev / Logging)
+                  {tr("consoleFallbackLocalDevLogging")}
                 </option>
                 <option value="smtp" style={{ backgroundColor: "#12091f", color: "#ffffff" }}>
-                  SMTP Server
+                  {tr("smtpServer")}
                 </option>
                 <option value="cloudflare" style={{ backgroundColor: "#12091f", color: "#ffffff" }}>
-                  Cloudflare Workers
+                  {tr("cloudflareWorkers")}
                 </option>
                 <option
                   value="cloudflare_api"
                   style={{ backgroundColor: "#12091f", color: "#ffffff" }}
                 >
-                  Cloudflare Email REST API
+                  {tr("cloudflareEmailRestApi")}
                 </option>
               </select>
             </div>
@@ -368,12 +366,12 @@ function extractRawEmail(fromStr) {
                   marginBottom: "6px",
                 }}
               >
-                From Address
+                {tr("fromAddress")}
               </label>
               <input
                 type="text"
                 required
-                placeholder="e.g. RSVP to Me <noreply@yourdomain.com>"
+                placeholder={tr("eGRsvpToMeNoreplyYourdomainCom")}
                 value={emailFrom}
                 onChange={(e) => setEmailFrom(e.target.value)}
                 style={{
@@ -403,12 +401,12 @@ function extractRawEmail(fromStr) {
                         marginBottom: "6px",
                       }}
                     >
-                      SMTP Host
+                      {tr("smtpHost")}
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. smtp.gmail.com"
+                      placeholder={tr("eGSmtpGmailCom")}
                       value={smtpHost}
                       onChange={(e) => setSmtpHost(e.target.value)}
                       style={{
@@ -434,7 +432,7 @@ function extractRawEmail(fromStr) {
                         marginBottom: "6px",
                       }}
                     >
-                      SMTP Port
+                      {tr("smtpPort")}
                     </label>
                     <input
                       type="text"
@@ -472,7 +470,7 @@ function extractRawEmail(fromStr) {
                         color: APP_SHELL.textPrimary,
                       }}
                     >
-                      Use Secure Connection (SSL/TLS)
+                      {tr("useSecureConnectionSslTls")}
                     </div>
                     <div
                       style={{
@@ -481,7 +479,7 @@ function extractRawEmail(fromStr) {
                         marginTop: "2px",
                       }}
                     >
-                      Set true for port 465, false for 587 (STARTTLS).
+                      {tr("setTrueForPort465FalseFor587Starttls")}
                     </div>
                   </div>
                   <button
@@ -524,11 +522,11 @@ function extractRawEmail(fromStr) {
                       marginBottom: "6px",
                     }}
                   >
-                    SMTP Username (Optional)
+                    {tr("smtpUsernameOptional")}
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. user@gmail.com"
+                    placeholder={tr("eGUserGmailCom")}
                     value={smtpUser}
                     onChange={(e) => setSmtpUser(e.target.value)}
                     style={{
@@ -555,11 +553,11 @@ function extractRawEmail(fromStr) {
                       marginBottom: "6px",
                     }}
                   >
-                    SMTP Password (Optional)
+                    {tr("smtpPasswordOptional")}
                   </label>
                   <input
                     type="password"
-                    placeholder="Password"
+                    placeholder={tr("password")}
                     value={smtpPass}
                     onChange={(e) => setSmtpPass(e.target.value)}
                     style={{
@@ -596,10 +594,9 @@ function extractRawEmail(fromStr) {
                 >
                   <span style={{ fontSize: "16px" }}>⚠️</span>
                   <div>
-                    <strong>One-Way Outbound Only:</strong> Direct API sending does not deploy any
-                    code to Cloudflare. As a result, guest replies to invite emails will not trigger
-                    automatic worker-based auto-responses. Any replies will only follow standard
-                    email forwarding/routing rules configured in your Cloudflare dashboard.
+                    {tr.rich("oneWayOutboundOnlyDirectApiSendingDoesMessage", {
+                      part0: (chunks) => <strong>{chunks}</strong>,
+                    })}
                   </div>
                 </div>
 
@@ -613,12 +610,12 @@ function extractRawEmail(fromStr) {
                       marginBottom: "6px",
                     }}
                   >
-                    Cloudflare Account ID
+                    {tr("cloudflareAccountId")}
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. 1a2b3c4d5e6f..."
+                    placeholder={tr("eG1a2b3c4d5e6f")}
                     value={cfAccountId}
                     onChange={(e) => setCfAccountId(e.target.value)}
                     style={{
@@ -642,9 +639,9 @@ function extractRawEmail(fromStr) {
                       lineHeight: "1.4",
                     }}
                   >
-                    Your unique 32-character Cloudflare Account ID. You can find this on your
-                    Cloudflare Dashboard homepage (sidebar on the right under{" "}
-                    <strong>Account ID</strong>).
+                    {tr.rich("yourUnique32CharacterCloudflareAccountIdYouMessage", {
+                      part0: (chunks) => <strong>{chunks}</strong>,
+                    })}
                   </span>
                 </div>
 
@@ -658,13 +655,13 @@ function extractRawEmail(fromStr) {
                       marginBottom: "6px",
                     }}
                   >
-                    Cloudflare API Token
+                    {tr("cloudflareApiToken")}
                   </label>
                   <div style={{ position: "relative" }}>
                     <input
                       type={showCfApiToken ? "text" : "password"}
                       required
-                      placeholder="Cloudflare API Token"
+                      placeholder={tr("cloudflareApiToken")}
                       value={cfApiToken}
                       onChange={(e) => setCfApiToken(e.target.value)}
                       style={{
@@ -696,7 +693,7 @@ function extractRawEmail(fromStr) {
                         alignItems: "center",
                         justifyContent: "center",
                       }}
-                      title={showCfApiToken ? "Hide token" : "Show token"}
+                      title={showCfApiToken ? tr("hideToken") : tr("showToken")}
                     >
                       {showCfApiToken ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -710,7 +707,9 @@ function extractRawEmail(fromStr) {
                       lineHeight: "1.4",
                     }}
                   >
-                    An API Token with <strong>Account &gt; Email Sending: Edit</strong> permissions.
+                    {tr.rich("anApiTokenWithAccountGtEmailSendingMessage", {
+                      part0: (chunks) => <strong>{chunks}</strong>,
+                    })}
                   </span>
                 </div>
 
@@ -731,7 +730,7 @@ function extractRawEmail(fromStr) {
                       margin: "0 0 10px 0",
                     }}
                   >
-                    ⚡ Quick Dashboard Setup (No CLI Required)
+                    {tr("quickDashboardSetupNoCliRequired")}
                   </h4>
                   <ol
                     style={{
@@ -743,61 +742,76 @@ function extractRawEmail(fromStr) {
                     }}
                   >
                     <li style={{ marginBottom: "6px" }}>
-                      Log in to{" "}
-                      <a
-                        href="https://dash.cloudflare.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: APP_SHELL.accent, textDecoration: "underline" }}
-                      >
-                        dash.cloudflare.com
-                      </a>
-                      .
+                      {tr.rich("logInToDashCloudflareComMessage", {
+                        part0: (chunks) => (
+                          <a
+                            href="https://dash.cloudflare.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: APP_SHELL.accent, textDecoration: "underline" }}
+                          >
+                            {chunks}
+                          </a>
+                        ),
+                      })}
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      In the left sidebar, click on your domain (under <strong>Websites</strong>),
-                      then navigate to{" "}
-                      <strong>Email &gt; Email Routing &gt; Destination addresses</strong> to verify
-                      your email routing is configured.
+                      {tr.rich("inTheLeftSidebarClickOnYourDomainMessage", {
+                        part0: (chunks) => <strong>{chunks}</strong>,
+                        part1: (chunks) => <strong>{chunks}</strong>,
+                      })}
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Navigate to the <strong>Email Sending</strong> tab on the same page, click{" "}
-                      <strong>Configure</strong> or <strong>Get Started</strong>, and authorize the
-                      generated DNS records (DKIM/SPF) to allow sending.{" "}
-                      <strong>
-                        (CRITICAL: If you skip this, major providers like Gmail will reject your
-                        emails due to DMARC policies!)
-                      </strong>
+                      {tr.rich("navigateToTheEmailSendingTabOnTheMessage", {
+                        part0: (chunks) => <strong>{chunks}</strong>,
+                        part1: (chunks) => <strong>{chunks}</strong>,
+                        part2: (chunks) => <strong>{chunks}</strong>,
+                        part3: (chunks) => <strong>{chunks}</strong>,
+                      })}
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Go to <strong>My Profile &gt; API Tokens</strong> (top right user icon &gt; My
-                      Profile &gt; API Tokens).
+                      {tr.rich("goToMyProfileGtApiTokensTopMessage", {
+                        part0: (chunks) => <strong>{chunks}</strong>,
+                      })}
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Click <strong>Create Token</strong>. Scroll to the bottom and click{" "}
-                      <strong>Create Custom Token</strong>.
+                      {tr.rich("clickCreateTokenScrollToTheBottomAndMessage", {
+                        part0: (chunks) => <strong>{chunks}</strong>,
+                        part1: (chunks) => <strong>{chunks}</strong>,
+                      })}
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Give your token a name (e.g., <code>RSVP to Me API Token</code>).
+                      {tr.rich("giveYourTokenANameEGRsvpMessage", {
+                        part0: (chunks) => <code>{chunks}</code>,
+                      })}
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Under <strong>Permissions</strong>, select:
+                      {tr("under")} <strong>{tr("permissions2")}</strong>
+                      {tr("select")}
                       <ul style={{ paddingLeft: "16px", marginTop: "4px" }}>
                         <li style={{ marginBottom: "4px" }}>
-                          <strong>Account</strong> | <strong>Email Sending</strong> |{" "}
-                          <strong>Edit</strong>
+                          {tr.rich("accountEmailSendingEditMessage", {
+                            part0: (chunks) => <strong>{chunks}</strong>,
+                            part1: (chunks) => <strong>{chunks}</strong>,
+                            part2: (chunks) => <strong>{chunks}</strong>,
+                          })}
                         </li>
                       </ul>
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Under <strong>Account Resources</strong>, choose <strong>Include</strong> and
-                      select your account. Under <strong>Zone Resources</strong>, choose{" "}
-                      <strong>Include</strong> &gt; <strong>Specific zone</strong> &gt; select your
-                      domain.
+                      {tr.rich("underAccountResourcesChooseIncludeAndSelectYourMessage", {
+                        part0: (chunks) => <strong>{chunks}</strong>,
+                        part1: (chunks) => <strong>{chunks}</strong>,
+                        part2: (chunks) => <strong>{chunks}</strong>,
+                        part3: (chunks) => <strong>{chunks}</strong>,
+                        part4: (chunks) => <strong>{chunks}</strong>,
+                      })}
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Click <strong>Continue to summary</strong>, then click{" "}
-                      <strong>Create Token</strong>. Copy the token and paste it above!
+                      {tr.rich("clickContinueToSummaryThenClickCreateTokenMessage", {
+                        part0: (chunks) => <strong>{chunks}</strong>,
+                        part1: (chunks) => <strong>{chunks}</strong>,
+                      })}
                     </li>
                   </ol>
                 </div>
@@ -816,7 +830,7 @@ function extractRawEmail(fromStr) {
                       marginBottom: "6px",
                     }}
                   >
-                    Cloudflare Worker URL
+                    {tr("cloudflareWorkerUrl")}
                   </label>
                   <input
                     type="url"
@@ -851,10 +865,12 @@ function extractRawEmail(fromStr) {
                       lineHeight: "1.4",
                     }}
                   >
-                    The public HTTP endpoint of your worker. Usually formatted as{" "}
-                    <code>https://rsvp-email-worker.{suggestedSubdomain}.workers.dev</code>. You can
-                    find this in your Cloudflare Dashboard under your worker&apos;s{" "}
-                    <strong>Triggers</strong> or <strong>Routes</strong> tab.
+                    {tr.rich("thePublicHttpEndpointOfYourWorkerUsuallyMessage", {
+                      part0: (chunks) => <code>{chunks}</code>,
+                      part1: (chunks) => <strong>{chunks}</strong>,
+                      part2: (chunks) => <strong>{chunks}</strong>,
+                      value0: suggestedSubdomain,
+                    })}
                   </span>
                 </div>
 
@@ -868,14 +884,14 @@ function extractRawEmail(fromStr) {
                       marginBottom: "6px",
                     }}
                   >
-                    Worker API Secret (WORKER_API_SECRET)
+                    {tr("workerApiSecretWorkerApiSecret")}
                   </label>
                   <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                     <div style={{ position: "relative", flex: 1 }}>
                       <input
                         type={showSecret ? "text" : "password"}
                         required
-                        placeholder="API Secret Token"
+                        placeholder={tr("apiSecretToken")}
                         value={cfWorkerSecret}
                         onChange={(e) => setCfWorkerSecret(e.target.value)}
                         style={{
@@ -907,7 +923,7 @@ function extractRawEmail(fromStr) {
                           alignItems: "center",
                           justifyContent: "center",
                         }}
-                        title={showSecret ? "Hide secret" : "Show secret"}
+                        title={showSecret ? tr("hideSecret") : tr("showSecret")}
                       >
                         {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -946,7 +962,7 @@ function extractRawEmail(fromStr) {
                         if (cfWorkerSecret && !secretCopied)
                           e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.08)";
                       }}
-                      title="Copy secret to clipboard"
+                      title={tr("copySecretToClipboard")}
                     >
                       {secretCopied ? "✓" : "📋"}
                     </button>
@@ -990,7 +1006,7 @@ function extractRawEmail(fromStr) {
                         (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.08)")
                       }
                     >
-                      ⚡ Generate
+                      {tr("generate")}
                     </button>
                   </div>
                   <span
@@ -1002,8 +1018,9 @@ function extractRawEmail(fromStr) {
                       lineHeight: "1.4",
                     }}
                   >
-                    A secure token used to authenticate Next.js requests to your worker. Click{" "}
-                    <strong>Generate</strong> to create one, then copy it.
+                    {tr.rich("aSecureTokenUsedToAuthenticateNextJsMessage", {
+                      part0: (chunks) => <strong>{chunks}</strong>,
+                    })}
                   </span>
                 </div>
 
@@ -1017,12 +1034,12 @@ function extractRawEmail(fromStr) {
                       marginBottom: "6px",
                     }}
                   >
-                    Admin Fallback Email (INBOUND_FORWARD_TO)
+                    {tr("adminFallbackEmailInboundForwardTo")}
                   </label>
                   <input
                     type="email"
                     required
-                    placeholder="e.g. admin@domain.com"
+                    placeholder={tr("eGAdminDomainCom")}
                     value={cfInboundForwardTo}
                     onChange={(e) => setCfInboundForwardTo(e.target.value)}
                     style={{
@@ -1046,11 +1063,7 @@ function extractRawEmail(fromStr) {
                       lineHeight: "1.4",
                     }}
                   >
-                    By default, guest replies go dynamically to each event host&apos;s email (using
-                    the Reply-To header). This address is a catch-all fallback used only if a guest
-                    replies directly to the From address (e.g., noreply@yourdomain.com). Because
-                    Cloudflare Email Routing only forwards to verified destination addresses, this
-                    fallback email must be verified in your Cloudflare settings.
+                    {tr("byDefaultGuestRepliesGoDynamicallyToEachEvent")}
                   </span>
                 </div>
 
@@ -1071,7 +1084,7 @@ function extractRawEmail(fromStr) {
                       margin: "0 0 10px 0",
                     }}
                   >
-                    ⚡ Quick Browser Setup (No CLI Required)
+                    {tr("quickBrowserSetupNoCliRequired")}
                   </h4>
                   <ol
                     style={{
@@ -1083,31 +1096,33 @@ function extractRawEmail(fromStr) {
                     }}
                   >
                     <li style={{ marginBottom: "6px" }}>
-                      Log in to{" "}
-                      <a
-                        href="https://dash.cloudflare.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: APP_SHELL.accent, textDecoration: "underline" }}
-                      >
-                        dash.cloudflare.com
-                      </a>{" "}
-                      (sign up for a free account if you haven&apos;t already).
+                      {tr.rich("logInToDashCloudflareComSignUpMessage", {
+                        part0: (chunks) => (
+                          <a
+                            href="https://dash.cloudflare.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: APP_SHELL.accent, textDecoration: "underline" }}
+                          >
+                            {chunks}
+                          </a>
+                        ),
+                      })}
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Go to{" "}
-                      <strong>
-                        Websites &gt; [Your Domain] &gt; Email &gt; Email Routing &gt; Email Workers
-                      </strong>
-                      .
+                      {tr.rich("goToWebsitesGtYourDomainGtEmailMessage", {
+                        part0: (chunks) => <strong>{chunks}</strong>,
+                      })}
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Click <strong>Create Email Worker</strong>, name it{" "}
-                      <code>rsvp-email-worker</code>, and select <strong>Create my own</strong>{" "}
-                      (which opens the online code editor).
+                      {tr.rich("clickCreateEmailWorkerNameItRsvpEmailMessage", {
+                        part0: (chunks) => <strong>{chunks}</strong>,
+                        part1: (chunks) => <code>{chunks}</code>,
+                        part2: (chunks) => <strong>{chunks}</strong>,
+                      })}
                     </li>
                     <li style={{ marginBottom: "8px" }}>
-                      Click the button below to copy or view the worker code:
+                      {tr("clickTheButtonBelowToCopyOrViewThe")}
                     </li>
                   </ol>
 
@@ -1141,7 +1156,7 @@ function extractRawEmail(fromStr) {
                         gap: "6px",
                       }}
                     >
-                      {copied ? "✓ Copied!" : "📋 Copy Worker Code"}
+                      {copied ? tr("copied") : tr("copyWorkerCode")}
                     </button>
 
                     <button
@@ -1168,7 +1183,8 @@ function extractRawEmail(fromStr) {
                         (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.08)")
                       }
                     >
-                      <span>&lt;/&gt;</span> {showCode ? "Hide Worker Code" : "View Worker Code"}
+                      <span>{tr("ltGt")}</span>{" "}
+                      {showCode ? tr("hideWorkerCode") : tr("viewWorkerCode")}
                     </button>
                   </div>
 
@@ -1207,77 +1223,92 @@ function extractRawEmail(fromStr) {
                     }}
                   >
                     <li style={{ marginBottom: "6px" }}>
-                      Delete everything in the Cloudflare editor, paste the copied code, and click{" "}
-                      <strong>Save and Deploy</strong>.
+                      {tr.rich("deleteEverythingInTheCloudflareEditorPasteTheMessage", {
+                        part0: (chunks) => <strong>{chunks}</strong>,
+                      })}
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Copy your worker&apos;s public URL (found under your worker&apos;s{" "}
-                      <strong>Overview</strong> or <strong>Triggers</strong> tab, e.g.{" "}
-                      <code>https://rsvp-email-worker.{suggestedSubdomain}.workers.dev</code>) and
-                      paste it into the <strong>Cloudflare Worker URL</strong> input field at the
-                      top of this settings page.
+                      {tr.rich("copyYourWorkerSPublicUrlFoundUnderMessage", {
+                        part0: (chunks) => <strong>{chunks}</strong>,
+                        part1: (chunks) => <strong>{chunks}</strong>,
+                        part2: (chunks) => <code>{chunks}</code>,
+                        part3: (chunks) => <strong>{chunks}</strong>,
+                        value0: suggestedSubdomain,
+                      })}
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Go to the Cloudflare main dashboard and click on{" "}
-                      <strong>Workers & Pages</strong> (left-hand sidebar) &gt; click your worker (
-                      <code>rsvp-email-worker</code>) &gt; select the <strong>Settings</strong> tab
-                      &gt; select <strong>Variables</strong> in the settings menu.
+                      {tr.rich("goToTheCloudflareMainDashboardAndClickMessage", {
+                        part0: (chunks) => <strong>{chunks}</strong>,
+                        part1: (chunks) => <code>{chunks}</code>,
+                        part2: (chunks) => <strong>{chunks}</strong>,
+                        part3: (chunks) => <strong>{chunks}</strong>,
+                      })}
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Under the <strong>Environment Variables</strong> table:
+                      {tr("underThe")} <strong>{tr("environmentVariables")}</strong> {tr("table")}
                       <ul style={{ paddingLeft: "16px", marginTop: "4px" }}>
                         <li style={{ marginBottom: "4px" }}>
-                          Click the <strong>Edit variables</strong> button first (required before
-                          you can add or change variables).
+                          {tr.rich("clickTheEditVariablesButtonFirstRequiredBeforeMessage", {
+                            part0: (chunks) => <strong>{chunks}</strong>,
+                          })}
                         </li>
                         <li style={{ marginBottom: "4px" }}>
-                          Click <strong>Add variable</strong>: set Name to{" "}
-                          <code>WORKER_API_SECRET</code>, select Type as <strong>Secret</strong>{" "}
-                          (using the dropdown or padlock icon), and paste your{" "}
-                          <strong>Worker API Secret</strong> from above.
+                          {tr.rich("clickAddVariableSetNameToWorkerApiMessage", {
+                            part0: (chunks) => <strong>{chunks}</strong>,
+                            part1: (chunks) => <code>{chunks}</code>,
+                            part2: (chunks) => <strong>{chunks}</strong>,
+                            part3: (chunks) => <strong>{chunks}</strong>,
+                          })}
                         </li>
                         <li style={{ marginBottom: "4px" }}>
-                          Click <strong>Add variable</strong> again: set Name to{" "}
-                          <code>INBOUND_FORWARD_TO</code>, leave Type as <strong>Text</strong>, and
-                          paste your <strong>Admin Fallback Email</strong> (e.g.{" "}
-                          <code>{cfInboundForwardTo || "your-email@domain.com"}</code>).
+                          {tr("click")} <strong>{tr("addVariable")}</strong> {tr("againSetNameTo")}{" "}
+                          <code>{tr("inboundForwardTo")}</code>
+                          {tr("leaveTypeAs")} <strong>{tr("text")}</strong>
+                          {tr("andPasteYour")} <strong>{tr("adminFallbackEmail")}</strong>{" "}
+                          {tr("eG")} <code>{cfInboundForwardTo || "your-email@domain.com"}</code>).
                         </li>
                       </ul>
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Scroll down to the <strong>Bindings</strong> section on the same page:
+                      {tr("scrollDownToThe")} <strong>{tr("bindings")}</strong>{" "}
+                      {tr("sectionOnTheSamePage")}
                       <ul style={{ paddingLeft: "16px", marginTop: "4px" }}>
                         <li style={{ marginBottom: "4px" }}>
-                          Click <strong>Add binding</strong>.
+                          {tr.rich("clickAddBindingMessage", {
+                            part0: (chunks) => <strong>{chunks}</strong>,
+                          })}
                         </li>
                         <li style={{ marginBottom: "4px" }}>
-                          Select <strong>Email Service</strong> from the Type dropdown.
+                          {tr.rich("selectEmailServiceFromTheTypeDropdownMessage", {
+                            part0: (chunks) => <strong>{chunks}</strong>,
+                          })}
                         </li>
                         <li style={{ marginBottom: "4px" }}>
-                          Set the Name to <code>EMAIL</code> (must be all capital letters).
+                          {tr.rich("setTheNameToEmailMustBeAllMessage", {
+                            part0: (chunks) => <code>{chunks}</code>,
+                          })}
                         </li>
                         <li style={{ marginBottom: "4px" }}>
-                          <em>
-                            Note: Do not enter anything for Value. Once saved, it will display as a
-                            dash (<code>—</code>), which is correct and expected.
-                          </em>
+                          {tr.rich("noteDoNotEnterAnythingForValueOnceMessage", {
+                            part0: (chunks) => <em>{chunks}</em>,
+                            part1: (chunks) => <code>{chunks}</code>,
+                          })}
                         </li>
                       </ul>
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Click the <strong>Save and deploy</strong> button at the bottom of the page to
-                      apply all variables and bindings.
+                      {tr.rich("clickTheSaveAndDeployButtonAtTheMessage", {
+                        part0: (chunks) => <strong>{chunks}</strong>,
+                      })}
                     </li>
                     <li style={{ marginBottom: "6px" }}>
-                      Go to your domain dashboard under{" "}
-                      <strong>
-                        Websites &gt; [Your Domain] &gt; Email &gt; Email Routing &gt; Routes
-                      </strong>
-                      , and click <strong>Add Route</strong>:
+                      {tr("goToYourDomainDashboardUnder")}{" "}
+                      <strong>{tr("websitesGtYourDomainGtEmailGtEmailRouting2")}</strong>
+                      {tr("andClick")} <strong>{tr("addRoute")}</strong>:
                       <ul style={{ paddingLeft: "16px", marginTop: "4px" }}>
                         <li style={{ marginBottom: "4px" }}>
-                          <strong>Custom address</strong>: Enter your preferred custom sender
-                          address (e.g.,{" "}
+                          <strong>{tr("customAddress")}</strong>
+                          {tr("enterYourPreferredCustomSenderAddressEG")}{" "}
                           <code>
                             {emailFrom.match(/<([^>]+)>/)?.[1] ||
                               emailFrom ||
@@ -1286,14 +1317,21 @@ function extractRawEmail(fromStr) {
                           ).
                         </li>
                         <li style={{ marginBottom: "4px" }}>
-                          <strong>Action</strong>: Select <strong>Send to Worker</strong>.
+                          {tr.rich("actionSelectSendToWorkerMessage", {
+                            part0: (chunks) => <strong>{chunks}</strong>,
+                            part1: (chunks) => <strong>{chunks}</strong>,
+                          })}
                         </li>
                         <li style={{ marginBottom: "4px" }}>
-                          <strong>Destination worker</strong>: Select <code>rsvp-email-worker</code>
-                          .
+                          {tr.rich("destinationWorkerSelectRsvpEmailWorkerMessage", {
+                            part0: (chunks) => <strong>{chunks}</strong>,
+                            part1: (chunks) => <code>{chunks}</code>,
+                          })}
                         </li>
                         <li style={{ marginBottom: "4px" }}>
-                          Click <strong>Save</strong>.
+                          {tr.rich("clickSaveMessage", {
+                            part0: (chunks) => <strong>{chunks}</strong>,
+                          })}
                         </li>
                       </ul>
                     </li>
@@ -1327,7 +1365,7 @@ function extractRawEmail(fromStr) {
                   opacity: isPending || isTestingEmail ? 0.6 : 1,
                 }}
               >
-                {isTestingEmail ? "Testing..." : "Test Connection"}
+                {isTestingEmail ? tr("testing") : tr("testConnection")}
               </button>
 
               <button
@@ -1345,17 +1383,14 @@ function extractRawEmail(fromStr) {
                   opacity: isPending || isTestingEmail ? 0.6 : 1,
                 }}
               >
-                Save Settings
+                {tr("saveSettings")}
               </button>
             </div>
           </form>
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection
-        title="Email Templates"
-        subtitle="Customize copy and content blocks, preview each themed email, and send yourself a test"
-      >
+      <CollapsibleSection title={tr("emailTemplates")} subtitle={tr("EmailTab.templatesSubtitle")}>
         <div
           style={{
             ...appCardStyle,

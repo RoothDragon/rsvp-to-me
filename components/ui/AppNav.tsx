@@ -1,3 +1,5 @@
+import type { Locale } from "@/i18n/config";
+import LanguageSelector from "./LanguageSelector";
 import { APP_SHELL } from "@/lib/theme";
 import ProfileDropdown, { type DropdownUser } from "@/components/ui/ProfileDropdown";
 
@@ -35,7 +37,15 @@ export function AppNavLogo({
   style?: React.CSSProperties;
 }) {
   return (
-    <nav style={{ ...navBase, justifyContent: "space-between", gap: "12px", ...style }}>
+    <nav
+      style={{
+        ...navBase,
+        direction: "ltr",
+        justifyContent: "space-between",
+        gap: "12px",
+        ...style,
+      }}
+    >
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
         {leading}
         <a
@@ -59,16 +69,18 @@ export function AppNavLogo({
 
 export function AppTopNav({
   user,
+  onLocaleChange,
   href,
   variant = "default",
 }: {
   user: DropdownUser | null;
+  onLocaleChange?: (locale: Locale) => Promise<void>;
   href?: string;
   variant?: "default" | "fixed" | "event-overlay";
 }) {
   const variantStyle =
     variant === "default"
-      ? undefined
+      ? { background: APP_SHELL.pageBg, color: APP_SHELL.textPrimary }
       : {
           ...fixedNavStyle,
           ...(variant === "event-overlay"
@@ -83,7 +95,12 @@ export function AppTopNav({
   return (
     <AppNavLogo
       href={href ?? (user ? "/dashboard" : "/")}
-      trailing={<ProfileDropdown user={user} />}
+      trailing={
+        <div style={{ display: "flex", alignItems: "center", gap: 4, height: 36 }}>
+          <LanguageSelector onLocaleChange={onLocaleChange} />
+          <ProfileDropdown user={user} />
+        </div>
+      }
       style={variantStyle}
     />
   );

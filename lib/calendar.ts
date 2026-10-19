@@ -105,17 +105,18 @@ export function buildIcsContent(ev: CalendarEventInput): string {
 export function formatEventDateTime(
   startAt: Date,
   endAt: Date | null | undefined,
-  timezone: string | undefined
+  timezone: string | undefined,
+  locale: string = "en-US"
 ): { date: string; time: string } {
   const tz = timezone || "America/New_York";
-  const date = new Intl.DateTimeFormat("en-US", {
+  const date = new Intl.DateTimeFormat(locale, {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
     timeZone: tz,
   }).format(startAt);
-  const timeFmt = new Intl.DateTimeFormat("en-US", {
+  const timeFmt = new Intl.DateTimeFormat(locale, {
     hour: "numeric",
     minute: "2-digit",
     timeZoneName: "short",

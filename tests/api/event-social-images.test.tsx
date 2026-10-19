@@ -6,6 +6,14 @@ vi.mock("@/lib/db", () => ({
   db: { event: { findUnique } },
 }));
 
+vi.mock("@/i18n/server", async () => {
+  const { createTranslator } = await import("next-intl");
+  const messages = (await import("@/messages/en-US.json")).default;
+  return {
+    getRequestLocale: async () => "en-US",
+    getRequestTranslator: async () => createTranslator({ locale: "en-US", messages }),
+  };
+});
 import OpenGraphImage, {
   contentType as openGraphContentType,
   size as openGraphSize,

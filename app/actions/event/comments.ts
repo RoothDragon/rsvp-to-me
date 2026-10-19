@@ -1,5 +1,7 @@
 "use server";
 
+import { eventActionMessage } from "./localization";
+
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
@@ -26,7 +28,8 @@ export async function addComment(rawInput: unknown, captchaToken?: string | null
       coHosts: { select: { userId: true } },
     },
   });
-  if (!event?.commentsEnabled) return { success: false, error: "Comments disabled" };
+  if (!event?.commentsEnabled)
+    return { success: false, error: await eventActionMessage("commentsDisabled") };
 
   // SEC-17: authorize the author and derive the stored display name server-side.
   // Mirrors the castVote / claimPotluckItem authorization shape — host/co-host/
@@ -60,7 +63,7 @@ export async function addComment(rawInput: unknown, captchaToken?: string | null
       // A guest with an RSVP comments under their RSVP name, but only once the
       // host has approved it — a pending RSVP can view but not comment.
       if (!rsvp.approved) {
-        return { success: false, error: "You must be an approved guest to comment." };
+        return { success: false, error: await eventActionMessage("commentApprovalRequired") };
       }
       guestName = rsvp.guestName;
       rsvpId = rsvp.id;
@@ -68,7 +71,7 @@ export async function addComment(rawInput: unknown, captchaToken?: string | null
       // No RSVP and no host/co-host relationship to a PRIVATE event — this is
       // the SEC-17 case: a logged-in user must not comment on an event they
       // have no access to.
-      return { success: false, error: "You must be an approved guest to comment." };
+      return { success: false, error: await eventActionMessage("commentApprovalRequired") };
     } else {
       // PUBLIC / UNLISTED events are viewable by anyone, so a logged-in user
       // with no RSVP may comment under their own verified identity (name taken
@@ -85,7 +88,7 @@ export async function addComment(rawInput: unknown, captchaToken?: string | null
     // taken from the matched approved RSVP row, never the client `guestName`.
     const rsvp = await findApprovedGuestByToken(data.guestEditToken, data.eventId);
     if (!rsvp) {
-      return { success: false, error: "A valid approved RSVP is required to comment." };
+      return { success: false, error: await eventActionMessage("commentRsvpRequired") };
     }
     guestName = rsvp.guestName;
     rsvpId = rsvp.id;
@@ -100,7 +103,7 @@ export async function addComment(rawInput: unknown, captchaToken?: string | null
       select: { id: true },
     });
     if (!parent) {
-      return { success: false, error: "Invalid parent comment." };
+      return { success: false, error: await eventActionMessage("invalidParentComment") };
     }
     parentId = parent.id;
   }

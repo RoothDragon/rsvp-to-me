@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import type { ResolvedTheme } from "@/lib/theme";
 import type { ReminderOverrides } from "./types";
 import { Label, Section, Toggle } from "./ui";
@@ -41,24 +43,25 @@ export function RemindersPanel({
   triggerSaveReminders: (overrides: ReminderOverrides) => void;
   t: ResolvedTheme;
 }) {
+  const translate = useTranslations("Ui.Event.RemindersPanel");
+
   return (
-    <Section title="Auto-Reminders" t={t}>
+    <Section title={translate("autoReminders")} t={t}>
       {!channelConfig.email && !channelConfig.sms ? (
         <div style={{ fontSize: "13px", color: t.textMuted }}>
-          Reminders require at least one messaging channel. Enable email or SMS in admin settings to
-          configure reminders.
+          {translate("remindersRequireAtLeastOneMessaging")}
         </div>
       ) : (
         <>
           <div style={{ fontSize: "13px", color: t.textMuted, marginBottom: "16px" }}>
             {channelConfig.email && channelConfig.sms
-              ? "Reminders are sent to guests who provided their email or phone number."
+              ? translate("remindersSentGuestsWhoProvidedTheir")
               : channelConfig.email
-                ? "Reminders are sent to guests who provided their email address."
-                : "Reminders are sent to guests who provided their phone number."}
+                ? translate("remindersSentGuestsWhoProvidedTheir2")
+                : translate("remindersSentGuestsWhoProvidedTheir3")}
           </div>
           <Toggle
-            label="Nudge guests who haven't RSVP'd (3 days before)"
+            label={translate("nudgeGuestsWhoHavenTRsvp")}
             value={nudgeUnresponded}
             onChange={(val) => {
               setNudgeUnresponded(val);
@@ -68,9 +71,9 @@ export function RemindersPanel({
           />
           {channelConfig.email && (
             <div style={{ marginBottom: "20px" }}>
-              <Label t={t}>Email reminders</Label>
+              <Label t={t}>{translate("emailReminders")}</Label>
               <Toggle
-                label="1 week before"
+                label={translate("1WeekBefore")}
                 value={emailWeekBefore}
                 onChange={(val) => {
                   setEmailWeekBefore(val);
@@ -79,7 +82,7 @@ export function RemindersPanel({
                 t={t}
               />
               <Toggle
-                label="1 day before"
+                label={translate("1DayBefore")}
                 value={emailDayBefore}
                 onChange={(val) => {
                   setEmailDayBefore(val);
@@ -96,7 +99,7 @@ export function RemindersPanel({
                 }}
               >
                 <span style={{ fontSize: "14px", color: t.textSecondary, flex: 1 }}>
-                  Hours before
+                  {translate("hoursBefore")}
                 </span>
                 <select
                   value={emailHoursBefore}
@@ -116,19 +119,19 @@ export function RemindersPanel({
                     cursor: "pointer",
                   }}
                 >
-                  <option value={0}>Off</option>
-                  <option value={1}>1 hour</option>
-                  <option value={2}>2 hours</option>
-                  <option value={4}>4 hours</option>
+                  <option value={0}>{translate("off")}</option>
+                  <option value={1}>{translate("1Hour")}</option>
+                  <option value={2}>{translate("2Hours")}</option>
+                  <option value={4}>{translate("4Hours")}</option>
                 </select>
               </div>
             </div>
           )}
           {channelConfig.sms && (
             <div style={{ marginBottom: "20px" }}>
-              <Label t={t}>SMS reminders</Label>
+              <Label t={t}>{translate("smsReminders")}</Label>
               <Toggle
-                label="1 week before"
+                label={translate("1WeekBefore")}
                 value={smsWeekBefore}
                 onChange={(val) => {
                   setSmsWeekBefore(val);
@@ -137,7 +140,7 @@ export function RemindersPanel({
                 t={t}
               />
               <Toggle
-                label="1 day before"
+                label={translate("1DayBefore")}
                 value={smsDayBefore}
                 onChange={(val) => {
                   setSmsDayBefore(val);
@@ -154,7 +157,7 @@ export function RemindersPanel({
                 }}
               >
                 <span style={{ fontSize: "14px", color: t.textSecondary, flex: 1 }}>
-                  Hours before
+                  {translate("hoursBefore")}
                 </span>
                 <select
                   value={smsHoursBefore}
@@ -174,9 +177,9 @@ export function RemindersPanel({
                     cursor: "pointer",
                   }}
                 >
-                  <option value={0}>Off</option>
-                  <option value={1}>1 hour</option>
-                  <option value={2}>2 hours</option>
+                  <option value={0}>{translate("off")}</option>
+                  <option value={1}>{translate("1Hour")}</option>
+                  <option value={2}>{translate("2Hours")}</option>
                 </select>
               </div>
             </div>

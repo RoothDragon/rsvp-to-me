@@ -1,8 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useTransition, useEffect, useMemo } from "react";
 import { ArrowLeft, Check } from "lucide-react";
-import { AppTopNav } from "@/components/ui/AppNav";
 import { type BaseTheme, resolveTheme, getSortedPresets, getDefaultCardOpacity } from "@/lib/theme";
 import {
   DEFAULT_EFFECT_DENSITY,
@@ -75,6 +76,8 @@ export function SettingsPage({
   sessionUser?: SessionUser | null;
   channelConfig?: { email: boolean; sms: boolean };
 }) {
+  const translate = useTranslations("Ui.Event.SettingsPage");
+
   const [isPending, startTransition] = useTransition();
   const { runWithCaptcha } = useCaptcha();
   const [saveStatus, setSaveStatus] = useState<"IDLE" | "SAVING" | "SAVED" | "ERROR">("IDLE");
@@ -307,7 +310,7 @@ export function SettingsPage({
         setSaveStatus("SAVED");
       } catch {
         setSaveStatus("ERROR");
-        setErr("Failed to save theme settings.");
+        setErr(translate("failedSaveThemeSettings"));
       }
     });
   };
@@ -376,13 +379,13 @@ export function SettingsPage({
         );
         if (res && !res.success) {
           setSaveStatus("ERROR");
-          setErr(res.error ?? "Failed to save settings.");
+          setErr(res.error ?? translate("failedSaveSettings"));
         } else {
           setSaveStatus("SAVED");
         }
       } catch {
         setSaveStatus("ERROR");
-        setErr("Failed to save settings.");
+        setErr(translate("failedSaveSettings"));
       }
     });
   };
@@ -414,7 +417,7 @@ export function SettingsPage({
         setSaveStatus("SAVED");
       } catch {
         setSaveStatus("ERROR");
-        setErr("Failed to save reminders.");
+        setErr(translate("failedSaveReminders"));
       }
     });
   };
@@ -429,7 +432,7 @@ export function SettingsPage({
           addCoHost(event.id, cohostEmail.trim(), token)
         );
         if (!result.success) {
-          setCohostError(result.error ?? "Error adding co-host");
+          setCohostError(result.error ?? translate("errorAddingCoHost"));
           setSaveStatus("ERROR");
           return;
         }
@@ -443,7 +446,7 @@ export function SettingsPage({
         setCohostEmail("");
         setSaveStatus("SAVED");
       } catch {
-        setCohostError("An unexpected error occurred.");
+        setCohostError(translate("unexpectedErrorOccurred"));
         setSaveStatus("ERROR");
       }
     });
@@ -870,7 +873,6 @@ export function SettingsPage({
       <EventAtmosphere theme={t} effect={activeEffect} />
 
       {/* ── Global nav ── */}
-      <AppTopNav user={sessionUser} variant="fixed" />
 
       {/* ── Settings sub-nav ── */}
       <div style={S.header}>
@@ -906,23 +908,23 @@ export function SettingsPage({
           {activeSection ? (
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <span style={{ cursor: "pointer", opacity: 0.6 }} onClick={closeSection}>
-                Settings
+                {translate("settings")}
               </span>
               <span style={{ opacity: 0.4 }}>/</span>
               <span>
-                {activeSection === "theme" && "Theme"}
-                {activeSection === "hosts" && "Hosts"}
-                {activeSection === "rsvp" && "RSVP Options"}
-                {activeSection === "questionnaire" && "Questionnaire"}
-                {activeSection === "polls" && "Polls"}
-                {activeSection === "potluck" && "Potluck"}
-                {activeSection === "privacy" && "Display Options"}
-                {activeSection === "reminders" && "Auto-Reminders"}
-                {activeSection === "emails" && "Emails"}
+                {activeSection === "theme" && translate("theme")}
+                {activeSection === "hosts" && translate("hosts")}
+                {activeSection === "rsvp" && translate("rsvpOptions")}
+                {activeSection === "questionnaire" && translate("questionnaire")}
+                {activeSection === "polls" && translate("polls")}
+                {activeSection === "potluck" && translate("potluck")}
+                {activeSection === "privacy" && translate("displayOptions")}
+                {activeSection === "reminders" && translate("autoReminders")}
+                {activeSection === "emails" && translate("emails")}
               </span>
             </div>
           ) : (
-            "Event Settings"
+            translate("eventSettings")
           )}
         </h1>
         {saveStatus === "SAVING" && (
@@ -947,7 +949,7 @@ export function SettingsPage({
                 boxSizing: "border-box",
               }}
             />
-            Saving...
+            {translate("saving")}
           </div>
         )}
       </div>
@@ -977,7 +979,7 @@ export function SettingsPage({
           }}
         >
           {saveStatus === "SAVED" ? <Check size={16} color="#22c55e" /> : <span>⚠️</span>}
-          {saveStatus === "SAVED" ? "Changes saved" : "Error saving changes"}
+          {saveStatus === "SAVED" ? translate("changesSaved") : translate("errorSavingChanges")}
         </div>
       )}
 

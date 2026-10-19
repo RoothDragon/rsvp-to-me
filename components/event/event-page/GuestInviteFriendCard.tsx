@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Mail } from "lucide-react";
 import { useState, useTransition } from "react";
 import { inviteFriendAsGuest } from "@/app/actions/event";
@@ -16,6 +18,8 @@ export function GuestInviteFriendCard({
   guestToken: string;
   theme: ResolvedTheme;
 }) {
+  const translate = useTranslations("Ui.Event.GuestInviteFriendCard");
+
   const [target, setTarget] = useState("");
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
@@ -38,10 +42,10 @@ export function GuestInviteFriendCard({
           return;
         }
         setStatus("error");
-        setErrorMsg(res.error ?? "Failed to send invitation");
+        setErrorMsg(res.error ?? translate("failedSendInvitation"));
       } catch (reason) {
         setStatus("error");
-        setErrorMsg(reason instanceof Error ? reason.message : "Security check failed");
+        setErrorMsg(reason instanceof Error ? reason.message : translate("securityCheckFailed"));
       }
     });
   };
@@ -57,12 +61,11 @@ export function GuestInviteFriendCard({
             color: t.textPrimary,
           }}
         >
-          Invite a friend
+          {translate("inviteFriend")}
         </span>
       </div>
       <p style={{ fontSize: "13px", color: t.textSecondary, margin: "0 0 12px", lineHeight: 1.4 }}>
-        This event is private. You can invite friends by entering their email address or phone
-        number below:
+        {translate("eventPrivateCanInviteFriendsBy")}
       </p>
       <div style={{ display: "flex", gap: "8px", width: "100%" }}>
         <input
@@ -78,7 +81,7 @@ export function GuestInviteFriendCard({
             outline: "none",
             boxSizing: "border-box",
           }}
-          placeholder="friend@email.com or +15551234567"
+          placeholder={translate("friendEmailComOr15551234567")}
           value={target}
           disabled={isPending}
           onChange={(e) => setTarget(e.target.value)}
@@ -104,12 +107,12 @@ export function GuestInviteFriendCard({
             whiteSpace: "nowrap",
           }}
         >
-          {isPending ? "Sending…" : "Send"}
+          {isPending ? translate("sending") : translate("send")}
         </button>
       </div>
       {status === "success" && (
         <div style={{ fontSize: "12.5px", color: "#4ade80", fontWeight: 600, marginTop: "8px" }}>
-          ✓ Invitation sent successfully!
+          {translate("invitationSentSuccessfully")}
         </div>
       )}
       {status === "error" && (

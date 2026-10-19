@@ -1,3 +1,7 @@
+import { cookies } from "next/headers";
+import { LOCALE_COOKIE } from "@/i18n/config";
+import { adoptLoginLocale, writeLocaleCookie } from "@/i18n/preferences";
+import { getRequestTranslator } from "@/i18n/server";
 import { randomBytes } from "crypto";
 import { db } from "./db";
 import { createSession } from "./session";
@@ -138,6 +142,9 @@ export async function verifyMagicToken(token: string): Promise<boolean> {
     }
   }
 
+  const locale = await adoptLoginLocale(user, (await cookies()).get(LOCALE_COOKIE)?.value);
+  if (locale) await writeLocaleCookie(locale);
+
   // Auto-link any matching RSVPs
   await linkRsvpsToUser(user.id);
 
@@ -152,41 +159,42 @@ export async function verifyMagicToken(token: string): Promise<boolean> {
 export async function verifyChangeToken(
   token: string
 ): Promise<{ success: boolean; error?: string; type?: "EMAIL" | "PHONE"; newValue?: string }> {
+  const t = await getRequestTranslator();
   if (token.length > 128) {
-    return { success: false, error: "Invalid, used, or expired verification link." };
+    return { success: false, error: t("Ui.Errors.Auth.invalidLink") };
   }
   const hashedToken = hashToken(token);
   const record = await db.magicToken.findUnique({ where: { token: hashedToken } });
 
   if (!record || record.used || record.expiresAt < new Date()) {
-    return { success: false, error: "Invalid, used, or expired verification link." };
+    return { success: false, error: t("Ui.Errors.Auth.invalidLink") };
   }
 
   if (record.type === "LOGIN") {
-    return { success: false, error: "This link is for signing in, not for profile updates." };
+    return { success: false, error: t("Ui.Errors.Auth.loginLink") };
   }
 
   const user = await db.user.findUnique({ where: { id: record.userId } });
   if (!user) {
-    return { success: false, error: "User not found." };
+    return { success: false, error: t("Ui.Errors.Auth.userNotFound") };
   }
 
   const isEmail = record.type === "EMAIL_CHANGE";
   const newValue = record.metadata;
   if (!newValue) {
-    return { success: false, error: "Invalid request metadata." };
+    return { success: false, error: t("Ui.Errors.Auth.invalidMetadata") };
   }
 
   // Check for conflicts before consuming the token so it isn't burned on a recoverable error
   if (isEmail) {
     const existing = await db.user.findFirst({ where: { email: newValue, NOT: { id: user.id } } });
     if (existing) {
-      return { success: false, error: "An account with this email already exists." };
+      return { success: false, error: t("Ui.Errors.Auth.emailExists") };
     }
   } else {
     const existing = await db.user.findFirst({ where: { phone: newValue, NOT: { id: user.id } } });
     if (existing) {
-      return { success: false, error: "An account with this phone number already exists." };
+      return { success: false, error: t("Ui.Errors.Auth.phoneExists") };
     }
   }
 
@@ -229,6 +237,7 @@ export async function registerHost(
   name: string,
   inviteCode: string
 ): Promise<{ success: boolean; error?: string }> {
+  const t = await getRequestTranslator();
   const normalizedEmail = email.toLowerCase().trim();
   const openRegistration = await isOpenRegistrationActive();
 
@@ -237,7 +246,7 @@ export async function registerHost(
     if (existing.role === "HOST" || existing.role === "ADMIN") {
       return {
         success: false,
-        error: "An account with this email already exists. Sign in with a magic link instead.",
+        error: t("Ui.Errors.Auth.hostExists"),
       };
     }
 
@@ -261,7 +270,7 @@ export async function registerHost(
     });
 
     if (!validCode || (validCode.maxUses !== null && validCode.uses >= validCode.maxUses)) {
-      return { success: false, error: "Invalid or expired invite code." };
+      return { success: false, error: t("Ui.Errors.Auth.invalidInvite") };
     }
 
     await db.$transaction([
@@ -295,7 +304,7 @@ export async function registerHost(
   });
 
   if (!validCode || (validCode.maxUses !== null && validCode.uses >= validCode.maxUses)) {
-    return { success: false, error: "Invalid or expired invite code." };
+    return { success: false, error: t("Ui.Errors.Auth.invalidInvite") };
   }
 
   const [newUser] = await db.$transaction([

@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// Mock the request-locale boundary; translation rendering remains the real English ICU catalog.
+vi.mock("@/i18n/server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/i18n/server")>();
+  return { ...actual, getRequestTranslator: () => actual.getTranslator("en-US") };
+});
+
 const mocks = vi.hoisted(() => ({
   mockCreateMagicLink: vi.fn(),
   mockRegisterHost: vi.fn(),
@@ -7,9 +13,12 @@ const mocks = vi.hoisted(() => ({
   mockSendMagicLinkEmail: vi.fn().mockResolvedValue(undefined),
   mockSendMagicLinkSms: vi.fn().mockResolvedValue(undefined),
   mockRateLimit: vi.fn().mockResolvedValue({ success: true }),
+  mockCookieGet: vi.fn(),
+  mockRecipient: vi.fn().mockResolvedValue({ preferredLocale: null }),
   mockHeadersGet: vi.fn().mockReturnValue("127.0.0.1"),
 }));
 
+vi.mock("@/lib/db", () => ({ db: { user: { findUnique: mocks.mockRecipient } } }));
 vi.mock("@/lib/auth", () => ({
   createMagicLink: mocks.mockCreateMagicLink,
   registerHost: mocks.mockRegisterHost,
@@ -29,6 +38,7 @@ vi.mock("@/lib/rateLimit", () => ({
 }));
 
 vi.mock("next/headers", () => ({
+  cookies: vi.fn().mockResolvedValue({ get: mocks.mockCookieGet }),
   headers: vi.fn().mockResolvedValue({
     get: mocks.mockHeadersGet,
   }),
@@ -111,7 +121,7 @@ describe("sendMagicLinkAction", () => {
 
     const result = await sendMagicLinkAction("host@example.com", "/e/panton-wine-night");
     expect(result.success).toBe(true);
-    expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledWith("host@example.com", link);
+    expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledWith("host@example.com", link, "en-US");
   });
 
   it("calls sendMagicLinkEmail when input is an email and user exists", async () => {
@@ -120,7 +130,7 @@ describe("sendMagicLinkAction", () => {
 
     const result = await sendMagicLinkAction("user@example.com");
     expect(result.success).toBe(true);
-    expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledWith("user@example.com", link);
+    expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledWith("user@example.com", link, "en-US");
   });
 
   it("calls sendMagicLinkSms with normalized phone when input is a phone and user exists", async () => {
@@ -129,7 +139,7 @@ describe("sendMagicLinkAction", () => {
 
     const result = await sendMagicLinkAction("+1 (555) 123-4567");
     expect(result.success).toBe(true);
-    expect(mocks.mockSendMagicLinkSms).toHaveBeenCalledWith("+15551234567", link);
+    expect(mocks.mockSendMagicLinkSms).toHaveBeenCalledWith("+15551234567", link, "en-US");
   });
 });
 
@@ -222,5 +232,46 @@ describe("registerHostAction", () => {
       await sendMagicLinkAction("test@example.com");
       expect(mocks.mockRateLimit).toHaveBeenCalledWith("ip:4.4.4.4:magic-link", 20, 600);
     });
+  });
+});
+
+describe("magic-link recipient language", () => {
+  beforeEach(() => {
+    mocks.mockRecipient.mockResolvedValue({ preferredLocale: null });
+    mocks.mockCookieGet.mockReturnValue(undefined);
+    mocks.mockCreateMagicLink.mockResolvedValue("http://localhost:3000/auth/verify?token=language");
+  });
+  it("uses saved recipient preference ahead of requesting browser", async () => {
+    mocks.mockRecipient.mockResolvedValue({ preferredLocale: "nl-NL" });
+    mocks.mockCookieGet.mockReturnValue({ value: "en-US" });
+    await sendMagicLinkAction("known@example.com");
+    expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledWith(
+      "known@example.com",
+      expect.any(String),
+      "nl-NL"
+    );
+  });
+  it("uses browser cookie for an unset recipient without persisting it", async () => {
+    mocks.mockCookieGet.mockReturnValue({ value: "nl-NL" });
+    await sendMagicLinkAction("known@example.com");
+    expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledWith(
+      "known@example.com",
+      expect.any(String),
+      "nl-NL"
+    );
+    expect(mocks.mockRecipient).toHaveBeenCalledWith({
+      where: { email: "known@example.com" },
+      select: { preferredLocale: true },
+    });
+  });
+  it("uses English for corrupt saved preference rather than requesting browser", async () => {
+    mocks.mockRecipient.mockResolvedValue({ preferredLocale: "invalid" });
+    mocks.mockCookieGet.mockReturnValue({ value: "nl-NL" });
+    await sendMagicLinkAction("known@example.com");
+    expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledWith(
+      "known@example.com",
+      expect.any(String),
+      "en-US"
+    );
   });
 });

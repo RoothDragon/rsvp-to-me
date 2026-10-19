@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// Mock the request-locale boundary; translation rendering remains the real English ICU catalog.
+vi.mock("@/i18n/server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/i18n/server")>();
+  return { ...actual, getRequestTranslator: () => actual.getTranslator("en-US") };
+});
+
 const {
   mockUserFindUnique,
   mockUserFindFirst,
@@ -66,6 +72,7 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+vi.mock("next/headers", () => ({ cookies: vi.fn(async () => ({ get: vi.fn(), set: vi.fn() })) }));
 vi.mock("@/lib/session", () => ({
   createSession: mockCreateSession,
 }));

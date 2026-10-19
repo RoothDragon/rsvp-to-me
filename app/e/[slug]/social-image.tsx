@@ -7,9 +7,12 @@ import {
   formatSocialEventDate,
   isEventSociallyShareable,
   type SocialEvent,
+  type SocialPresentation,
+  resolveSocialPresentation,
 } from "@/lib/event-social";
 
-export async function renderEventSocialImage(slug: string) {
+export async function renderEventSocialImage(slug: string, presentation?: SocialPresentation) {
+  const { translate } = resolveSocialPresentation(presentation);
   const event = await db.event.findUnique({
     where: { slug },
     select: {
@@ -35,7 +38,7 @@ export async function renderEventSocialImage(slug: string) {
   });
 
   const shareable = isEventSociallyShareable(event);
-  const { title, date, hostLine } = getEventSocialImageCopy(event);
+  const { title, date, hostLine } = getEventSocialImageCopy(event, presentation);
   const gradientFrom = shareable ? (event.theme?.gradientFrom ?? "#7c3aed") : "#312e81";
   const gradientTo = shareable ? (event.theme?.gradientTo ?? "#1e40af") : "#7c3aed";
   const accent = shareable ? (event.theme?.accentColor ?? "#a855f7") : "#c084fc";
@@ -152,7 +155,7 @@ export async function renderEventSocialImage(slug: string) {
         </div>
 
         <div style={{ display: "flex", fontSize: 19, color: "rgba(255,255,255,0.72)" }}>
-          {shareable ? "You’re invited" : "Open your invitation to learn more"}
+          {shareable ? translate("invited") : translate("openInvitation")}
         </div>
       </div>
     </div>,
@@ -168,15 +171,19 @@ type EventSocialImageSource =
   | null
   | undefined;
 
-export function getEventSocialImageCopy(event: EventSocialImageSource) {
+export function getEventSocialImageCopy(
+  event: EventSocialImageSource,
+  presentation?: SocialPresentation
+) {
+  const { locale, translate } = resolveSocialPresentation(presentation);
   if (!isEventSociallyShareable(event)) {
-    return { title: "Event invitation", date: null, hostLine: null };
+    return { title: translate("genericTitle"), date: null, hostLine: null };
   }
 
-  const hostName = event.hostDisplayName?.trim() || event.host?.name?.trim() || "Event host";
+  const hostName = event.hostDisplayName?.trim() || event.host?.name?.trim() || translate("host");
   return {
     title: event.title,
-    date: formatSocialEventDate(event),
-    hostLine: `Hosted by ${hostName}`,
+    date: formatSocialEventDate(event, locale),
+    hostLine: translate("hostLine", { name: hostName }),
   };
 }

@@ -1,4 +1,5 @@
 "use client";
+import { useLocale, useTranslations } from "next-intl";
 
 import { APP_SHELL } from "@/lib/theme";
 import { appCardStyle } from "@/components/ui/AppPrimitives";
@@ -35,6 +36,9 @@ export function InvitesTab({
   inviteCodes: AdminInviteCode[];
   handleRevokeCode: (id: string) => void;
 }) {
+  const tr = useTranslations("Ui.Admin");
+  const locale = useLocale();
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
       {/* Open Host Registration */}
@@ -53,7 +57,7 @@ export function InvitesTab({
         >
           <div>
             <div style={{ fontWeight: 700, fontSize: "15px", color: APP_SHELL.textPrimary }}>
-              Open Host Registration
+              {tr("openHostRegistration")}
             </div>
             <div
               style={{
@@ -62,7 +66,7 @@ export function InvitesTab({
                 marginTop: "4px",
               }}
             >
-              Allow anyone to sign up as a host without entering an invite code.
+              {tr("allowAnyoneToSignUpAsAHostWithout")}
             </div>
           </div>
           <button
@@ -114,11 +118,10 @@ export function InvitesTab({
               marginBottom: "6px",
             }}
           >
-            Open Registration is Active
+            {tr("openRegistrationIsActive")}
           </div>
           <div style={{ fontSize: "13px", color: APP_SHELL.textSecondary }}>
-            Invite codes are not required while open registration is enabled. Disable it above to
-            manage invite codes.
+            {tr("inviteCodesAreNotRequiredWhileOpenRegistrationIs")}
           </div>
         </div>
       ) : (
@@ -141,7 +144,7 @@ export function InvitesTab({
                   margin: 0,
                 }}
               >
-                Generate Host Invite Code
+                {tr("generateHostInviteCode")}
               </h3>
             </div>
 
@@ -155,12 +158,12 @@ export function InvitesTab({
                   marginBottom: "6px",
                 }}
               >
-                Invite Code String
+                {tr("inviteCodeString")}
               </label>
               <input
                 type="text"
                 required
-                placeholder="e.g. VIPHOST2026"
+                placeholder={tr("eGViphost2026")}
                 value={newCode}
                 onChange={(e) => setNewCode(e.target.value)}
                 style={{
@@ -187,11 +190,11 @@ export function InvitesTab({
                   marginBottom: "6px",
                 }}
               >
-                Max Uses (Optional)
+                {tr("maxUsesOptional")}
               </label>
               <input
                 type="number"
-                placeholder="Unlimited if empty"
+                placeholder={tr("unlimitedIfEmpty")}
                 value={maxUses}
                 onChange={(e) => setMaxUses(e.target.value === "" ? "" : Number(e.target.value))}
                 style={{
@@ -218,7 +221,7 @@ export function InvitesTab({
                   marginBottom: "6px",
                 }}
               >
-                Expires At (Optional)
+                {tr("expiresAtOptional")}
               </label>
               <input
                 type="datetime-local"
@@ -248,11 +251,11 @@ export function InvitesTab({
                   marginBottom: "6px",
                 }}
               >
-                Note / Description
+                {tr("noteDescription")}
               </label>
               <input
                 type="text"
-                placeholder="e.g. Invite code for VIP sponsors"
+                placeholder={tr("eGInviteCodeForVipSponsors")}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 style={{
@@ -285,7 +288,7 @@ export function InvitesTab({
                   opacity: isPending ? 0.6 : 1,
                 }}
               >
-                Generate Code
+                {tr("generateCode")}
               </button>
             </div>
           </form>
@@ -307,10 +310,10 @@ export function InvitesTab({
                       textAlign: "left",
                     }}
                   >
-                    <th style={{ padding: "16px" }}>Code</th>
-                    <th style={{ padding: "16px" }}>Usage</th>
-                    <th style={{ padding: "16px" }}>Expirations / Notes</th>
-                    <th style={{ padding: "16px", textAlign: "right" }}>Actions</th>
+                    <th style={{ padding: "16px" }}>{tr("code")}</th>
+                    <th style={{ padding: "16px" }}>{tr("usage")}</th>
+                    <th style={{ padding: "16px" }}>{tr("expirationsNotes")}</th>
+                    <th style={{ padding: "16px", textAlign: "right" }}>{tr("actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -324,7 +327,7 @@ export function InvitesTab({
                           color: APP_SHELL.textMuted,
                         }}
                       >
-                        No active invite codes.
+                        {tr("noActiveInviteCodes")}
                       </td>
                     </tr>
                   ) : (
@@ -343,15 +346,18 @@ export function InvitesTab({
                           </span>
                         </td>
                         <td style={{ padding: "16px", color: APP_SHELL.textPrimary }}>
-                          {c.uses} / {c.maxUses ?? "∞"} uses
+                          {c.uses} / {c.maxUses ?? "∞"} {tr("uses")}
                         </td>
                         <td style={{ padding: "16px" }}>
                           {c.expiresAt ? (
                             <div style={{ fontSize: "12px", color: "#f87171" }}>
-                              Expires: {new Date(c.expiresAt).toLocaleDateString()}
+                              {tr("expires")}
+                              {new Date(c.expiresAt).toLocaleDateString(locale)}
                             </div>
                           ) : (
-                            <div style={{ fontSize: "12px", color: "#4ade80" }}>Never expires</div>
+                            <div style={{ fontSize: "12px", color: "#4ade80" }}>
+                              {tr("neverExpires")}
+                            </div>
                           )}
                           {c.note && (
                             <div
@@ -361,7 +367,7 @@ export function InvitesTab({
                                 marginTop: "2px",
                               }}
                             >
-                              Note: {c.note}
+                              {tr("noteMessage", { value0: c.note })}
                             </div>
                           )}
                         </td>
@@ -377,7 +383,7 @@ export function InvitesTab({
                               fontSize: "13px",
                             }}
                           >
-                            Revoke
+                            {tr("revoke")}
                           </button>
                         </td>
                       </tr>

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { createTranslator } from "next-intl";
+import english from "@/messages/en-US.json";
 
 export const SOCIAL_IMAGE_SIZE = { width: 1200, height: 630 } as const;
 
@@ -19,8 +21,23 @@ export type SocialEvent = {
   } | null;
 };
 
-const GENERIC_TITLE = "Event invitation";
-const GENERIC_DESCRIPTION = "View this event invitation on RSVP to Me.";
+export type SocialPresentation = {
+  locale?: string;
+  translate?: (
+    key: keyof typeof english.Ui.Event.Social,
+    values?: Record<string, string | number>
+  ) => string;
+};
+
+// Pure English fallback keeps existing synchronous callers request-independent.
+export function resolveSocialPresentation(presentation: SocialPresentation = {}) {
+  return {
+    locale: presentation.locale ?? "en-US",
+    translate:
+      presentation.translate ??
+      createTranslator({ locale: "en-US", messages: english.Ui.Event.Social }),
+  };
+}
 
 export function getAppOrigin(): string {
   return (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/+$/, "");
@@ -41,8 +58,11 @@ export function isEventSociallyShareable(
   );
 }
 
-export function formatSocialEventDate(event: Pick<SocialEvent, "startAt" | "timezone">): string {
-  return new Intl.DateTimeFormat("en-US", {
+export function formatSocialEventDate(
+  event: Pick<SocialEvent, "startAt" | "timezone">,
+  locale: string = "en-US"
+): string {
+  return new Intl.DateTimeFormat(locale, {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -59,22 +79,29 @@ function compactDescription(value: string): string {
 
 export function buildEventSocialMetadata(
   event: SocialEvent | null | undefined,
-  requestedSlug: string
+  requestedSlug: string,
+  presentation?: SocialPresentation
 ): Metadata {
+  const { locale, translate } = resolveSocialPresentation(presentation);
   const slug = event?.slug ?? requestedSlug;
   const encodedSlug = encodeURIComponent(slug);
   const canonicalPath = `/e/${encodedSlug}`;
   const openGraphImage = `${canonicalPath}/opengraph-image`;
   const twitterImage = `${canonicalPath}/twitter-image`;
   const shareable = isEventSociallyShareable(event);
-  const title = shareable ? event.title : GENERIC_TITLE;
+  const title = shareable ? event.title : translate("genericTitle");
   const description = shareable
     ? compactDescription(
         event.description?.trim() ||
-          `You’re invited to ${event.title} on ${formatSocialEventDate(event)}.`
+          translate("invitation", {
+            title: event.title,
+            date: formatSocialEventDate(event, locale),
+          })
       )
-    : GENERIC_DESCRIPTION;
-  const imageAlt = shareable ? `${event.title} event invitation` : GENERIC_TITLE;
+    : translate("genericDescription");
+  const imageAlt = shareable
+    ? translate("imageAlt", { title: event.title })
+    : translate("genericTitle");
 
   return {
     title,
@@ -89,7 +116,7 @@ export function buildEventSocialMetadata(
           },
     openGraph: {
       type: "website",
-      locale: "en_US",
+      locale: locale.replaceAll("-", "_"),
       siteName: "RSVP to Me",
       title,
       description,

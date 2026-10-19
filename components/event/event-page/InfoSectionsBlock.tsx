@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Plus, X, ExternalLink, Pencil, ChevronUp, ChevronDown } from "lucide-react";
 import { IconPicker } from "./IconPicker";
 import { getIconItem, getPlaceholder, ICON_SET, PRESET_CHIPS } from "./helpers";
@@ -59,6 +61,9 @@ export function InfoSectionsBlock({
   commitEditSection: (id: string) => Promise<void>;
   moveSection?: (index: number, direction: -1 | 1) => void;
 }) {
+  const shared = useTranslations("Ui.Event.shared");
+  const translate = useTranslations("Ui.Event.InfoSectionsBlock");
+
   return (
     <>
       {/* ── Info sections ── */}
@@ -106,7 +111,9 @@ export function InfoSectionsBlock({
                     <textarea
                       style={{ ...S.inp, resize: "none" } as React.CSSProperties}
                       rows={2}
-                      placeholder={getPlaceholder(editDraft.iconKey)}
+                      placeholder={getPlaceholder(editDraft.iconKey, (key) =>
+                        shared("placeholders." + key)
+                      )}
                       value={editDraft.content}
                       onChange={(e) => setEditDraft((d) => ({ ...d, content: e.target.value }))}
                       autoFocus
@@ -115,7 +122,7 @@ export function InfoSectionsBlock({
                       <input
                         style={S.inp}
                         type="text"
-                        placeholder="Suggested donation amount (optional, e.g. 15)"
+                        placeholder={translate("suggestedDonationAmountOptionalEG")}
                         value={editDraft.title}
                         onChange={(e) => setEditDraft((d) => ({ ...d, title: e.target.value }))}
                       />
@@ -123,7 +130,7 @@ export function InfoSectionsBlock({
                     <input
                       style={S.inp}
                       type="url"
-                      placeholder="Link (optional)"
+                      placeholder={translate("linkOptional")}
                       value={editDraft.url}
                       onChange={(e) => setEditDraft((d) => ({ ...d, url: e.target.value }))}
                     />
@@ -132,10 +139,10 @@ export function InfoSectionsBlock({
                         onClick={() => commitEditSection(sec.id)}
                         style={{ ...S.btn, flex: 1, padding: "8px" }}
                       >
-                        Save
+                        {translate("save")}
                       </button>
                       <button onClick={() => setEditingSection(null)} style={S.mutedBtn}>
-                        Cancel
+                        {translate("cancel")}
                       </button>
                     </div>
                   </div>
@@ -168,7 +175,7 @@ export function InfoSectionsBlock({
                       )}
                       {sec.title && (sec.type === "zelle" || sec.type === "venmo") && (
                         <span style={{ marginLeft: "6px", color: t.textMuted, fontSize: "12px" }}>
-                          (Suggested: ${sec.title})
+                          {translate("donation", { amount: sec.title })}
                         </span>
                       )}
                     </div>
@@ -185,7 +192,7 @@ export function InfoSectionsBlock({
                               padding: "2px",
                               flexShrink: 0,
                             }}
-                            title="Move Up"
+                            title={translate("moveUp")}
                           >
                             <ChevronUp size={13} />
                           </button>
@@ -201,7 +208,7 @@ export function InfoSectionsBlock({
                               padding: "2px",
                               flexShrink: 0,
                             }}
-                            title="Move Down"
+                            title={translate("moveDown")}
                           >
                             <ChevronDown size={13} />
                           </button>
@@ -263,7 +270,9 @@ export function InfoSectionsBlock({
             backdropFilter: "blur(8px)",
           }}
         >
-          <span style={{ fontSize: "13px", color: t.textSecondary }}>Section removed</span>
+          <span style={{ fontSize: "13px", color: t.textSecondary }}>
+            {translate("sectionRemoved")}
+          </span>
           <button
             onClick={undoDeleteSection}
             style={{
@@ -278,7 +287,7 @@ export function InfoSectionsBlock({
               fontFamily: "inherit",
             }}
           >
-            Undo
+            {translate("undo")}
           </button>
         </div>
       )}
@@ -295,7 +304,9 @@ export function InfoSectionsBlock({
             <textarea
               style={{ ...S.inp, resize: "none", marginBottom: "10px" } as React.CSSProperties}
               rows={2}
-              placeholder={getPlaceholder(sectionDraft.iconKey)}
+              placeholder={getPlaceholder(sectionDraft.iconKey, (key) =>
+                shared("placeholders." + key)
+              )}
               value={sectionDraft.content}
               onChange={(e) => setSectionDraft((d) => ({ ...d, content: e.target.value }))}
               autoFocus
@@ -304,7 +315,7 @@ export function InfoSectionsBlock({
               <input
                 style={{ ...S.inp, marginBottom: "10px" }}
                 type="text"
-                placeholder="Suggested donation amount (optional, e.g. 15)"
+                placeholder={translate("suggestedDonationAmountOptionalEG")}
                 value={sectionDraft.title}
                 onChange={(e) => setSectionDraft((d) => ({ ...d, title: e.target.value }))}
               />
@@ -312,16 +323,16 @@ export function InfoSectionsBlock({
             <input
               style={{ ...S.inp, marginBottom: "10px" }}
               type="url"
-              placeholder="Link (optional)"
+              placeholder={translate("linkOptional")}
               value={sectionDraft.url}
               onChange={(e) => setSectionDraft((d) => ({ ...d, url: e.target.value }))}
             />
             <div style={{ display: "flex", gap: "8px" }}>
               <button onClick={commitInfoSection} style={{ ...S.btn, flex: 1, padding: "10px" }}>
-                Save
+                {translate("save")}
               </button>
               <button onClick={() => setAddingSection(false)} style={S.mutedBtn}>
-                Cancel
+                {translate("cancel")}
               </button>
             </div>
           </EventCard>
@@ -341,7 +352,7 @@ export function InfoSectionsBlock({
                     style={getChipStyle(false)}
                   >
                     <Icon size={13} />
-                    {preset.label}
+                    {shared("chips." + preset.key)}
                   </button>
                 );
               }
@@ -355,7 +366,7 @@ export function InfoSectionsBlock({
               style={getChipStyle(true)}
             >
               <Plus size={13} />
-              Add Custom
+              {translate("addCustom")}
             </button>
           </div>
         ))}

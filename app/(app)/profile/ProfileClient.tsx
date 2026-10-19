@@ -1,5 +1,7 @@
 "use client";
 
+import LanguageSelector from "@/components/ui/LanguageSelector";
+import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useTransition, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import NextImage from "next/image";
@@ -47,6 +49,8 @@ export default function ProfileClient({
   initialProfile: ProfileData;
   channelConfig?: { email: boolean; sms: boolean };
 }) {
+  const t = useTranslations("Ui.Profile");
+  const locale = useLocale();
   const { runWithCaptcha } = useCaptcha();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -98,30 +102,30 @@ export default function ProfileClient({
     if (verified === "1") {
       setFeedback({
         type: "success",
-        message: "Contact details successfully verified and updated!",
+        message: t("verified"),
       });
       // Clean query params
       router.replace("/profile");
     } else if (error === "invalid-token") {
       setFeedback({
         type: "error",
-        message: "The verification link was invalid, expired, or already used.",
+        message: t("invalidLink"),
       });
       router.replace("/profile");
     } else if (error === "email-taken") {
       setFeedback({
         type: "error",
-        message: "That email address is already taken by another account.",
+        message: t("emailTaken"),
       });
       router.replace("/profile");
     } else if (error === "phone-taken") {
       setFeedback({
         type: "error",
-        message: "That phone number is already taken by another account.",
+        message: t("phoneTaken"),
       });
       router.replace("/profile");
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, t]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,10 +161,10 @@ export default function ProfileClient({
         )
       );
 
-      setFeedback({ type: "success", message: "Avatar updated successfully!" });
+      setFeedback({ type: "success", message: t("avatarSaved") });
     } catch (err) {
       console.error(err);
-      const message = err instanceof Error ? err.message : "Failed to upload avatar.";
+      const message = err instanceof Error ? err.message : t("avatarFailed");
       setFeedback({ type: "error", message });
     } finally {
       setIsUploading(false);
@@ -191,12 +195,12 @@ export default function ProfileClient({
           if (result.messages && result.messages.length > 0) {
             setInfoMessages(result.messages);
           } else {
-            setFeedback({ type: "success", message: "Profile settings saved!" });
+            setFeedback({ type: "success", message: t("saved") });
           }
           router.refresh();
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to update profile.";
+        const message = err instanceof Error ? err.message : t("saveFailed");
         setFeedback({ type: "error", message });
       }
     });
@@ -233,11 +237,12 @@ export default function ProfileClient({
     }
   };
 
-  const displayName = name || initialProfile.email?.split("@")[0] || "User";
+  const displayName = name || initialProfile.email?.split("@")[0] || t("user");
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
     <AppShell>
+      <LanguageSelector settings />
       <div
         style={{
           maxWidth: "600px",
@@ -254,10 +259,10 @@ export default function ProfileClient({
             marginBottom: "8px",
           }}
         >
-          Profile Settings
+          {t("title")}
         </h2>
         <p style={{ color: APP_SHELL.textSecondary, marginBottom: "32px", fontSize: "14px" }}>
-          Manage your account profile details, verification status, and notification preferences.
+          {t("description")}
         </p>
 
         <FeedbackToast feedback={feedback} onDismiss={() => setFeedback(null)} />
@@ -302,7 +307,7 @@ export default function ProfileClient({
                   >
                     <NextImage
                       src={avatarUrl}
-                      alt="Avatar"
+                      alt={t("avatar")}
                       fill
                       sizes="80px"
                       style={{
@@ -381,16 +386,16 @@ export default function ProfileClient({
                     (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)")
                   }
                 >
-                  Change Photo
+                  {t("changePhoto")}
                 </button>
                 <div style={{ color: APP_SHELL.textMuted, fontSize: "11px", marginTop: "6px" }}>
-                  Max 8MB. Compressed automatically.
+                  {t("photoHint")}
                 </div>
               </div>
             </div>
 
             {/* Inputs */}
-            <FormField label="Full Name" style={{ marginBottom: 0 }}>
+            <FormField label={t("fullName")} style={{ marginBottom: 0 }}>
               <AppInput
                 type="text"
                 required
@@ -400,7 +405,7 @@ export default function ProfileClient({
               />
             </FormField>
 
-            <FormField label="Email Address" style={{ marginBottom: 0 }}>
+            <FormField label={t("email")} style={{ marginBottom: 0 }}>
               <AppInput
                 type="email"
                 required
@@ -411,7 +416,7 @@ export default function ProfileClient({
             </FormField>
 
             {channelConfig.sms && (
-              <FormField label="Phone Number" style={{ marginBottom: 0 }}>
+              <FormField label={t("phone")} style={{ marginBottom: 0 }}>
                 <AppInput
                   type="tel"
                   value={phone}
@@ -440,7 +445,7 @@ export default function ProfileClient({
                 if (!isPending) e.currentTarget.style.opacity = "1";
               }}
             >
-              {isPending ? "Saving..." : "Save Settings"}
+              {isPending ? t("saving") : t("save")}
             </AppButton>
           </div>
 
@@ -463,11 +468,10 @@ export default function ProfileClient({
                   margin: 0,
                 }}
               >
-                Notification Preferences
+                {t("notifications")}
               </h3>
               <p style={{ color: APP_SHELL.textSecondary, fontSize: "13px", margin: "0 0 8px 0" }}>
-                Control which notifications you wish to receive. Transactional messages (like login
-                magic links and RSVP confirmations) are always sent.
+                {t("notificationHint")}
               </p>
 
               {/* Preferred Channel (shown only when both email and SMS are enabled) */}
@@ -481,14 +485,14 @@ export default function ProfileClient({
                       marginBottom: "10px",
                     }}
                   >
-                    Preferred Channel for Event Updates
+                    {t("channel")}
                   </div>
                   <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                     {(
                       [
-                        { value: "EMAIL", label: "Email" },
-                        { value: "SMS", label: "SMS" },
-                        { value: "BOTH", label: "Both" },
+                        { value: "EMAIL", label: t("emailChannel") },
+                        { value: "SMS", label: t("smsChannel") },
+                        { value: "BOTH", label: t("both") },
                       ] as const
                     ).map(({ value, label }) => (
                       <button
@@ -528,7 +532,7 @@ export default function ProfileClient({
                       margin: "8px 0 0 0",
                     }}
                   >
-                    Hosts use this channel when sending event update notifications to guests.
+                    {t("channelHint")}
                   </p>
                 </div>
               )}
@@ -542,12 +546,12 @@ export default function ProfileClient({
                     <div
                       style={{ fontWeight: 600, fontSize: "14px", color: APP_SHELL.textPrimary }}
                     >
-                      Email Blasts & Reminders
+                      {t("emailBlasts")}
                     </div>
                     <div
                       style={{ fontSize: "12px", color: APP_SHELL.textSecondary, marginTop: "2px" }}
                     >
-                      Receive scheduled reminders and host blasts via email
+                      {t("emailHint")}
                     </div>
                   </div>
                   <button
@@ -592,12 +596,12 @@ export default function ProfileClient({
                     <div
                       style={{ fontWeight: 600, fontSize: "14px", color: APP_SHELL.textPrimary }}
                     >
-                      SMS Blasts & Reminders
+                      {t("smsBlasts")}
                     </div>
                     <div
                       style={{ fontSize: "12px", color: APP_SHELL.textSecondary, marginTop: "2px" }}
                     >
-                      Receive scheduled reminders and host blasts via SMS
+                      {t("smsHint")}
                     </div>
                   </div>
                   <button
@@ -647,7 +651,7 @@ export default function ProfileClient({
           }}
         >
           <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#ef4444", marginBottom: "16px" }}>
-            Danger Zone
+            {t("danger")}
           </h2>
 
           {scheduledDeletionDate ? (
@@ -663,9 +667,7 @@ export default function ProfileClient({
               }}
             >
               <div>
-                <p style={{ color: "#ef4444", fontWeight: 700, margin: 0 }}>
-                  Your account is scheduled for deletion
-                </p>
+                <p style={{ color: "#ef4444", fontWeight: 700, margin: 0 }}>{t("scheduled")}</p>
                 <p
                   style={{
                     color: "rgba(255,255,255,0.6)",
@@ -674,9 +676,9 @@ export default function ProfileClient({
                     marginBottom: 0,
                   }}
                 >
-                  Anonymization will occur on or after{" "}
-                  {new Date(scheduledDeletionDate).toLocaleString()}. You can cancel this request at
-                  any time before then.
+                  {t("scheduledDate", {
+                    date: new Date(scheduledDeletionDate).toLocaleString(locale),
+                  })}
                 </p>
               </div>
               <button
@@ -690,15 +692,14 @@ export default function ProfileClient({
                         setScheduledDeletionDate(null);
                         setFeedback({
                           type: "success",
-                          message: "Account deletion request successfully canceled!",
+                          message: t("cancelled"),
                         });
                         router.refresh();
                       }
                     } catch (err) {
                       setFeedback({
                         type: "error",
-                        message:
-                          err instanceof Error ? err.message : "Failed to cancel deletion request.",
+                        message: err instanceof Error ? err.message : t("cancelFailed"),
                       });
                     }
                   });
@@ -717,13 +718,13 @@ export default function ProfileClient({
                   transition: "opacity 0.2s",
                 }}
               >
-                Cancel Deletion Request
+                {t("cancelDeletion")}
               </button>
             </div>
           ) : (
             <>
               <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px", marginBottom: "16px" }}>
-                Permanently delete your account and all associated data. This cannot be undone.
+                {t("deleteWarning")}
               </p>
               <button
                 onClick={() => setShowDeleteModal(true)}
@@ -738,7 +739,7 @@ export default function ProfileClient({
                   cursor: "pointer",
                 }}
               >
-                Delete My Account
+                {t("deleteAccount")}
               </button>
             </>
           )}
@@ -772,13 +773,13 @@ export default function ProfileClient({
             marginBottom: "12px",
           }}
         >
-          Delete your account?
+          {t("deleteTitle")}
         </h2>
 
         {blockedEvents && blockedEvents.length > 0 ? (
           <>
             <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "14px", marginBottom: "16px" }}>
-              You have upcoming published events. Delete them first before deleting your account.
+              {t("blocked")}
             </p>
             <div
               style={{
@@ -815,7 +816,7 @@ export default function ProfileClient({
                       } catch {
                         setFeedback({
                           type: "error",
-                          message: `Failed to delete "${ev.title}".`,
+                          message: t("eventDeleteFailed", { title: ev.title }),
                         });
                       } finally {
                         setIsDeletingEvent(null);
@@ -833,25 +834,24 @@ export default function ProfileClient({
                       opacity: isDeletingEvent === ev.id ? 0.5 : 1,
                     }}
                   >
-                    {isDeletingEvent === ev.id ? "Deleting…" : "Delete event"}
+                    {isDeletingEvent === ev.id ? t("deleting") : t("deleteEvent")}
                   </button>
                 </div>
               ))}
             </div>
             {blockedEvents.length === 0 && (
               <p style={{ color: "#22c55e", fontSize: "14px", marginBottom: "16px" }}>
-                All events deleted. You can now confirm account deletion below.
+                {t("allDeleted")}
               </p>
             )}
           </>
         ) : (
           <>
             <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "14px", marginBottom: "8px" }}>
-              Your profile info will be anonymized within 30 days. Past event history is preserved
-              for guests. You will be signed out immediately.
+              {t("anonymize")}
             </p>
             <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "13px", marginBottom: "16px" }}>
-              An admin can reverse this within 30 days if you change your mind.
+              {t("reverse")}
             </p>
             <p
               style={{
@@ -861,7 +861,7 @@ export default function ProfileClient({
                 fontWeight: 600,
               }}
             >
-              Type DELETE to confirm:
+              {t("confirmHint")}
             </p>
             <AppInput
               type="text"
@@ -890,7 +890,7 @@ export default function ProfileClient({
               cursor: "pointer",
             }}
           >
-            Cancel
+            {t("cancel")}
           </button>
           {(!blockedEvents || blockedEvents.length === 0) && (
             <button
@@ -909,7 +909,7 @@ export default function ProfileClient({
                 } catch {
                   setFeedback({
                     type: "error",
-                    message: "Failed to delete account. Please try again.",
+                    message: t("deleteFailed"),
                   });
                   setIsDeletingAccount(false);
                 }
@@ -929,7 +929,7 @@ export default function ProfileClient({
                   deleteConfirmText === "DELETE" && !isDeletingAccount ? "pointer" : "not-allowed",
               }}
             >
-              {isDeletingAccount ? "Processing…" : "Confirm Delete"}
+              {isDeletingAccount ? t("processing") : t("confirmDelete")}
             </button>
           )}
         </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Plus, X } from "lucide-react";
 import type { ResolvedTheme } from "@/lib/theme";
 import type { RsvpFieldEntry, SettingsOverrides } from "./types";
@@ -62,8 +64,10 @@ export function QuestionnairePanel({
   t: ResolvedTheme;
   S: SettingsPageStyles;
 }) {
+  const translate = useTranslations("Ui.Event.QuestionnairePanel");
+
   return (
-    <Section title="Questionnaire" t={t}>
+    <Section title={translate("questionnaire")} t={t}>
       <div
         style={{
           fontSize: "13px",
@@ -72,9 +76,7 @@ export function QuestionnairePanel({
           lineHeight: "1.5",
         }}
       >
-        Add custom questions to gather extra information from guests (e.g., dietary restrictions,
-        song requests). The questionnaire is automatically enabled and presented during the RSVP
-        flow when one or more questions are added here.
+        {translate("addCustomQuestionsGatherExtraInformation")}
       </div>
 
       {fields.length > 0 && (
@@ -116,10 +118,10 @@ export function QuestionnairePanel({
                     colorScheme: t.textPrimary === "#ffffff" ? "dark" : "light",
                   }}
                 >
-                  <option value="TEXT">Short text</option>
-                  <option value="TEXTAREA">Long text</option>
-                  <option value="SELECT">Multiple choice</option>
-                  <option value="CHECKBOX">Checkboxes</option>
+                  <option value="TEXT">{translate("shortText")}</option>
+                  <option value="TEXTAREA">{translate("longText")}</option>
+                  <option value="SELECT">{translate("multipleChoice")}</option>
+                  <option value="CHECKBOX">{translate("checkboxes")}</option>
                 </select>
                 <label
                   style={{
@@ -138,7 +140,7 @@ export function QuestionnairePanel({
                     onChange={(e) => handleUpdateFieldRequired(f.id, e.target.checked)}
                     style={{ accentColor: t.accent }}
                   />
-                  Required
+                  {translate("required")}
                 </label>
                 <button
                   onClick={() => handleDeleteField(f.id)}
@@ -164,7 +166,7 @@ export function QuestionnairePanel({
                 onKeyDown={(e) => {
                   if (e.key === "Enter") e.currentTarget.blur();
                 }}
-                placeholder="Question text"
+                placeholder={translate("questionText")}
                 style={{
                   ...S.inp,
                   marginBottom: f.fieldType === "SELECT" || f.fieldType === "CHECKBOX" ? "8px" : 0,
@@ -178,7 +180,7 @@ export function QuestionnairePanel({
                     setOptionsDrafts((prev) => ({ ...prev, [f.id]: e.target.value }))
                   }
                   onBlur={() => handleUpdateFieldOptions(f.id)}
-                  placeholder="Options, one per line"
+                  placeholder={translate("optionsOnePerLine")}
                   style={{ ...S.inp, resize: "none", marginTop: "4px" } as React.CSSProperties}
                   rows={3}
                 />
@@ -218,10 +220,10 @@ export function QuestionnairePanel({
                 colorScheme: t.textPrimary === "#ffffff" ? "dark" : "light",
               }}
             >
-              <option value="TEXT">Short text</option>
-              <option value="TEXTAREA">Long text</option>
-              <option value="SELECT">Multiple choice</option>
-              <option value="CHECKBOX">Checkboxes</option>
+              <option value="TEXT">{translate("shortText")}</option>
+              <option value="TEXTAREA">{translate("longText")}</option>
+              <option value="SELECT">{translate("multipleChoice")}</option>
+              <option value="CHECKBOX">{translate("checkboxes")}</option>
             </select>
             <label
               style={{
@@ -240,20 +242,20 @@ export function QuestionnairePanel({
                 onChange={(e) => setNewFieldRequired(e.target.checked)}
                 style={{ accentColor: t.accent }}
               />
-              Required
+              {translate("required")}
             </label>
           </div>
           <input
             value={newFieldLabel}
             onChange={(e) => setNewFieldLabel(e.target.value)}
-            placeholder="Question text *"
+            placeholder={translate("questionText2")}
             style={S.inp}
           />
           {(newFieldType === "SELECT" || newFieldType === "CHECKBOX") && (
             <textarea
               value={newFieldOptions}
               onChange={(e) => setNewFieldOptions(e.target.value)}
-              placeholder="Options, one per line"
+              placeholder={translate("optionsOnePerLine")}
               style={{ ...S.inp, resize: "none" } as React.CSSProperties}
               rows={3}
             />
@@ -264,7 +266,7 @@ export function QuestionnairePanel({
               disabled={!newFieldLabel.trim() || isPending}
               style={{ ...S.smallBtn, flex: 1 }}
             >
-              Add Question
+              {translate("addQuestion")}
             </button>
             <button
               onClick={() => setAddingField(false)}
@@ -275,7 +277,7 @@ export function QuestionnairePanel({
                 border: `1px solid ${t.inputBorder}`,
               }}
             >
-              Cancel
+              {translate("cancel")}
             </button>
           </div>
         </div>
@@ -298,7 +300,7 @@ export function QuestionnairePanel({
             width: "100%",
           }}
         >
-          <Plus size={14} /> Add Question
+          <Plus size={14} /> {translate("addQuestion")}
         </button>
       )}
     </Section>

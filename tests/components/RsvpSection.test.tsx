@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@/tests/components/render";
 import { RsvpSection } from "@/components/event/event-page/RsvpSection";
 import type { EventData } from "@/components/event/event-page/types";
 import { testTheme } from "./helpers/theme";

@@ -8,7 +8,7 @@
 // those cards when deciding whether the All view is empty.
 
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { render, screen } from "@/tests/components/render";
 import { describe, expect, it, vi } from "vitest";
 import { testTheme } from "@/tests/components/helpers/theme";
 

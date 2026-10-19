@@ -1,3 +1,4 @@
+import { getRequestLocale, getRequestTranslator } from "@/i18n/server";
 import { SOCIAL_IMAGE_SIZE } from "@/lib/event-social";
 import { renderEventSocialImage } from "./social-image";
 
@@ -8,5 +9,9 @@ export const dynamic = "force-dynamic";
 
 export default async function OpenGraphImage({ params }: PageProps<"/e/[slug]">) {
   const { slug } = await params;
-  return renderEventSocialImage(slug);
+  const [locale, translate] = await Promise.all([getRequestLocale(), getRequestTranslator()]);
+  return renderEventSocialImage(slug, {
+    locale,
+    translate: (key, values) => translate(`Ui.Event.Social.${key}`, values),
+  });
 }

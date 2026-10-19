@@ -56,7 +56,11 @@ describe("lib/email.ts", () => {
     it("logs to console instead of sending when no provider is configured", async () => {
       const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
       const { sendMagicLinkEmail } = await loadModule();
-      await sendMagicLinkEmail("user@example.com", "http://localhost:3000/auth/verify?token=abc");
+      await sendMagicLinkEmail(
+        "user@example.com",
+        "http://localhost:3000/auth/verify?token=abc",
+        "en-US"
+      );
       expect(consoleSpy).toHaveBeenCalledWith(
         "[email:dev]",
         expect.objectContaining({ to: "user@example.com" })
@@ -78,7 +82,11 @@ describe("lib/email.ts", () => {
 
     it("creates nodemailer transport with correct options", async () => {
       const { sendMagicLinkEmail } = await loadModule();
-      await sendMagicLinkEmail("user@example.com", "http://localhost:3000/auth/verify?token=abc");
+      await sendMagicLinkEmail(
+        "user@example.com",
+        "http://localhost:3000/auth/verify?token=abc",
+        "en-US"
+      );
       expect(mockCreateTransport).toHaveBeenCalledWith(
         expect.objectContaining({
           host: "smtp.example.com",
@@ -90,7 +98,11 @@ describe("lib/email.ts", () => {
 
     it("calls sendMail with correct to and subject for magic link", async () => {
       const { sendMagicLinkEmail } = await loadModule();
-      await sendMagicLinkEmail("user@example.com", "http://localhost:3000/auth/verify?token=abc");
+      await sendMagicLinkEmail(
+        "user@example.com",
+        "http://localhost:3000/auth/verify?token=abc",
+        "en-US"
+      );
       expect(mockSendMail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: "user@example.com",
@@ -104,6 +116,7 @@ describe("lib/email.ts", () => {
     it("sends RSVP confirmation with edit link in body", async () => {
       const { sendRsvpConfirmationEmail } = await loadModule();
       await sendRsvpConfirmationEmail("guest@example.com", {
+        locale: "en-US",
         guestName: "Alice",
         eventTitle: "Wine Night",
         eventSlug: "wine-night",
@@ -122,6 +135,7 @@ describe("lib/email.ts", () => {
     it("sends blast email to BCC list", async () => {
       const { sendBlastEmail } = await loadModule();
       await sendBlastEmail(["a@example.com", "b@example.com"], {
+        locale: "en-US",
         eventTitle: "Wine Night",
         eventSlug: "wine-night",
         message: "Can't wait!",
@@ -148,7 +162,11 @@ describe("lib/email.ts", () => {
 
     it("uses Cloudflare Worker when URL is set", async () => {
       const { sendMagicLinkEmail } = await loadModule();
-      await sendMagicLinkEmail("user@example.com", "http://localhost:3000/auth/verify?token=abc");
+      await sendMagicLinkEmail(
+        "user@example.com",
+        "http://localhost:3000/auth/verify?token=abc",
+        "en-US"
+      );
       expect(mockFetch).toHaveBeenCalledWith(
         "https://email-worker.example.com/send",
         expect.objectContaining({
@@ -171,7 +189,11 @@ describe("lib/email.ts", () => {
       });
 
       const { sendMagicLinkEmail } = await loadModule();
-      await sendMagicLinkEmail("user@example.com", "http://localhost:3000/auth/verify?token=abc");
+      await sendMagicLinkEmail(
+        "user@example.com",
+        "http://localhost:3000/auth/verify?token=abc",
+        "en-US"
+      );
 
       expect(mockFetch).toHaveBeenCalled();
       expect(mockSendMail).toHaveBeenCalled();
@@ -198,7 +220,11 @@ describe("lib/email.ts", () => {
       ]);
 
       const { sendMagicLinkEmail } = await loadModule();
-      await sendMagicLinkEmail("user@example.com", "http://localhost:3000/auth/verify?token=abc");
+      await sendMagicLinkEmail(
+        "user@example.com",
+        "http://localhost:3000/auth/verify?token=abc",
+        "en-US"
+      );
 
       expect(mockFetch).toHaveBeenCalledWith(
         "https://db-worker.example.com/send",
@@ -220,7 +246,11 @@ describe("lib/email.ts", () => {
       ]);
 
       const { sendMagicLinkEmail } = await loadModule();
-      await sendMagicLinkEmail("user@example.com", "http://localhost:3000/auth/verify?token=abc");
+      await sendMagicLinkEmail(
+        "user@example.com",
+        "http://localhost:3000/auth/verify?token=abc",
+        "en-US"
+      );
 
       expect(mockCreateTransport).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -239,7 +269,11 @@ describe("lib/email.ts", () => {
       ]);
 
       const { sendMagicLinkEmail } = await loadModule();
-      await sendMagicLinkEmail("user@example.com", "http://localhost:3000/auth/verify?token=abc");
+      await sendMagicLinkEmail(
+        "user@example.com",
+        "http://localhost:3000/auth/verify?token=abc",
+        "en-US"
+      );
 
       expect(mockFetch).toHaveBeenCalledWith(
         "https://api.cloudflare.com/client/v4/accounts/db-account-id/email/sending/send",

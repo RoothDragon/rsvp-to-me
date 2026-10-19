@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Check, Megaphone } from "lucide-react";
 import type { EventData } from "./types";
 import type { ResolvedTheme } from "@/lib/theme";
@@ -20,6 +22,8 @@ export function GuestSharingCard({
   setEventLinkCopied: React.Dispatch<React.SetStateAction<boolean>>;
   setShowShareQr: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  const translate = useTranslations("Ui.Event.GuestSharingCard");
+
   return (
     <>
       {/* ── Guest Sharing Card ── */}
@@ -35,7 +39,7 @@ export function GuestSharingCard({
         >
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <Megaphone size={16} style={{ color: t.accent }} />
-            <span style={{ fontWeight: 700, fontSize: "14px" }}>Share this event</span>
+            <span style={{ fontWeight: 700, fontSize: "14px" }}>{translate("shareEvent")}</span>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
             <button
@@ -65,7 +69,7 @@ export function GuestSharingCard({
               }}
             >
               {eventLinkCopied ? <Check size={14} /> : <span>📋</span>}
-              {eventLinkCopied ? "Copied!" : "Copy Link"}
+              {eventLinkCopied ? translate("copied") : translate("copyLink")}
             </button>
             <button
               onClick={() => setShowShareQr(true)}
@@ -86,7 +90,7 @@ export function GuestSharingCard({
                 gap: "6px",
               }}
             >
-              <span>📱</span> Show QR Code
+              <span>📱</span> {translate("showQrCode")}
             </button>
           </div>
         </EventCard>

@@ -55,7 +55,7 @@
 .md-body ul,
 .md-body ol {
   margin: 0 0 16px;
-  padding-left: 24px;
+  padding-inline-start: 24px;
 }
 .md-body li {
   margin: 6px 0;
@@ -106,7 +106,7 @@
 .md-body td {
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 8px 12px;
-  text-align: left;
+  text-align: start;
 }
 .md-body th {
   background: rgba(255, 255, 255, 0.04);
@@ -117,7 +117,7 @@
 .md-body blockquote {
   margin: 0 0 16px;
   padding: 4px 16px;
-  border-left: 3px solid #a855f7;
+  border-inline-start: 3px solid #a855f7;
   background: rgba(168, 85, 247, 0.06);
   border-radius: 0 8px 8px 0;
   color: rgba(255, 255, 255, 0.7);

@@ -5,7 +5,7 @@
 // deletes only the invitation history, never the guest's RSVP.
 
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@/tests/components/render";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { testTheme } from "@/tests/components/helpers/theme";
 

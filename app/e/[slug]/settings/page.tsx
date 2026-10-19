@@ -1,3 +1,4 @@
+import { getRequestTranslator } from "@/i18n/server";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
@@ -10,7 +11,8 @@ export async function generateMetadata(props: PageProps<"/e/[slug]/settings">): 
   const { slug } = await props.params;
   const event = await db.event.findUnique({ where: { slug }, select: { title: true } });
   if (!event) return {};
-  return { title: `Settings – ${event.title}` };
+  const translate = await getRequestTranslator();
+  return { title: translate("Ui.Event.SettingsRoute.metadata", { title: event.title }) };
 }
 
 export default async function EventSettingsRoute(props: PageProps<"/e/[slug]/settings">) {

@@ -1,8 +1,11 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { resolveTheme } from "@/lib/theme";
 
 export default function BoldPreview() {
+  const tr = useTranslations("Ui.Preview");
+
   const accent = "#f97316"; // orange
   const secondary = "#0ea5e9"; // sky
   const t = resolveTheme("BOLD", accent, secondary, accent);
@@ -53,26 +56,32 @@ export default function BoldPreview() {
         >
           {/* Date badges */}
           <div className="flex items-center gap-2 mb-3">
-            <span
-              className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full"
-              style={{
-                background: t.badgeBg,
-                color: t.badgeText,
-                border: `1px solid ${t.accentBorder}`,
-              }}
-            >
-              Friday, June 27
-            </span>
-            <span
-              className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full"
-              style={{
-                background: t.badgeBg,
-                color: t.badgeText,
-                border: `1px solid ${t.accentBorder}`,
-              }}
-            >
-              8:00 PM
-            </span>
+            {tr.rich("fridayJune27800PmMessage", {
+              part0: (chunks) => (
+                <span
+                  className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full"
+                  style={{
+                    background: t.badgeBg,
+                    color: t.badgeText,
+                    border: `1px solid ${t.accentBorder}`,
+                  }}
+                >
+                  {chunks}
+                </span>
+              ),
+              part1: (chunks) => (
+                <span
+                  className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full"
+                  style={{
+                    background: t.badgeBg,
+                    color: t.badgeText,
+                    border: `1px solid ${t.accentBorder}`,
+                  }}
+                >
+                  {chunks}
+                </span>
+              ),
+            })}
           </div>
 
           {/* Title */}
@@ -80,7 +89,7 @@ export default function BoldPreview() {
             className="text-4xl font-black mb-2"
             style={{ letterSpacing: "-0.03em", fontFamily: t.headingFont }}
           >
-            Wine Night ✨
+            {tr("wineNight")}
           </h1>
 
           {/* Host */}
@@ -89,9 +98,9 @@ export default function BoldPreview() {
               className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black"
               style={{ background: t.avatarGradient, color: t.accentFg }}
             >
-              J
+              {tr("j")}
             </div>
-            <span style={{ color: t.textSecondary }}>Hosted by Joe</span>
+            <span style={{ color: t.textSecondary }}>{tr("hostedByJoe")}</span>
           </div>
 
           {/* Location row */}
@@ -101,16 +110,16 @@ export default function BoldPreview() {
           >
             <span style={{ fontSize: "20px" }}>📍</span>
             <div>
-              <div className="font-bold text-sm">Joe&apos;s Place</div>
-              <div style={{ color: t.textMuted, fontSize: "13px" }}>123 Main St, Brooklyn, NY</div>
+              <div className="font-bold text-sm">{tr("joeSPlace")}</div>
+              <div style={{ color: t.textMuted, fontSize: "13px" }}>
+                {tr("123MainStBrooklynNy")}
+              </div>
             </div>
           </div>
 
           {/* Description */}
           <p className="mb-5 leading-relaxed text-sm" style={{ color: t.textSecondary }}>
-            Monthly wine night at my place! Bring a bottle you love and be ready to share what you
-            enjoy about it. I&apos;ll have snacks and plenty of glasses. This month&apos;s theme is
-            anything from Burgundy. 🍇
+            {tr("monthlyWineNightAtMyPlaceBringABottle")}
           </p>
 
           {/* RSVP section */}
@@ -118,12 +127,14 @@ export default function BoldPreview() {
             className="rounded-2xl p-5 mb-5"
             style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}` }}
           >
-            <h2 className="text-base font-black mb-4 uppercase tracking-wide">Are you coming?</h2>
+            <h2 className="text-base font-black mb-4 uppercase tracking-wide">
+              {tr("areYouComing")}
+            </h2>
             <div className="flex gap-2 mb-4">
               {[
-                { label: "Going", emoji: "🎉", active: true },
-                { label: "Maybe", emoji: "🤔", active: false },
-                { label: "Can&apos;t", emoji: "😔", active: false },
+                { label: tr("going"), emoji: "🎉", active: true },
+                { label: tr("maybe"), emoji: "🤔", active: false },
+                { label: tr("canT"), emoji: "😔", active: false },
               ].map((opt) => (
                 <button
                   key={opt.label}
@@ -142,7 +153,7 @@ export default function BoldPreview() {
             <div className="space-y-2">
               <input
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none font-medium"
-                placeholder="Your name"
+                placeholder={tr("yourName")}
                 style={{
                   background: t.cardBg,
                   border: `2px solid ${t.inputBorder}`,
@@ -151,7 +162,7 @@ export default function BoldPreview() {
               />
               <input
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none font-medium"
-                placeholder="Email (optional)"
+                placeholder={tr("emailOptional")}
                 style={{
                   background: t.cardBg,
                   border: `2px solid ${t.inputBorder}`,
@@ -167,7 +178,7 @@ export default function BoldPreview() {
                     "none" | "capitalize" | "uppercase" | "lowercase",
                 }}
               >
-                Send RSVP →
+                {tr("sendRsvp2")}
               </button>
             </div>
           </div>
@@ -175,8 +186,10 @@ export default function BoldPreview() {
           {/* Guest list */}
           <div className="mb-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-black text-sm uppercase tracking-wide">Going (8)</h3>
-              <span style={{ color: t.textMuted, fontSize: "12px", fontWeight: 600 }}>3 maybe</span>
+              <h3 className="font-black text-sm uppercase tracking-wide">{tr("going8")}</h3>
+              <span style={{ color: t.textMuted, fontSize: "12px", fontWeight: 600 }}>
+                {tr("3Maybe")}
+              </span>
             </div>
             <div className="flex gap-2 flex-wrap">
               {["Sarah", "Mike", "Emma", "James", "Priya", "Tom", "Leila", "Raj"].map((name) => (
@@ -197,11 +210,11 @@ export default function BoldPreview() {
 
           {/* Comments */}
           <div>
-            <h3 className="font-black text-sm uppercase tracking-wide mb-3">Hype 💬</h3>
+            <h3 className="font-black text-sm uppercase tracking-wide mb-3">{tr("hype")}</h3>
             <div className="space-y-2 mb-3">
               {[
-                { name: "Sarah", msg: "Cannot wait!! Bringing a Pinot 🍷", time: "2h ago" },
-                { name: "Mike", msg: "YES. Bringing something from Burgundy!", time: "1h ago" },
+                { name: "Sarah", msg: tr("cannotWaitBringingAPinot"), time: tr("2hAgo") },
+                { name: "Mike", msg: tr("yesBringingSomethingFromBurgundy"), time: tr("1hAgo") },
               ].map((c) => (
                 <div
                   key={c.name}
@@ -227,7 +240,7 @@ export default function BoldPreview() {
             <div className="flex gap-2">
               <input
                 className="flex-1 px-3 py-2 rounded-xl text-sm outline-none font-medium"
-                placeholder="Say something..."
+                placeholder={tr("saySomething")}
                 style={{
                   background: t.inputBg,
                   border: `2px solid ${t.inputBorder}`,
@@ -238,14 +251,14 @@ export default function BoldPreview() {
                 className="px-4 py-2 rounded-xl text-sm font-black"
                 style={{ background: t.accent, color: t.accentFg }}
               >
-                Post
+                {tr("post")}
               </button>
             </div>
           </div>
         </div>
 
         <p className="text-center mt-8 text-xs" style={{ color: t.textMuted }}>
-          rsvp to me
+          {tr("rsvpToMe")}
         </p>
       </div>
     </div>

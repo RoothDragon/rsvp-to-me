@@ -1,5 +1,7 @@
 "use server";
 
+import { eventActionMessage } from "./localization";
+
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
@@ -21,7 +23,7 @@ export async function createPoll(
 ) {
   const event = await assertHostOrCohost(eventId);
   await assertCaptcha("poll_manage", captchaToken);
-  if (!question.trim()) throw new Error("Question cannot be empty");
+  if (!question.trim()) throw new Error(await eventActionMessage("questionEmpty"));
 
   const cleanOptions = options.map((o) => o.trim()).filter((o) => o.length > 0);
 
@@ -74,7 +76,7 @@ export async function deletePoll(pollId: string) {
     where: { id: pollId },
     select: { eventId: true },
   });
-  if (!poll) throw new Error("Poll not found");
+  if (!poll) throw new Error(await eventActionMessage("pollNotFound"));
 
   const event = await assertHostOrCohost(poll.eventId);
 
@@ -105,8 +107,8 @@ export async function castVote(
       },
     },
   });
-  if (!poll) throw new Error("Poll not found");
-  if (poll.locked) throw new Error("This poll is locked");
+  if (!poll) throw new Error(await eventActionMessage("pollNotFound"));
+  if (poll.locked) throw new Error(await eventActionMessage("pollLocked"));
 
   // Auth verification
   const session = await getSession();
@@ -118,7 +120,7 @@ export async function castVote(
     // SEC-24: authorize by secret editToken; the voter name is the RSVP's,
     // never the client-supplied one (both rsvpId and guestName are public).
     const rsvp = await findApprovedGuestByToken(guestEditToken, poll.eventId);
-    if (!rsvp) throw new Error("Unauthorized: a valid approved RSVP is required to vote");
+    if (!rsvp) throw new Error(await eventActionMessage("voteRsvpRequired"));
     voterName = rsvp.guestName;
   }
 
@@ -126,7 +128,7 @@ export async function castVote(
     where: { id: pollOptionId },
     select: { text: true },
   });
-  if (!option) throw new Error("Option not found");
+  if (!option) throw new Error(await eventActionMessage("optionNotFound"));
 
   if (isVoted) {
     if (!poll.multiChoice) {
@@ -187,7 +189,7 @@ export async function addPollOption(
   guestEditToken?: string,
   captchaToken?: string | null
 ) {
-  if (!text.trim()) throw new Error("Option text cannot be empty");
+  if (!text.trim()) throw new Error(await eventActionMessage("optionEmpty"));
   await assertCaptcha("poll_option", captchaToken);
 
   const poll = await db.poll.findUnique({
@@ -202,8 +204,8 @@ export async function addPollOption(
       },
     },
   });
-  if (!poll) throw new Error("Poll not found");
-  if (poll.locked) throw new Error("This poll is locked");
+  if (!poll) throw new Error(await eventActionMessage("pollNotFound"));
+  if (poll.locked) throw new Error(await eventActionMessage("pollLocked"));
 
   const session = await getSession();
   const isOwner = session?.userId === poll.event.hostId;
@@ -211,11 +213,10 @@ export async function addPollOption(
   const isHost = isOwner || isCohost;
 
   if (!isHost) {
-    if (!poll.allowGuestsToAdd)
-      throw new Error("Guests are not allowed to add options to this poll");
+    if (!poll.allowGuestsToAdd) throw new Error(await eventActionMessage("guestOptionsDisabled"));
     // SEC-24: authorize by secret editToken; the creator name is the RSVP's.
     const rsvp = await findApprovedGuestByToken(guestEditToken, poll.eventId);
-    if (!rsvp) throw new Error("Unauthorized: a valid approved RSVP is required");
+    if (!rsvp) throw new Error(await eventActionMessage("approvedRsvpRequired"));
     creatorName = rsvp.guestName;
   }
 
@@ -228,7 +229,7 @@ export async function addPollOption(
       },
     },
   });
-  if (existing) throw new Error("Option already exists");
+  if (existing) throw new Error(await eventActionMessage("optionExists"));
 
   const option = await db.pollOption.create({
     data: {
@@ -265,7 +266,7 @@ export async function updatePollSettings(
     where: { id: pollId },
     select: { eventId: true, question: true },
   });
-  if (!poll) throw new Error("Poll not found");
+  if (!poll) throw new Error(await eventActionMessage("pollNotFound"));
 
   const event = await assertHostOrCohost(poll.eventId);
 
@@ -309,7 +310,7 @@ export async function deletePollOption(pollId: string, optionId: string) {
     where: { id: pollId },
     select: { eventId: true, question: true },
   });
-  if (!poll) throw new Error("Poll not found");
+  if (!poll) throw new Error(await eventActionMessage("pollNotFound"));
 
   const event = await assertHostOrCohost(poll.eventId);
 
@@ -317,7 +318,7 @@ export async function deletePollOption(pollId: string, optionId: string) {
     where: { id: optionId },
     select: { text: true },
   });
-  if (!option) throw new Error("Option not found");
+  if (!option) throw new Error(await eventActionMessage("optionNotFound"));
 
   await db.pollOption.delete({
     where: { id: optionId },

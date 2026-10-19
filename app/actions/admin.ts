@@ -1,4 +1,6 @@
 "use server";
+import { getRequestLocale, getRequestTranslator } from "@/i18n/server";
+import { DEFAULT_LOCALE } from "@/i18n/config";
 
 import { randomBytes } from "crypto";
 import { db } from "@/lib/db";
@@ -13,7 +15,12 @@ import { encryptConfig, decryptConfig } from "@/lib/crypto";
 import { hashToken } from "@/lib/hash";
 import { sendWelcomeEmail } from "@/lib/email";
 import { normalizePhone } from "@/lib/auth";
-import { EMAIL_TEMPLATE_META, TEMPLATE_IDS, type TemplateId } from "@/emails/registry";
+import {
+  EMAIL_TEMPLATE_META,
+  getEmailTemplateMeta,
+  TEMPLATE_IDS,
+  type TemplateId,
+} from "@/emails/registry";
 import { assertAdmin } from "@/lib/auth-guards";
 import { isValidFontId } from "@/lib/fonts";
 import { getSystemConfigMap } from "@/lib/config";
@@ -79,12 +86,14 @@ export async function getAdminUsers(query: string = "") {
 }
 
 export async function updateUserRole(userId: string, role: "GUEST" | "HOST" | "ADMIN") {
+  const tr = await getRequestTranslator();
+
   const session = await assertAdmin();
   if (userId === session.userId) {
-    throw new Error("You cannot change your own admin role.");
+    throw new Error(tr("Ui.Errors.Admin.youCannotChangeYourOwnAdminRole"));
   }
   if (userId === "system") {
-    throw new Error("You cannot change the role of the system user.");
+    throw new Error(tr("Ui.Errors.Admin.youCannotChangeTheRoleOfTheSystemUser"));
   }
 
   await db.user.update({
@@ -100,12 +109,14 @@ export async function updateUserRole(userId: string, role: "GUEST" | "HOST" | "A
 }
 
 export async function deleteUserAccount(userId: string) {
+  const tr = await getRequestTranslator();
+
   const session = await assertAdmin();
   if (userId === session.userId) {
-    throw new Error("You cannot delete your own admin account.");
+    throw new Error(tr("Ui.Errors.Admin.youCannotDeleteYourOwnAdminAccount"));
   }
   if (userId === "system") {
-    throw new Error("You cannot delete the system user.");
+    throw new Error(tr("Ui.Errors.Admin.youCannotDeleteTheSystemUser"));
   }
 
   const result = await scheduleUserDeletion(userId);
@@ -182,13 +193,15 @@ export async function createInviteCode(data: {
   expiresAt?: Date | null;
   note?: string | null;
 }) {
+  const tr = await getRequestTranslator();
+
   await assertAdmin();
 
   const code = data.code.trim();
-  if (!code) throw new Error("Invite code cannot be empty.");
+  if (!code) throw new Error(tr("Ui.Errors.Admin.inviteCodeCannotBeEmpty"));
 
   const existing = await db.hostInviteCode.findUnique({ where: { code } });
-  if (existing) throw new Error("An invite code with this text already exists.");
+  if (existing) throw new Error(tr("Ui.Errors.Admin.anInviteCodeWithThisTextAlreadyExists"));
 
   const newCode = await db.hostInviteCode.create({
     data: {
@@ -362,9 +375,11 @@ export async function testEmailConfigAction(data: {
   cfAccountId?: string;
   cfApiToken?: string;
 }) {
+  const tr = await getRequestTranslator();
+
   const session = await assertAdmin();
   if (!session.email) {
-    throw new Error("Admin email is required to send test email.");
+    throw new Error(tr("Ui.Errors.Admin.adminEmailIsRequiredToSendTestEmail"));
   }
 
   let finalSmtpPass = data.smtpPass || "";
@@ -389,32 +404,39 @@ export async function testEmailConfigAction(data: {
 
   const { testEmailConfig } = await import("@/lib/email");
 
-  const result = await testEmailConfig(session.email, {
-    provider: data.provider,
-    from: (data.from || "").trim(),
-    smtp: {
-      host: (data.smtpHost || "").trim(),
-      port: parseInt((data.smtpPort || "").trim() || "587"),
-      secure: !!data.smtpSecure,
-      user: (data.smtpUser || "").trim(),
-      pass: finalSmtpPass,
+  const result = await testEmailConfig(
+    session.email,
+    {
+      provider: data.provider,
+      from: (data.from || "").trim(),
+      smtp: {
+        host: (data.smtpHost || "").trim(),
+        port: parseInt((data.smtpPort || "").trim() || "587"),
+        secure: !!data.smtpSecure,
+        user: (data.smtpUser || "").trim(),
+        pass: finalSmtpPass,
+      },
+      cloudflare: {
+        url: (data.cfWorkerUrl || "").trim(),
+        secret: finalCfWorkerSecret,
+        accountId: (data.cfAccountId || "").trim(),
+        apiToken: finalCfApiToken,
+      },
     },
-    cloudflare: {
-      url: (data.cfWorkerUrl || "").trim(),
-      secret: finalCfWorkerSecret,
-      accountId: (data.cfAccountId || "").trim(),
-      apiToken: finalCfApiToken,
-    },
-  });
+    await getRequestLocale()
+  );
 
   return result;
 }
 
 // ── Email templates (copy + toggles, previews, test sends) ───────────────────
 
-function parseTemplateId(id: string): TemplateId {
+function parseTemplateId(
+  id: string,
+  tr: Awaited<ReturnType<typeof getRequestTranslator>>
+): TemplateId {
   if (!TEMPLATE_IDS.includes(id as TemplateId)) {
-    throw new Error("Unknown email template");
+    throw new Error(tr("Ui.Errors.Admin.unknownEmailTemplate"));
   }
   return id as TemplateId;
 }
@@ -435,9 +457,10 @@ async function emailThemeForPreview(base?: string) {
 export async function getEmailTemplatesAdmin() {
   await assertAdmin();
   const { getEmailTemplateSettings } = await import("@/lib/email-settings");
+  const localizedMeta = getEmailTemplateMeta(await getRequestTranslator());
   const templates = await Promise.all(
     TEMPLATE_IDS.map(async (id) => ({
-      meta: EMAIL_TEMPLATE_META[id],
+      meta: localizedMeta[id],
       overrides: await getEmailTemplateSettings(id),
     }))
   );
@@ -445,12 +468,14 @@ export async function getEmailTemplatesAdmin() {
 }
 
 export async function saveEmailTemplateAction(id: string, overrides: unknown) {
+  const tr = await getRequestTranslator();
+
   await assertAdmin();
-  const templateId = parseTemplateId(id);
+  const templateId = parseTemplateId(id, await getRequestTranslator());
   const { templateOverridesSchema, templateConfigKey } = await import("@/lib/email-settings");
   const parsed = templateOverridesSchema.safeParse(overrides);
   if (!parsed.success) {
-    return { success: false as const, error: "Invalid template settings" };
+    return { success: false as const, error: tr("Ui.Errors.Admin.invalidTemplateSettings") };
   }
   // Persist only real overrides; empty strings mean "use the default".
   const cleaned = Object.fromEntries(
@@ -469,7 +494,7 @@ export async function saveEmailTemplateAction(id: string, overrides: unknown) {
 
 export async function resetEmailTemplateAction(id: string) {
   await assertAdmin();
-  const templateId = parseTemplateId(id);
+  const templateId = parseTemplateId(id, await getRequestTranslator());
   const { templateConfigKey } = await import("@/lib/email-settings");
   await db.systemConfig.deleteMany({ where: { key: templateConfigKey(templateId) } });
   revalidatePath("/admin");
@@ -493,7 +518,7 @@ export async function previewEmailTemplateAction(
   sampleBase?: string
 ) {
   await assertAdmin();
-  const templateId = parseTemplateId(id);
+  const templateId = parseTemplateId(id, await getRequestTranslator());
   const { templateOverridesSchema } = await import("@/lib/email-settings");
   const parsed = templateOverridesSchema.safeParse(overrides ?? {});
   const { buildSampleEmail } = await import("@/emails/registry");
@@ -502,10 +527,11 @@ export async function previewEmailTemplateAction(
   const theme = meta.eventScoped
     ? await emailThemeForPreview(sampleBase ?? "DARK")
     : await emailThemeForPreview();
-  const { subject, element } = buildSampleEmail(
+  const { subject, element } = await buildSampleEmail(
     templateId,
     theme,
-    parsed.success ? parsed.data : {}
+    parsed.success ? parsed.data : {},
+    await getRequestLocale()
   );
   const { html } = await renderEmail(element);
   return { subject, html };
@@ -513,15 +539,17 @@ export async function previewEmailTemplateAction(
 
 /** Send a sample of any template to the signed-in admin's email. */
 export async function sendEmailTemplateTestAction(id: string, sampleBase?: string) {
+  const tr = await getRequestTranslator();
+
   const session = await assertAdmin();
   if (!session.email) {
-    throw new Error("Admin email is required to send a test email.");
+    throw new Error(tr("Ui.Errors.Admin.adminEmailIsRequiredToSendATestEmail"));
   }
-  const templateId = parseTemplateId(id);
+  const templateId = parseTemplateId(id, await getRequestTranslator());
   const { rateLimit } = await import("@/lib/rateLimit");
   const limit = await rateLimit(`admin-email-test:${session.userId}`, 10, 3600);
   if (!limit.success) {
-    return { success: false as const, error: "Too many test emails. Try again later." };
+    return { success: false as const, error: tr("Ui.Errors.Admin.tooManyTestEmailsTryAgainLater") };
   }
   const { getEmailTemplateSettings } = await import("@/lib/email-settings");
   const { buildSampleEmail } = await import("@/emails/registry");
@@ -532,7 +560,12 @@ export async function sendEmailTemplateTestAction(id: string, sampleBase?: strin
     ? await emailThemeForPreview(sampleBase ?? "DARK")
     : await emailThemeForPreview();
   const overrides = await getEmailTemplateSettings(templateId);
-  const { subject, element } = buildSampleEmail(templateId, theme, overrides);
+  const { subject, element } = await buildSampleEmail(
+    templateId,
+    theme,
+    overrides,
+    await getRequestLocale()
+  );
   const { html, text } = await renderEmail(element);
   // Send the real subject (no prefix) so the test matches exactly what a
   // recipient would receive; it goes only to the admin's own inbox.
@@ -556,11 +589,15 @@ export async function testSmsConfigAction(data: {
 
   const { testSmsConfig } = await import("@/lib/sms");
 
-  return testSmsConfig(data.testTo.trim(), {
-    sid: (data.sid || "").trim(),
-    token: finalToken,
-    phone: (data.phone || "").trim(),
-  });
+  return testSmsConfig(
+    data.testTo.trim(),
+    {
+      sid: (data.sid || "").trim(),
+      token: finalToken,
+      phone: (data.phone || "").trim(),
+    },
+    await getRequestLocale()
+  );
 }
 
 /**
@@ -576,7 +613,10 @@ export async function createBackupAction() {
     return { success: true, filename };
   } catch (err) {
     console.error("[admin] Failed to trigger manual backup:", err);
-    const msg = err instanceof Error ? err.message : "Manual database backup failed.";
+    const msg =
+      err instanceof Error
+        ? err.message
+        : (await getRequestTranslator())("Ui.Errors.Admin.manualBackupFailed");
     throw new Error(msg);
   }
 }
@@ -594,7 +634,10 @@ export async function deleteBackupAction(filename: string) {
     return { success };
   } catch (err) {
     console.error("[admin] Failed to delete backup file:", err);
-    const msg = err instanceof Error ? err.message : "Failed to delete backup file.";
+    const msg =
+      err instanceof Error
+        ? err.message
+        : (await getRequestTranslator())("Ui.Errors.Admin.deleteBackupFileFailed");
     throw new Error(msg);
   }
 }
@@ -624,10 +667,12 @@ export async function getBackupConfig() {
 }
 
 export async function updateBackupConfigAction(schedule: string, keepCount: number) {
+  const tr = await getRequestTranslator();
+
   await assertAdmin();
 
   if (keepCount <= 0) {
-    throw new Error("Backup retention count must be at least 1.");
+    throw new Error(tr("Ui.Errors.Admin.backupRetentionCountMustBeAtLeast1"));
   }
 
   await db.$transaction([
@@ -665,8 +710,10 @@ export async function createThemePreset(data: {
   cardOpacity?: number | null;
   fontId?: string | null;
 }) {
+  const tr = await getRequestTranslator();
+
   await assertAdmin();
-  if (!isValidFontId(data.fontId)) throw new Error("Unknown font");
+  if (!isValidFontId(data.fontId)) throw new Error(tr("Ui.Errors.Admin.unknownFont"));
   const maxOrder = await db.themePreset.aggregate({ _max: { sortOrder: true } });
   const snapshot = {
     name: data.name,
@@ -729,8 +776,11 @@ export async function updateThemePreset(
     fontId: string | null;
   }>
 ) {
+  const tr = await getRequestTranslator();
+
   await assertAdmin();
-  if ("fontId" in data && !isValidFontId(data.fontId)) throw new Error("Unknown font");
+  if ("fontId" in data && !isValidFontId(data.fontId))
+    throw new Error(tr("Ui.Errors.Admin.unknownFont"));
   await db.themePreset.update({ where: { id }, data });
   revalidatePath("/admin");
   return { success: true };
@@ -749,14 +799,16 @@ export async function createAdminUser(data: {
   phone?: string;
   role: "GUEST" | "HOST" | "ADMIN";
 }): Promise<{ success: true } | { success: false; error: string }> {
+  const tr = await getRequestTranslator();
+
   await assertAdmin();
 
   const email = data.email.trim().toLowerCase();
   if (!email) {
-    return { success: false, error: "Email is required." };
+    return { success: false, error: tr("Ui.Errors.Admin.emailIsRequired") };
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { success: false, error: "Please enter a valid email address." };
+    return { success: false, error: tr("Ui.Errors.Admin.pleaseEnterAValidEmailAddress") };
   }
 
   const rawPhone = data.phone?.trim() || undefined;
@@ -765,18 +817,18 @@ export async function createAdminUser(data: {
   const role = data.role;
 
   if (!["GUEST", "HOST", "ADMIN"].includes(role)) {
-    return { success: false, error: "Invalid role." };
+    return { success: false, error: tr("Ui.Errors.Admin.invalidRole") };
   }
 
   const existingEmail = await db.user.findUnique({ where: { email } });
   if (existingEmail) {
-    return { success: false, error: "A user with this email already exists." };
+    return { success: false, error: tr("Ui.Errors.Admin.aUserWithThisEmailAlreadyExists") };
   }
 
   if (phone) {
     const existingPhone = await db.user.findUnique({ where: { phone } });
     if (existingPhone) {
-      return { success: false, error: "A user with this phone number already exists." };
+      return { success: false, error: tr("Ui.Errors.Admin.aUserWithThisPhoneNumberAlreadyExists") };
     }
   }
 
@@ -798,7 +850,7 @@ export async function createAdminUser(data: {
   const magicLink = `${appUrl}/auth/verify?token=${token}`;
 
   try {
-    await sendWelcomeEmail(email, magicLink);
+    await sendWelcomeEmail(email, magicLink, DEFAULT_LOCALE);
   } catch (err) {
     console.error("[admin:create-user] Failed to send welcome email:", err);
   }
@@ -815,12 +867,14 @@ export async function cancelAccountDeletion(userId: string) {
 }
 
 export async function deleteUserAccountImmediately(userId: string) {
+  const tr = await getRequestTranslator();
+
   const session = await assertAdmin();
   if (userId === session.userId) {
-    throw new Error("You cannot delete your own admin account.");
+    throw new Error(tr("Ui.Errors.Admin.youCannotDeleteYourOwnAdminAccount"));
   }
   if (userId === "system") {
-    throw new Error("You cannot delete the system user.");
+    throw new Error(tr("Ui.Errors.Admin.youCannotDeleteTheSystemUser"));
   }
 
   await performImmediateUserDeletion(userId);

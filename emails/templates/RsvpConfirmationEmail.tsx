@@ -1,3 +1,4 @@
+import { requireEmailI18n } from "../i18n";
 import { EmailLayout } from "../components/EmailLayout";
 import { Hero } from "../components/Hero";
 import { EmailButton } from "../components/EmailButton";
@@ -6,28 +7,36 @@ import { splitParagraphs } from "../render";
 import type { RsvpConfirmationEmailProps } from "../types";
 
 export function RsvpConfirmationEmail({
+  i18n,
   theme,
   body,
   toggles,
   event,
-  statusLabel,
+  status,
   eventUrl,
   editUrl,
 }: RsvpConfirmationEmailProps) {
-  const emoji = statusLabel === "Going" ? " 🎉" : statusLabel === "Maybe" ? " 🤞" : "";
+  const { t } = requireEmailI18n(i18n);
+  const emoji = status === "GOING" ? " 🎉" : status === "MAYBE" ? " 🤞" : "";
   const footer = (
     <p className="dm-text-muted" style={{ margin: 0, fontSize: "13px", color: theme.textMuted }}>
-      Changed your mind?{" "}
+      {t("Email.confirmation.changed")}{" "}
       <a href={editUrl} target="_blank" rel="noopener noreferrer" style={{ color: theme.accent }}>
-        Update your RSVP
+        {t("Email.confirmation.update")}
       </a>
     </p>
   );
+  const statusLabel = t(`Email.status.${status}`);
   return (
-    <EmailLayout theme={theme} preview={`You're ${statusLabel} — ${event.title}`} footer={footer}>
+    <EmailLayout
+      i18n={i18n}
+      theme={theme}
+      preview={t("Email.confirmation.preview", { status: statusLabel, eventTitle: event.title })}
+      footer={footer}
+    >
       <Hero
         theme={theme}
-        kicker="RSVP confirmed"
+        kicker={t("Email.confirmation.kicker")}
         title={event.title}
         showCoverImage={toggles.showCoverImage}
       />
@@ -55,8 +64,7 @@ export function RsvpConfirmationEmail({
                   color: theme.textPrimary,
                 }}
               >
-                {"You're "}
-                {statusLabel}!{emoji}
+                {t("Email.confirmation.heading", { status: statusLabel, emoji })}
               </h2>
               {splitParagraphs(body).map((paragraph, i) => (
                 <p
@@ -74,6 +82,7 @@ export function RsvpConfirmationEmail({
               ))}
 
               <DetailsCard
+                i18n={i18n}
                 theme={theme}
                 event={event}
                 showMapLink={toggles.showMapLink}
@@ -93,7 +102,7 @@ export function RsvpConfirmationEmail({
                   <tr>
                     <td>
                       <EmailButton theme={theme} href={eventUrl} variant="primary">
-                        View event
+                        {t("Email.viewEvent")}
                       </EmailButton>
                     </td>
                   </tr>

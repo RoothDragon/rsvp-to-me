@@ -1,5 +1,7 @@
 "use server";
 
+import { eventActionMessage } from "./localization";
+
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
@@ -25,7 +27,7 @@ async function getAuthorizedRsvp(rsvpId: string): Promise<{
   rsvp: EligibleRsvp;
 }> {
   const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
+  if (!session) throw new Error(await eventActionMessage("unauthorized"));
 
   const rsvp = await db.rSVP.findUnique({
     where: { id: rsvpId },
@@ -38,7 +40,7 @@ async function getAuthorizedRsvp(rsvpId: string): Promise<{
       event: { select: { slug: true } },
     },
   });
-  if (!rsvp) throw new Error("Forbidden");
+  if (!rsvp) throw new Error(await eventActionMessage("forbidden"));
   await assertHostOrCohost(rsvp.eventId);
   return { session, rsvp };
 }
@@ -95,21 +97,21 @@ export async function undoCheckIn(rsvpId: string) {
 
 export async function addWalkIn(rawInput: unknown, captchaToken?: string | null) {
   const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
+  if (!session) throw new Error(await eventActionMessage("unauthorized"));
   await assertCaptcha("walkin_create", captchaToken);
   const parsed = AddWalkInSchema.safeParse(rawInput);
   if (!parsed.success) {
-    return { success: false as const, error: "Please check the walk-in details and try again." };
+    return { success: false as const, error: await eventActionMessage("walkInInvalid") };
   }
   const data = parsed.data;
   const event = await assertHostOrCohost(data.eventId);
   const channels = await getChannelConfig();
 
   if (data.guestEmail && !channels.email) {
-    return { success: false as const, error: "Email is not enabled for this site." };
+    return { success: false as const, error: await eventActionMessage("emailDisabled") };
   }
   if (data.guestPhone && !channels.sms) {
-    return { success: false as const, error: "SMS is not enabled for this site." };
+    return { success: false as const, error: await eventActionMessage("smsDisabled") };
   }
 
   const guestEmail = data.guestEmail || null;
@@ -127,8 +129,7 @@ export async function addWalkIn(rawInput: unknown, captchaToken?: string | null)
     if (matches.length > 1) {
       return {
         success: false as const,
-        error:
-          "That contact information matches more than one RSVP. Search the guest list instead.",
+        error: await eventActionMessage("ambiguousContact"),
       };
     }
     if (matches[0]) {

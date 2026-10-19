@@ -1,34 +1,37 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { APP_SHELL } from "@/lib/theme";
 import { appCardStyle } from "@/components/ui/AppPrimitives";
 import type { AdminStats } from "./types";
 
 export function OverviewTab({ initialStats }: { initialStats: AdminStats }) {
+  const tr = useTranslations("Ui.Admin");
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {[
           {
-            label: "Total Users",
+            label: tr("totalUsers"),
             val: initialStats.totalUsers,
             glow: "rgba(168, 85, 247, 0.4)",
             emoji: "👥",
           },
           {
-            label: "Total Events",
+            label: tr("totalEvents"),
             val: initialStats.totalEvents,
             glow: "rgba(236, 72, 153, 0.4)",
             emoji: "🎈",
           },
           {
-            label: "Total RSVPs",
+            label: tr("totalRsvps"),
             val: initialStats.totalRsvps,
             glow: "rgba(16, 185, 129, 0.4)",
             emoji: "✓",
           },
           {
-            label: "Guest Check-Ins",
+            label: tr("guestCheckIns"),
             val: initialStats.totalCheckIns,
             glow: "rgba(14, 165, 233, 0.4)",
             emoji: "📍",

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Users, X, Check } from "lucide-react";
 import type { EventData } from "./types";
 import type { ResolvedTheme } from "@/lib/theme";
@@ -28,14 +30,19 @@ export function PendingApprovalsCard({
     React.SetStateAction<{ rsvpId: string; type: "APPROVE" | "DECLINE"; guestName: string } | null>
   >;
 }) {
+  const translate = useTranslations("Ui.Event.PendingApprovals");
+
   return (
     <>
       {/* ── Pending approvals (host only) ── */}
       {isHost && event.pendingRsvps.length > 0 && (
-        <EventCard theme={t} aria-label="Pending RSVP approvals">
+        <EventCard theme={t} aria-label={translate("pendingRsvpApprovals")}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px" }}>
             <Users size={16} style={{ color: t.accent }} />
-            <span style={{ fontWeight: 700 }}>Pending Approval ({event.pendingRsvps.length})</span>
+            <span style={{ fontWeight: 700 }}>
+              {translate("pendingApproval")}
+              {event.pendingRsvps.length})
+            </span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
             {event.pendingRsvps.map((r, i) => (
@@ -75,7 +82,7 @@ export function PendingApprovalsCard({
                     fontWeight: 700,
                     cursor: "pointer",
                   }}
-                  title="Approve"
+                  title={translate("approve")}
                 >
                   <Check size={14} />
                 </button>
@@ -94,7 +101,7 @@ export function PendingApprovalsCard({
                     fontSize: "13px",
                     cursor: "pointer",
                   }}
-                  title="Decline"
+                  title={translate("decline")}
                 >
                   <X size={14} />
                 </button>
@@ -128,6 +135,8 @@ export function ApprovalMessageModal({
   handleApprove: (rsvpId: string, message?: string) => void;
   handleDecline: (rsvpId: string, message?: string) => void;
 }) {
+  const translate = useTranslations("Ui.Event.PendingApprovals");
+
   const close = () => {
     setActiveApproval(null);
     setApprovalMessage("");
@@ -154,17 +163,19 @@ export function ApprovalMessageModal({
             id="approval-message-dialog-title"
             style={{ fontSize: "18px", fontWeight: 800, color: t.textPrimary, margin: "0 0 8px" }}
           >
-            {activeApproval.type === "APPROVE" ? "Approve RSVP" : "Decline RSVP"}
+            {activeApproval.type === "APPROVE"
+              ? translate("approveRsvp")
+              : translate("declineRsvp")}
           </h3>
           <p style={{ fontSize: "14px", color: t.textSecondary, margin: "0 0 16px" }}>
             {activeApproval.type === "APPROVE"
-              ? `Would you like to send a message to ${activeApproval.guestName}?`
-              : `Would you like to send a message to ${activeApproval.guestName} explaining why?`}
+              ? translate("approvalMessage", { name: activeApproval.guestName })
+              : translate("declineMessage", { name: activeApproval.guestName })}
           </p>
           <textarea
             style={{ ...S.inp, resize: "none", marginBottom: "20px" } as React.CSSProperties}
             rows={3}
-            placeholder="Type an optional message..."
+            placeholder={translate("typeOptionalMessage")}
             value={approvalMessage}
             onChange={(e) => setApprovalMessage(e.target.value)}
           />
@@ -182,7 +193,7 @@ export function ApprovalMessageModal({
                 fontWeight: 600,
               }}
             >
-              Cancel
+              {translate("cancel")}
             </button>
             <button
               onClick={() => {
@@ -208,7 +219,7 @@ export function ApprovalMessageModal({
                 fontWeight: 700,
               }}
             >
-              {activeApproval.type === "APPROVE" ? "Approve" : "Decline"}
+              {activeApproval.type === "APPROVE" ? translate("approve") : translate("decline")}
             </button>
           </div>
         </>

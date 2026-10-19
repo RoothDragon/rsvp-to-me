@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import NextImage from "next/image";
 import type { ResolvedTheme } from "@/lib/theme";
 import { Dialog } from "@/components/ui/Dialog";
@@ -17,6 +19,8 @@ export function ShareQrModal({
   qrDataUrl: string | null;
   setQrDataUrl: React.Dispatch<React.SetStateAction<string | null>>;
 }) {
+  const translate = useTranslations("Ui.Event.ShareQrModal");
+
   const close = () => {
     setShowShareQr(false);
     setQrDataUrl(null);
@@ -48,7 +52,7 @@ export function ShareQrModal({
           margin: "0 0 16px",
         }}
       >
-        Event QR Code
+        {translate("eventQrCode")}
       </h3>
       <div
         style={{
@@ -62,7 +66,7 @@ export function ShareQrModal({
         {qrDataUrl ? (
           <NextImage
             src={qrDataUrl}
-            alt="Event QR Code"
+            alt={translate("eventQrCode")}
             width={200}
             height={200}
             unoptimized
@@ -81,7 +85,7 @@ export function ShareQrModal({
               fontWeight: 600,
             }}
           >
-            Generating QR…
+            {translate("generatingQr")}
           </div>
         )}
       </div>
@@ -99,7 +103,7 @@ export function ShareQrModal({
           fontWeight: 700,
         }}
       >
-        Close
+        {translate("close")}
       </button>
     </Dialog>
   );

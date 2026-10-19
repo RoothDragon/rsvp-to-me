@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@/tests/components/render";
 import { testTheme } from "./helpers/theme";
 import { GuestListSection } from "@/components/event/event-page/GuestListSection";
 import type { EventData } from "@/components/event/event-page/types";

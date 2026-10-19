@@ -1,3 +1,5 @@
+import { locales } from "@/i18n/config";
+import { requireEmailI18n, type EmailI18n } from "../i18n";
 import type { EmailTheme } from "@/lib/email-theme";
 import type * as React from "react";
 
@@ -21,18 +23,21 @@ const responsiveStyles = `
 `;
 
 export function EmailLayout({
+  i18n,
   theme,
   preview,
   footer,
   children,
 }: {
+  i18n?: EmailI18n;
   theme: EmailTheme;
   preview: string;
   footer?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const { t, locale } = requireEmailI18n(i18n);
   return (
-    <html lang="en">
+    <html lang={locale} dir={locales[locale].dir}>
       <head>
         <meta name="color-scheme" content="light dark" />
         <meta name="supported-color-schemes" content="light dark" />
@@ -109,7 +114,7 @@ export function EmailLayout({
                             className="dm-text-muted"
                             style={{ margin: "8px 0 0", fontSize: "12px", color: theme.textMuted }}
                           >
-                            Sent with RSVP to Me
+                            {t("Email.sentWith")}
                           </p>
                         </td>
                       </tr>

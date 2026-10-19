@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations, useLocale } from "next-intl";
+import { getTurnstileLanguage } from "@/i18n/turnstile";
 import Script from "next/script";
 import {
   createContext,
@@ -35,12 +37,15 @@ const CaptchaContext = createContext<CaptchaContextValue>({
   executeCaptcha: async () => null,
 });
 
-async function waitForTurnstile(container: HTMLDivElement | null): Promise<TurnstileApi> {
+async function waitForTurnstile(
+  container: HTMLDivElement | null,
+  errorMessage: string
+): Promise<TurnstileApi> {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     if (window.turnstile && container) return window.turnstile;
     await new Promise((resolve) => window.setTimeout(resolve, 50));
   }
-  throw new Error(CAPTCHA_ERROR_MESSAGE);
+  throw new Error(errorMessage);
 }
 
 export function CaptchaProvider({
@@ -54,6 +59,9 @@ export function CaptchaProvider({
   nonce?: string;
   children: ReactNode;
 }) {
+  const t = useTranslations("Ui.Errors.Captcha");
+  const locale = useLocale();
+  const errorMessage = t("humanVerification");
   const enabled = !!siteKey && !bypass;
   const [interactive, setInteractive] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -71,7 +79,7 @@ export function CaptchaProvider({
 
       await previousChallenge;
       try {
-        const turnstile = await waitForTurnstile(containerRef.current);
+        const turnstile = await waitForTurnstile(containerRef.current, errorMessage);
 
         return await new Promise<string>((resolve, reject) => {
           let widgetId = "";
@@ -93,7 +101,7 @@ export function CaptchaProvider({
             if (settled) return;
             settled = true;
             cleanup();
-            reject(new Error(CAPTCHA_ERROR_MESSAGE));
+            reject(new Error(errorMessage));
           };
 
           try {
@@ -103,6 +111,7 @@ export function CaptchaProvider({
               execution: "execute",
               appearance: "interaction-only",
               theme: "auto",
+              language: getTurnstileLanguage(locale),
               retry: "auto",
               "refresh-expired": "auto",
               callback: succeed,
@@ -121,7 +130,7 @@ export function CaptchaProvider({
         releaseChallenge();
       }
     },
-    [enabled, siteKey]
+    [enabled, siteKey, locale, errorMessage]
   );
 
   const value = useMemo(() => ({ executeCaptcha }), [executeCaptcha]);
@@ -165,23 +174,35 @@ export function CaptchaProvider({
 }
 
 export function useCaptcha() {
+  const t = useTranslations("Ui.Errors.Captcha");
   const { executeCaptcha } = useContext(CaptchaContext);
   const pendingActionsRef = useRef(new Set<CaptchaAction>());
 
   const runWithCaptcha = useCallback(
     async <T,>(action: CaptchaAction, submit: (token: string | null) => Promise<T>): Promise<T> => {
       if (pendingActionsRef.current.has(action)) {
-        throw new Error("This submission is already in progress.");
+        throw new Error(t("inProgress"));
       }
       pendingActionsRef.current.add(action);
       try {
         const token = await executeCaptcha(action);
         return await submit(token);
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          (error.name === "CaptchaVerificationError" || error.message === CAPTCHA_ERROR_MESSAGE)
+        ) {
+          const localized = new Error(t("humanVerification"));
+          localized.name = error.name;
+          if ("code" in error) Object.assign(localized, { code: error.code });
+          throw localized;
+        }
+        throw error;
       } finally {
         pendingActionsRef.current.delete(action);
       }
     },
-    [executeCaptcha]
+    [executeCaptcha, t]
   );
 
   return useMemo(() => ({ runWithCaptcha }), [runWithCaptcha]);

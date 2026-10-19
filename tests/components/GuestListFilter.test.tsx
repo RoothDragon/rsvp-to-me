@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@/tests/components/render";
 import { testTheme } from "./helpers/theme";
 
 const mocks = vi.hoisted(() => ({

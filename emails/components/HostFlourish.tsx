@@ -1,7 +1,17 @@
+import { requireEmailI18n, type EmailI18n } from "../i18n";
 import type { EmailTheme } from "@/lib/email-theme";
 
 /** "Hosted by" attribution with the themed avatar-gradient monogram. */
-export function HostFlourish({ theme, hostName }: { theme: EmailTheme; hostName: string }) {
+export function HostFlourish({
+  i18n,
+  theme,
+  hostName,
+}: {
+  i18n?: EmailI18n;
+  theme: EmailTheme;
+  hostName: string;
+}) {
+  const { t } = requireEmailI18n(i18n);
   const initial = (hostName.trim()[0] || "?").toUpperCase();
   return (
     <table
@@ -44,7 +54,7 @@ export function HostFlourish({ theme, hostName }: { theme: EmailTheme; hostName:
               className="dm-text-muted"
               style={{ margin: 0, fontSize: "12px", color: theme.textMuted }}
             >
-              Hosted by
+              {t("Email.hostedBy")}
             </p>
             <p
               className="dm-text-primary"

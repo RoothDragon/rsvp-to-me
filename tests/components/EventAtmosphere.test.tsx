@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { render } from "@testing-library/react";
+import { render } from "@/tests/components/render";
 import { EventAtmosphere } from "@/components/event/EventAtmosphere";
 import { testTheme } from "./helpers/theme";
 

@@ -1,5 +1,10 @@
 "use server";
 
+import { eventActionMessage } from "./localization";
+
+import { groupRecipientsByLocale } from "@/emails/recipients";
+import { getTranslator } from "@/i18n/server";
+
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { sendBlastEmail } from "@/lib/email";
@@ -30,7 +35,7 @@ export async function sendBlast(
       host: { select: { name: true, email: true } },
     },
   });
-  if (!event) throw new Error("Event not found");
+  if (!event) throw new Error(await eventActionMessage("eventNotFound"));
 
   const whereStatus = buildRsvpStatusFilter(filters);
 
@@ -41,7 +46,7 @@ export async function sendBlast(
   while (true) {
     const rsvps = await db.rSVP.findMany({
       where: { eventId, guestEmail: { not: null }, ...whereStatus },
-      select: { guestEmail: true },
+      select: { guestEmail: true, user: { select: { preferredLocale: true } } },
       take: CHUNK_SIZE,
       skip,
       orderBy: { id: "asc" },
@@ -54,15 +59,22 @@ export async function sendBlast(
     );
 
     if (emails.length > 0) {
-      await sendBlastEmail(emails, {
-        eventTitle: event.title,
-        eventSlug: event.slug,
-        message,
-        hostName: event.hostDisplayName ?? event.host.name ?? "Your host",
-        theme: event.theme,
-        replyTo: event.host.email || undefined,
-      });
-
+      for (const [locale, addresses] of groupRecipientsByLocale(
+        rsvps.flatMap((r) =>
+          r.guestEmail ? [{ address: r.guestEmail, preferredLocale: r.user?.preferredLocale }] : []
+        )
+      )) {
+        const t = await getTranslator(locale);
+        await sendBlastEmail(addresses, {
+          locale,
+          eventTitle: event.title,
+          eventSlug: event.slug,
+          message,
+          hostName: event.hostDisplayName ?? event.host.name ?? t("Email.yourHost"),
+          theme: event.theme,
+          replyTo: event.host.email || undefined,
+        });
+      }
       totalSent += emails.length;
 
       await db.invitation
@@ -92,7 +104,7 @@ export async function sendSmsBlast(
     where: { id: eventId },
     select: { title: true, slug: true, hostDisplayName: true, host: { select: { name: true } } },
   });
-  if (!event) throw new Error("Event not found");
+  if (!event) throw new Error(await eventActionMessage("eventNotFound"));
 
   const whereStatus = buildRsvpStatusFilter(filters);
 
@@ -103,7 +115,7 @@ export async function sendSmsBlast(
   while (true) {
     const rsvps = await db.rSVP.findMany({
       where: { eventId, guestPhone: { not: null }, ...whereStatus },
-      select: { guestPhone: true },
+      select: { guestPhone: true, user: { select: { preferredLocale: true } } },
       take: CHUNK_SIZE,
       skip,
       orderBy: { id: "asc" },
@@ -116,13 +128,21 @@ export async function sendSmsBlast(
     );
 
     if (phones.length > 0) {
-      const sent = await smsSendBlast(phones, {
-        eventTitle: event.title,
-        eventSlug: event.slug,
-        message,
-        hostName: event.hostDisplayName ?? event.host.name ?? "Your host",
-      });
-
+      let sent = 0;
+      for (const [locale, addresses] of groupRecipientsByLocale(
+        rsvps.flatMap((r) =>
+          r.guestPhone ? [{ address: r.guestPhone, preferredLocale: r.user?.preferredLocale }] : []
+        )
+      )) {
+        const t = await getTranslator(locale);
+        sent += await smsSendBlast(addresses, {
+          locale,
+          eventTitle: event.title,
+          eventSlug: event.slug,
+          message,
+          hostName: event.hostDisplayName ?? event.host.name ?? t("Email.yourHost"),
+        });
+      }
       totalSent += sent;
 
       await db.invitation
@@ -159,19 +179,19 @@ export async function addEventUpdate(
       select: {
         guestEmail: true,
         guestPhone: true,
-        user: { select: { notificationChannel: true } },
+        user: { select: { notificationChannel: true, preferredLocale: true } },
       },
     });
 
-    const emailGuests: string[] = [];
-    const smsGuests: string[] = [];
+    const emailGuests: { address: string; preferredLocale?: string | null }[] = [];
+    const smsGuests: { address: string; preferredLocale?: string | null }[] = [];
 
     for (const r of rsvps) {
       const channel = r.user?.notificationChannel ?? "EMAIL";
       if (channel === "SMS" && r.guestPhone) {
-        smsGuests.push(r.guestPhone);
+        smsGuests.push({ address: r.guestPhone, preferredLocale: r.user?.preferredLocale });
       } else if (r.guestEmail) {
-        emailGuests.push(r.guestEmail);
+        emailGuests.push({ address: r.guestEmail, preferredLocale: r.user?.preferredLocale });
       }
     }
 
@@ -186,26 +206,34 @@ export async function addEventUpdate(
         },
       });
       const eventTitle = fullEvent?.title ?? event.slug;
-      const hostName = fullEvent?.hostDisplayName ?? fullEvent?.host?.name ?? "Your host";
+      const hostName = fullEvent?.hostDisplayName ?? fullEvent?.host?.name;
       const replyTo = fullEvent?.host?.email || undefined;
 
       if (emailGuests.length > 0) {
-        sendBlastEmail(emailGuests, {
-          eventTitle,
-          eventSlug: event.slug,
-          message: body,
-          hostName,
-          theme: fullEvent?.theme,
-          replyTo,
-        }).catch(logSafe("addEventUpdate"));
+        for (const [locale, addresses] of groupRecipientsByLocale(emailGuests)) {
+          const t = await getTranslator(locale);
+          sendBlastEmail(addresses, {
+            locale,
+            eventTitle,
+            eventSlug: event.slug,
+            message: body,
+            hostName: hostName ?? t("Email.yourHost"),
+            theme: fullEvent?.theme,
+            replyTo,
+          }).catch(logSafe("addEventUpdate"));
+        }
       }
       if (smsGuests.length > 0) {
-        smsSendBlast(smsGuests, {
-          eventTitle,
-          eventSlug: event.slug,
-          message: body,
-          hostName,
-        }).catch(logSafe("addEventUpdate"));
+        for (const [locale, addresses] of groupRecipientsByLocale(smsGuests)) {
+          const t = await getTranslator(locale);
+          smsSendBlast(addresses, {
+            locale,
+            eventTitle,
+            eventSlug: event.slug,
+            message: body,
+            hostName: hostName ?? t("Email.yourHost"),
+          }).catch(logSafe("addEventUpdate"));
+        }
       }
     }
   }
@@ -218,7 +246,7 @@ export async function deleteEventUpdate(updateId: string) {
     where: { id: updateId },
     select: { eventId: true, event: { select: { slug: true } } },
   });
-  if (!update) throw new Error("Forbidden");
+  if (!update) throw new Error(await eventActionMessage("forbidden"));
   await assertHostOrCohost(update.eventId);
   await db.eventUpdate.delete({ where: { id: updateId } });
   revalidatePath(`/e/${update.event.slug}`);

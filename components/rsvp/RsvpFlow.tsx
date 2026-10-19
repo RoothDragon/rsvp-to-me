@@ -1,16 +1,16 @@
 "use client";
 
+import { useTranslations, useLocale } from "next-intl";
+
 import { useState, useTransition } from "react";
 import { addRSVP, updateRSVP, updateRsvpAsHost } from "@/app/actions/event";
 import type { ResolvedTheme } from "@/lib/theme";
 import { Check } from "lucide-react";
-import { AppTopNav } from "@/components/ui/AppNav";
 import { EventAtmosphere } from "@/components/event/EventAtmosphere";
 import type { EffectConfig } from "@/lib/effects";
 import {
   RSVP_RESPONSE_STATUSES,
   RSVP_STATUS_EMOJIS,
-  RSVP_STATUS_LABELS,
   RsvpStatusChoice,
   type RsvpResponseStatus,
 } from "./status";
@@ -83,7 +83,6 @@ export function RsvpFlow({
   initialStatus,
   existingRsvp,
   returnPath,
-  sessionUser,
   channelConfig = { email: true, sms: true },
   organizerOverride = false,
   readOnlyReason,
@@ -99,6 +98,10 @@ export function RsvpFlow({
   organizerOverride?: boolean;
   readOnlyReason?: string;
 }) {
+  const translate = useTranslations("Ui.Rsvp.RsvpFlow");
+  const statusLabel = useTranslations("Ui.Rsvp.status");
+  const locale = useLocale();
+
   const t = theme;
   const isEdit = !!existingRsvp;
 
@@ -139,7 +142,9 @@ export function RsvpFlow({
   const plusOneCount = status === "GOING" ? plusOneNames.length : 0;
   const plusOneGuestNames =
     status === "GOING"
-      ? plusOneNames.map((n, i) => n.trim() || `Guest ${i + 1} of ${name.trim()}`)
+      ? plusOneNames.map(
+          (n, i) => n.trim() || translate("unnamedGuest", { number: i + 1, name: name.trim() })
+        )
       : [];
 
   const setAnswerValue = (fieldId: string, value: string) => {
@@ -187,7 +192,7 @@ export function RsvpFlow({
               : updateRSVP(existingRsvp.editToken, input, token)
           );
           if (!result.success) {
-            setError(result.error ?? "Something went wrong");
+            setError(result.error ?? translate("somethingWentWrong"));
             return;
           }
         } else {
@@ -208,7 +213,7 @@ export function RsvpFlow({
             )
           );
           if (!result.success) {
-            setError(result.error ?? "Something went wrong");
+            setError(result.error ?? translate("somethingWentWrong"));
             return;
           }
           setJustCreated(true);
@@ -224,19 +229,17 @@ export function RsvpFlow({
         }
         setDone(true);
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : "Something went wrong");
+        setError(reason instanceof Error ? reason.message : translate("somethingWentWrong"));
       }
     });
   };
 
-  const dateStr = new Date(event.startAt).toLocaleDateString("en-US", {
+  const dateStr = new Date(event.startAt).toLocaleDateString(locale, {
     weekday: "long",
     month: "long",
     day: "numeric",
     timeZone: event.timezone,
   });
-
-  const renderNav = () => <AppTopNav user={sessionUser ?? null} variant="fixed" />;
 
   if (readOnlyReason && existingRsvp) {
     return (
@@ -254,7 +257,6 @@ export function RsvpFlow({
           overflowX: "hidden",
         }}
       >
-        {renderNav()}
         <EventAtmosphere theme={t} effect={effect} />
         <div
           style={{
@@ -270,7 +272,7 @@ export function RsvpFlow({
         >
           <div style={{ fontSize: "36px", marginBottom: "12px" }}>🔒</div>
           <h1 style={{ fontSize: "22px", fontWeight: 800, marginBottom: "8px" }}>
-            RSVP editing is closed
+            {translate("rsvpEditingClosed")}
           </h1>
           <p style={{ color: t.textSecondary, fontSize: "14px", lineHeight: 1.6 }}>
             {readOnlyReason}
@@ -286,7 +288,10 @@ export function RsvpFlow({
           >
             <div style={{ fontWeight: 700 }}>{existingRsvp.guestName}</div>
             <div style={{ color: t.textSecondary, marginTop: "4px", fontSize: "14px" }}>
-              {RSVP_STATUS_LABELS[existingRsvp.status]} · Party of {1 + existingRsvp.plusOneCount}
+              {translate("partySummary", {
+                status: statusLabel(existingRsvp.status),
+                count: 1 + existingRsvp.plusOneCount,
+              })}
             </div>
             {existingRsvp.note && (
               <p style={{ color: t.textMuted, fontSize: "13px", margin: "10px 0 0" }}>
@@ -305,7 +310,7 @@ export function RsvpFlow({
               fontWeight: 700,
             }}
           >
-            Return to event
+            {translate("returnEvent")}
           </a>
         </div>
       </div>
@@ -329,7 +334,6 @@ export function RsvpFlow({
           overflowX: "hidden",
         }}
       >
-        {renderNav()}
         <EventAtmosphere theme={t} effect={effect} />
         <div
           style={{
@@ -343,19 +347,19 @@ export function RsvpFlow({
           <div style={{ fontSize: "52px", marginBottom: "16px" }}>{RSVP_STATUS_EMOJIS[status]}</div>
           <h2 style={{ fontSize: "22px", fontWeight: 800, marginBottom: "8px" }}>
             {isEdit && !justCreated
-              ? "RSVP updated!"
+              ? translate("rsvpUpdated")
               : status === "GOING"
-                ? "You're in!"
+                ? translate("re")
                 : status === "MAYBE"
-                  ? "Noted!"
-                  : "Got it."}
+                  ? translate("noted")
+                  : translate("got")}
           </h2>
           <p style={{ color: t.textSecondary, fontSize: "15px", marginBottom: "28px" }}>
             {status === "GOING"
-              ? "See you there!"
+              ? translate("seeThere")
               : status === "MAYBE"
-                ? "Hope you can make it."
-                : "Sorry you can't make it."}
+                ? translate("hopeCanMake")
+                : translate("sorryCanTMake")}
           </p>
           {!email.trim() && !phone.trim() && savedEditToken && (
             <div
@@ -377,7 +381,7 @@ export function RsvpFlow({
                   marginBottom: "8px",
                 }}
               >
-                ⚠️ Save your Edit Link
+                {translate("saveEditLink")}
               </div>
               <p
                 style={{
@@ -387,8 +391,7 @@ export function RsvpFlow({
                   lineHeight: 1.5,
                 }}
               >
-                Since you didn&apos;t add an email or phone, copy this link to change your RSVP
-                later:
+                {translate("sinceDidnTAddEmailOr")}
               </p>
               <div style={{ display: "flex", gap: "8px" }}>
                 <input
@@ -435,7 +438,7 @@ export function RsvpFlow({
                   }}
                 >
                   {linkCopied ? <Check size={12} /> : null}
-                  {linkCopied ? "Copied!" : "Copy"}
+                  {linkCopied ? translate("copied") : translate("copy")}
                 </button>
               </div>
             </div>
@@ -462,7 +465,7 @@ export function RsvpFlow({
                     marginBottom: "12px",
                   }}
                 >
-                  👉 Next Steps
+                  {translate("nextSteps")}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {event.polls && event.polls.length > 0 && (
@@ -482,7 +485,7 @@ export function RsvpFlow({
                         fontWeight: 600,
                       }}
                     >
-                      <span>📊 Vote in the polls</span>
+                      <span>{translate("votePolls")}</span>
                       <span style={{ color: t.accent }}>→</span>
                     </a>
                   )}
@@ -503,7 +506,7 @@ export function RsvpFlow({
                         fontWeight: 600,
                       }}
                     >
-                      <span>🥗 Bring something (Potluck)</span>
+                      <span>{translate("bringSomethingPotluck")}</span>
                       <span style={{ color: t.accent }}>→</span>
                     </a>
                   )}
@@ -527,7 +530,7 @@ export function RsvpFlow({
               boxShadow: t.accentShadow,
             }}
           >
-            {returnPath ? "Back to guest list" : "Back to event"}
+            {returnPath ? translate("backGuestList") : translate("backEvent")}
           </a>
         </div>
       </div>
@@ -624,7 +627,6 @@ export function RsvpFlow({
   if (step === 1) {
     return (
       <div style={S.page}>
-        {renderNav()}
         <EventAtmosphere theme={t} effect={effect} />
         <div style={S.header}>
           <a
@@ -639,7 +641,7 @@ export function RsvpFlow({
               padding: "12px 0",
             }}
           >
-            ← Back
+            {translate("back")}
           </a>
           <div style={{ marginBottom: "20px" }}>
             <div
@@ -652,7 +654,7 @@ export function RsvpFlow({
                 marginBottom: "4px",
               }}
             >
-              {isEdit ? "Update RSVP" : "RSVP"}
+              {isEdit ? translate("updateRsvp") : translate("rsvp")}
             </div>
             <h1 style={{ fontSize: "22px", fontWeight: 800, margin: "0 0 4px", lineHeight: 1.2 }}>
               {event.title}
@@ -684,14 +686,14 @@ export function RsvpFlow({
 
           {/* RSVP as */}
           <div style={S.group}>
-            <div style={S.label}>RSVP as</div>
+            <div style={S.label}>{translate("rsvpAs")}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {isEdit ? (
                 <div style={{ ...S.inp, color: t.textSecondary }}>{name}</div>
               ) : (
                 <input
                   style={S.inp}
-                  placeholder="Your name (required)"
+                  placeholder={translate("nameRequired")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -702,7 +704,7 @@ export function RsvpFlow({
                     <input
                       style={S.inp}
                       type="email"
-                      placeholder="Email (optional — for updates)"
+                      placeholder={translate("emailOptionalUpdates")}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
@@ -711,7 +713,7 @@ export function RsvpFlow({
                     <input
                       style={S.inp}
                       type="tel"
-                      placeholder="Phone (optional — for SMS updates)"
+                      placeholder={translate("phoneOptionalSmsUpdates")}
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                     />
@@ -724,7 +726,7 @@ export function RsvpFlow({
           {/* Attendee Count dropdown — only for GOING */}
           {event.plusOneAllowed && event.plusOneMax > 0 && status === "GOING" && (
             <div style={S.group}>
-              <div style={S.label}>Attendee Count</div>
+              <div style={S.label}>{translate("attendeeCount")}</div>
               <select
                 style={{ ...S.inp, cursor: "pointer" }}
                 value={plusOneNames.length + 1}
@@ -745,8 +747,8 @@ export function RsvpFlow({
                   <option key={i + 1} value={i + 1}>
                     {i + 1}{" "}
                     {i + 1 === 1
-                      ? "(Just me)"
-                      : `(${i + 1} total — me + ${i} guest${i > 1 ? "s" : ""})`}
+                      ? translate("justMe")
+                      : translate("partyOption", { total: i + 1, count: i })}
                   </option>
                 ))}
               </select>
@@ -760,14 +762,14 @@ export function RsvpFlow({
             plusOneNames.length > 0 && (
               <div style={S.group}>
                 <div style={S.label}>
-                  Plus One Names{" "}
+                  {translate("plusOneNames")}{" "}
                   {event.plusOneNamesRequired ? (
                     <span style={{ color: "#ef4444", fontSize: "11px", textTransform: "none" }}>
-                      (Required)
+                      {translate("required")}
                     </span>
                   ) : (
                     <span style={{ color: t.textMuted, fontSize: "11px", textTransform: "none" }}>
-                      (Optional)
+                      {translate("optional")}
                     </span>
                   )}
                 </div>
@@ -776,7 +778,10 @@ export function RsvpFlow({
                     <input
                       key={i}
                       style={S.inp}
-                      placeholder={`Guest ${i + 1} Name${event.plusOneNamesRequired ? " (required)" : ""}`}
+                      placeholder={translate("plusOnePlaceholder", {
+                        number: i + 1,
+                        required: event.plusOneNamesRequired ? "yes" : "no",
+                      })}
                       value={n}
                       onChange={(e) => {
                         const next = [...plusOneNames];
@@ -787,18 +792,18 @@ export function RsvpFlow({
                   ))}
                 </div>
                 <p style={{ fontSize: "12px", color: t.textMuted, margin: "8px 0 0" }}>
-                  Note: Plus one names will be public.
+                  {translate("notePlusOneNamesPublic")}
                 </p>
               </div>
             )}
 
           {/* Note */}
           <div style={S.group}>
-            <div style={S.label}>Message (optional — will be public)</div>
+            <div style={S.label}>{translate("messageOptionalPublic")}</div>
             <textarea
               style={{ ...S.inp, resize: "none" } as React.CSSProperties}
               rows={3}
-              placeholder="Leave a note…"
+              placeholder={translate("leaveNote")}
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
@@ -819,7 +824,7 @@ export function RsvpFlow({
               alignItems: "center",
             }}
           >
-            Cancel
+            {translate("cancel")}
           </a>
           <button
             onClick={handleContinue}
@@ -827,12 +832,12 @@ export function RsvpFlow({
             style={{ ...S.primaryBtn, opacity: !canProceedStep1 || isPending ? 0.5 : 1 }}
           >
             {isPending
-              ? "Saving…"
+              ? translate("saving")
               : step < maxStep
-                ? "Continue →"
+                ? translate("continue")
                 : isEdit
-                  ? "Update RSVP"
-                  : "Confirm RSVP"}
+                  ? translate("updateRsvp")
+                  : translate("confirmRsvp")}
           </button>
         </div>
       </div>
@@ -842,7 +847,6 @@ export function RsvpFlow({
   // ── Step 2: Questionnaire ──────────────────────────────────────────────────────────
   return (
     <div style={S.page}>
-      {renderNav()}
       <EventAtmosphere theme={t} effect={effect} />
       <div style={S.header}>
         <button
@@ -860,14 +864,14 @@ export function RsvpFlow({
             fontFamily: "inherit",
           }}
         >
-          ← Back
+          {translate("back")}
         </button>
         <div style={{ marginBottom: "8px" }}>
           <h1 style={{ fontSize: "20px", fontWeight: 800, margin: "0 0 4px" }}>
-            Questions from the host
+            {translate("questionsHost")}
           </h1>
           <p style={{ color: t.textMuted, fontSize: "13px", margin: 0 }}>
-            Only the host can see your answers
+            {translate("onlyHostCanSeeAnswers")}
           </p>
         </div>
       </div>
@@ -889,7 +893,7 @@ export function RsvpFlow({
                 <span
                   style={{ color: "#ef4444", fontSize: "12px", marginLeft: "4px", fontWeight: 400 }}
                 >
-                  (required)
+                  {translate("required3")}
                 </span>
               )}
             </label>
@@ -906,7 +910,7 @@ export function RsvpFlow({
                 value={answers[f.id] ?? ""}
                 onChange={(e) => setAnswerValue(f.id, e.target.value)}
               >
-                <option value="">Select…</option>
+                <option value="">{translate("select")}</option>
                 {parseOptions(f.options).map((opt) => (
                   <option key={opt} value={opt}>
                     {opt}
@@ -953,14 +957,14 @@ export function RsvpFlow({
 
       <div style={S.footer}>
         <button onClick={() => setStep(1)} style={S.cancelBtn}>
-          ← Back
+          {translate("back")}
         </button>
         <button
           onClick={submit}
           disabled={requiredUnanswered.length > 0 || isPending}
           style={{ ...S.primaryBtn, opacity: requiredUnanswered.length > 0 || isPending ? 0.5 : 1 }}
         >
-          {isPending ? "Saving…" : isEdit ? "Update RSVP" : "Submit"}
+          {isPending ? translate("saving") : isEdit ? translate("updateRsvp") : translate("submit")}
         </button>
       </div>
     </div>

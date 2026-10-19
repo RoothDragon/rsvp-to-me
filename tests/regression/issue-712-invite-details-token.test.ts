@@ -35,6 +35,7 @@ async function invite(token: string | undefined, maybeEnabled = true, to = "alic
   const rsvpUrl = new URL(`${origin}/e/${slug}/rsvp`);
   if (token !== undefined) rsvpUrl.searchParams.set("token", token);
   await sendEventInviteEmail(to, {
+    locale: "en-US",
     guestName: "Alice",
     hostName: "Bob",
     eventTitle: "Birthday Party",

@@ -8,7 +8,7 @@
 // keeping the host card and its management links available from the start.
 
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { render, screen } from "@/tests/components/render";
 import { describe, expect, it } from "vitest";
 import { GuestListSection } from "@/components/event/event-page/GuestListSection";
 import type { EventData } from "@/components/event/event-page/types";
