@@ -1,11 +1,13 @@
 // September 2026 dependency backlog: npm audit stopped CI before application
 // tests, and the override-cleanup proposal reintroduced unsupported transitive
 // versions. Guard the installed dependency tree and exercise Prisma's real
-// config loader across the scoped deepmerge-ts security override.
-// Vitest's redirect-mock file-read advisory requires the 4.1.11 patch family.
+// config loader with the patched deepmerge-ts dependency.
 // October 2026: independent Next.js/ESLint updates broke the exact-patch guard.
 // Keep a security floor while allowing coordinated future patches; also check
 // the lockfile so a manifest-only update cannot leave the old toolchain installed.
+// The consolidated October batch includes Next's 16.4.1 security fixes and
+// Nodemailer's 10.1.2 hardening. Vitest 5.0.5 preserves Vite's default file-deny
+// rules; its coverage provider requires the exact same runner patch.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -35,7 +37,7 @@ function atLeast(version: string, floor: string): boolean {
 
 describe("Dependency security baseline", () => {
   it.each([
-    ["next", "16.3.8"],
+    ["next", "16.4.1"],
     ["source-map-js", "1.2.2"],
     ["axios", "1.20.0"],
     ["brace-expansion", "5.0.12"],
@@ -46,12 +48,12 @@ describe("Dependency security baseline", () => {
     ["fast-uri", "3.1.7"],
     ["mysql2", "3.24.4"],
     ["nanoid", "3.3.18"],
-    ["nodemailer", "10.0.12"],
+    ["nodemailer", "10.1.2"],
     ["js-yaml", "4.3.2"],
     ["joi", "18.2.9"],
-    ["vitest", "4.1.11"],
-    ["@vitest/coverage-v8", "4.1.11"],
-    ["@vitest/mocker", "4.1.11"],
+    ["vitest", "5.0.5"],
+    ["@vitest/coverage-v8", "5.0.5"],
+    ["@vitest/mocker", "5.0.5"],
   ])("keeps every %s resolution at or above %s", (name, minimum) => {
     const entries = Object.entries(lock.packages).filter(
       ([path]) => path === `node_modules/${name}` || path.endsWith(`/node_modules/${name}`)
@@ -73,7 +75,7 @@ describe("Dependency security baseline", () => {
   it("keeps Next.js and eslint-config-next on the same exact patch", () => {
     const nextVersion = manifest.dependencies?.next ?? "";
     expect(nextVersion).toMatch(/^\d+\.\d+\.\d+$/);
-    expect(atLeast(nextVersion, "16.3.8")).toBe(true);
+    expect(atLeast(nextVersion, "16.4.1")).toBe(true);
     expect(manifest.devDependencies?.["eslint-config-next"]).toBe(nextVersion);
 
     for (const name of ["next", "eslint-config-next", "@next/env", "@next/eslint-plugin-next"]) {
@@ -86,6 +88,24 @@ describe("Dependency security baseline", () => {
     expect(nativeCompilers.length).toBeGreaterThan(0);
     for (const [path, entry] of nativeCompilers) {
       expect(entry.version, path).toBe(nextVersion);
+    }
+  });
+
+  it.each([
+    ["React", ["react", "react-dom"]],
+    ["Prisma", ["prisma", "@prisma/client", "@prisma/adapter-pg"]],
+    ["Vitest", ["vitest", "@vitest/coverage-v8"]],
+  ])("keeps the %s package group synchronized in the manifest and lockfile", (_, names) => {
+    const declared = { ...manifest.dependencies, ...manifest.devDependencies };
+    const version = lock.packages[`node_modules/${names[0]}`]?.version;
+    expect(version).toMatch(/^\d+\.\d+\.\d+$/);
+    for (const name of names) {
+      expect(declared[name], name).toBe(declared[names[0]]);
+      const resolutions = Object.entries(lock.packages).filter(
+        ([path]) => path === `node_modules/${name}` || path.endsWith(`/node_modules/${name}`)
+      );
+      expect(resolutions.length, name).toBeGreaterThan(0);
+      for (const [path, entry] of resolutions) expect(entry.version, path).toBe(version);
     }
   });
 
