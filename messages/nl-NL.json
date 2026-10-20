@@ -22,7 +22,7 @@
       "showEffects": "Effecten tonen",
       "hideEffects": "Effecten verbergen",
       "adminRole": "Beheerder",
-      "hostRole": "Host"
+      "hostRole": "Organisator"
     },
     "Language": {
       "label": "Taal",
@@ -45,13 +45,13 @@
       "notificationHint": "Bepaal welke meldingen je wilt ontvangen. Transactionele berichten (zoals inloglinks en RSVP-bevestigingen) worden altijd verzonden.",
       "channel": "Voorkeurskanaal voor evenementupdates",
       "emailChannel": "E-mail",
-      "smsChannel": "SMS",
+      "smsChannel": "sms",
       "both": "Beide",
-      "channelHint": "Hosts gebruiken dit kanaal om gasten op de hoogte te houden van evenementupdates.",
+      "channelHint": "Organisatoren gebruiken dit kanaal om gasten op de hoogte te houden van evenementupdates.",
       "emailBlasts": "E-mailberichten en herinneringen",
       "smsBlasts": "Sms-berichten en herinneringen",
-      "emailHint": "Ontvang geplande herinneringen en berichten van hosts per e-mail",
-      "smsHint": "Ontvang geplande herinneringen en berichten van hosts per sms",
+      "emailHint": "Ontvang geplande herinneringen en berichten van organisatoren per e-mail",
+      "smsHint": "Ontvang geplande herinneringen en berichten van organisatoren per sms",
       "danger": "Gevarenzone",
       "scheduled": "Je account staat gepland voor verwijdering",
       "cancelDeletion": "Verwijderingsverzoek annuleren",
@@ -283,9 +283,9 @@
         "newRsvpAlertsGoCoHosts": "Meldingen over nieuwe aanmeldingen gaan naar jou en je mede-organisatoren.",
         "capacityLimitOptional": "Capaciteitslimiet (optioneel)",
         "noLimit": "Geen limiet",
-        "rsvpDeadlineOptional": "RSVP-deadline (optioneel)",
+        "rsvpDeadlineOptional": "Aanmelddeadline (optioneel)",
         "requirePlusOneNames": "Namen van extra gasten verplicht",
-        "requireHostApprovalEachRsvp": "Goedkeuring van de organisator voor elke aanmelding verplicht",
+        "requireHostApprovalEachRsvp": "Goedkeuring door de organisator is verplicht voor elke aanmelding.",
         "guestsCanRsvpMaybe": "Gasten kunnen ‘Misschien’ kiezen",
         "emailMeWhenGuestRsvps": "E-mail mij wanneer een gast zich aanmeldt",
         "textMeWhenGuestRsvps": "Stuur mij een sms wanneer een gast zich aanmeldt",
@@ -933,7 +933,7 @@
     },
     "Rsvp": {
       "RsvpFlow": {
-        "rsvpEditingClosed": "Je RSVP wijzigen is niet meer mogelijk",
+        "rsvpEditingClosed": "Je kunt je RSVP niet meer wijzigen.",
         "party": "· Aantal personen:",
         "returnEvent": "Terug naar het evenement",
         "rsvpUpdated": "RSVP bijgewerkt!",
