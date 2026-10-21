@@ -29,6 +29,16 @@ describe("language selector", () => {
     expect(trigger).toHaveFocus();
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
+  it("offers the German flag and native name and saves the selection", async () => {
+    render(<LanguageSelector />);
+    fireEvent.click(screen.getByRole("button", { name: "Choose language" }));
+    const german = screen.getByRole("menuitemradio", { name: "Deutsch" });
+    expect(german.querySelector("img")).toHaveAttribute("src", "/flags/de.svg");
+    fireEvent.click(german);
+    await waitFor(() => expect(save).toHaveBeenCalledWith("de-DE"));
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
   it("closes on outside pointer and exposes account setting selector", () => {
     render(<LanguageSelector />);
     fireEvent.click(screen.getByRole("button", { name: "Choose language" }));

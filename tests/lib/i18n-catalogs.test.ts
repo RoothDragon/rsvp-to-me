@@ -26,6 +26,27 @@ function signature(elements: MessageFormatElement[]): string[] {
   visit(elements);
   return [...found].sort();
 }
+function selectors(elements: MessageFormatElement[]): string[] {
+  const found: string[] = [];
+  function visit(nodes: MessageFormatElement[]) {
+    for (const node of nodes) {
+      if ("options" in node) {
+        found.push(
+          JSON.stringify({
+            type: node.type,
+            value: node.value,
+            options: Object.keys(node.options).sort(),
+            offset: "offset" in node ? node.offset : undefined,
+          })
+        );
+        for (const option of Object.values(node.options)) visit(option.value);
+      }
+      if ("children" in node) visit(node.children);
+    }
+  }
+  visit(elements);
+  return found.sort();
+}
 describe("registered ICU message catalogs", () => {
   const english = flatten(
     JSON.parse(readFileSync(new URL("../../messages/en-US.json", import.meta.url), "utf8"))
@@ -45,6 +66,23 @@ describe("registered ICU message catalogs", () => {
   it("validates every English ICU message", () => {
     for (const [key, value] of Object.entries(english))
       expect.soft(() => parse(value), key).not.toThrow();
+  });
+  it("ships a complete German catalog with the canonical boundary whitespace", () => {
+    const german = flatten(
+      JSON.parse(readFileSync(new URL("../../messages/de-DE.json", import.meta.url), "utf8"))
+    );
+    expect(Object.keys(german).sort()).toEqual(Object.keys(english).sort());
+    for (const [key, value] of Object.entries(german)) {
+      expect
+        .soft(selectors(parse(value)), key + " selectors")
+        .toEqual(selectors(parse(english[key])));
+      expect
+        .soft(value.match(/^\s*/)?.[0], key + " leading whitespace")
+        .toBe(english[key].match(/^\s*/)?.[0]);
+      expect
+        .soft(value.match(/\s*$/)?.[0], key + " trailing whitespace")
+        .toBe(english[key].match(/\s*$/)?.[0]);
+    }
   });
   for (const locale of Object.keys(locales)) {
     it(

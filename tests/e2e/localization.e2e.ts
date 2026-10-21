@@ -3,21 +3,30 @@ import { createHash, randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import english from "../../messages/en-US.json";
 import dutch from "../../messages/nl-NL.json";
+import german from "../../messages/de-DE.json";
 import locales from "../../messages/locales.json";
 import { PASSWORD_EVENT_SLUG, PRIVATE_EVENT_SLUG, PUBLIC_EVENT_SLUG } from "./fixtures";
 
 const LOCALE_COOKIE = "rsvp-locale";
 const SESSION_COOKIE = "rsvp-session";
-const choiceName = new RegExp(`^(${english.Ui.Language.choose}|${dutch.Ui.Language.choose})$`);
+type Locale = keyof typeof locales;
+const catalogs = [english, dutch, german];
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const choiceName = new RegExp(
+  `^(${catalogs.map((catalog) => escapeRegex(catalog.Ui.Language.choose)).join("|")})$`
+);
 const profileName = new RegExp(
-  `^(${english.Ui.Navigation.openProfile}|${dutch.Ui.Navigation.openProfile}|${english.Ui.Navigation.openMenu}|${dutch.Ui.Navigation.openMenu})$`
+  `^(${catalogs
+    .flatMap((catalog) => [catalog.Ui.Navigation.openProfile, catalog.Ui.Navigation.openMenu])
+    .map(escapeRegex)
+    .join("|")})$`
 );
 
 function header(page: Page) {
   return page.locator("nav").filter({ has: page.getByRole("button", { name: choiceName }) });
 }
 
-async function chooseLanguage(page: Page, locale: "en-US" | "nl-NL", scope = header(page)) {
+async function chooseLanguage(page: Page, locale: Locale, scope = header(page)) {
   await scope.getByRole("button", { name: choiceName }).click();
   await scope.getByRole("menuitemradio", { name: locales[locale].nativeName, exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", locale);
@@ -29,17 +38,14 @@ async function chooseLanguage(page: Page, locale: "en-US" | "nl-NL", scope = hea
     .toBe(locale);
 }
 
-async function expectHeader(page: Page, locale = "en-US") {
+async function expectHeader(page: Page, locale: Locale = "en-US") {
   const nav = header(page);
   await expect(nav).toHaveCount(1);
   const flag = nav.getByRole("button", { name: choiceName });
   const profile = nav.getByRole("button", { name: profileName });
   await expect(flag).toBeVisible();
   await expect(profile).toBeVisible();
-  await expect(flag.locator("img")).toHaveAttribute(
-    "src",
-    locale === "nl-NL" ? "/flags/nl.svg" : "/flags/us.svg"
-  );
+  await expect(flag.locator("img")).toHaveAttribute("src", locales[locale].flag);
   await expect(flag.locator("img")).toHaveCSS("border-radius", "50%");
   const flagBounds = (await flag.boundingBox())!;
   const profileBounds = (await profile.boundingBox())!;
@@ -52,7 +58,7 @@ async function expectHeader(page: Page, locale = "en-US") {
   ).toBeLessThanOrEqual(3);
 }
 
-async function seedLogin(pool: Pool, preferredLocale: "en-US" | "nl-NL" | null) {
+async function seedLogin(pool: Pool, preferredLocale: Locale | null) {
   const userId = randomUUID();
   const rawToken = randomUUID();
   await pool.query(
@@ -131,6 +137,31 @@ test.describe("Personal language selection", () => {
     await page.screenshot({ path: "/tmp/rsvp-01a150ee-event-nl.png" });
   });
 
+  test("German anonymous selection survives reload and fits a mobile header", async ({ page }) => {
+    await page.goto("/auth/sign-in");
+    await chooseLanguage(page, "de-DE");
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("lang", "de-DE");
+    await expectHeader(page, "de-DE");
+    await expect(page.getByRole("button", { name: german.Ui.Language.choose })).toBeVisible();
+    const cookie = (await page.context().cookies()).find((item) => item.name === LOCALE_COOKIE)!;
+    expect(cookie.httpOnly).toBe(true);
+    expect(cookie.sameSite).toBe("Lax");
+    expect(cookie.path).toBe("/");
+    await page.screenshot({ path: "/tmp/rsvp-01a150ee-login-de.png" });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/e/${PUBLIC_EVENT_SLUG}`);
+    await expectHeader(page, "de-DE");
+    await expect(page.getByRole("heading", { name: "E2E Test Event", exact: true })).toBeVisible();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
+    ).toBe(true);
+    const bounds = (await header(page).getByRole("button", { name: choiceName }).boundingBox())!;
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
+    await page.screenshot({ path: "/tmp/rsvp-01a150ee-event-de.png" });
+  });
+
   test("changing RSVP language preserves typed values, query and event-written title", async ({
     page,
   }) => {
@@ -154,6 +185,13 @@ test.describe("Personal language selection", () => {
   });
 
   for (const scenario of [
+    {
+      label: "saved German account beats Dutch browser",
+      account: "de-DE",
+      browser: "nl-NL",
+      expected: "de-DE",
+      saved: "de-DE",
+    },
     {
       label: "saved account beats Dutch browser",
       account: "en-US",
