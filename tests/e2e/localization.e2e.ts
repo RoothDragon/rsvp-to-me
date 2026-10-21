@@ -4,13 +4,14 @@ import { Pool } from "pg";
 import english from "../../messages/en-US.json";
 import dutch from "../../messages/nl-NL.json";
 import german from "../../messages/de-DE.json";
+import spanish from "../../messages/es-ES.json";
 import locales from "../../messages/locales.json";
 import { PASSWORD_EVENT_SLUG, PRIVATE_EVENT_SLUG, PUBLIC_EVENT_SLUG } from "./fixtures";
 
 const LOCALE_COOKIE = "rsvp-locale";
 const SESSION_COOKIE = "rsvp-session";
 type Locale = keyof typeof locales;
-const catalogs = [english, dutch, german];
+const catalogs = [english, dutch, german, spanish];
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const choiceName = new RegExp(
   `^(${catalogs.map((catalog) => escapeRegex(catalog.Ui.Language.choose)).join("|")})$`
@@ -162,6 +163,31 @@ test.describe("Personal language selection", () => {
     await page.screenshot({ path: "/tmp/rsvp-01a150ee-event-de.png" });
   });
 
+  test("Spanish anonymous selection survives reload and fits a mobile header", async ({ page }) => {
+    await page.goto("/auth/sign-in");
+    await chooseLanguage(page, "es-ES");
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("lang", "es-ES");
+    await expectHeader(page, "es-ES");
+    await expect(page.getByRole("button", { name: spanish.Ui.Language.choose })).toBeVisible();
+    const cookie = (await page.context().cookies()).find((item) => item.name === LOCALE_COOKIE)!;
+    expect(cookie.httpOnly).toBe(true);
+    expect(cookie.sameSite).toBe("Lax");
+    expect(cookie.path).toBe("/");
+    await page.screenshot({ path: "/tmp/rsvp-01a15d69-login-es.png" });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/e/${PUBLIC_EVENT_SLUG}`);
+    await expectHeader(page, "es-ES");
+    await expect(page.getByRole("heading", { name: "E2E Test Event", exact: true })).toBeVisible();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
+    ).toBe(true);
+    const bounds = (await header(page).getByRole("button", { name: choiceName }).boundingBox())!;
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
+    await page.screenshot({ path: "/tmp/rsvp-01a15d69-event-es.png" });
+  });
+
   test("changing RSVP language preserves typed values, query and event-written title", async ({
     page,
   }) => {
@@ -184,7 +210,43 @@ test.describe("Personal language selection", () => {
     await expect(page.getByRole("heading", { name: "E2E Test Event", exact: true })).toBeVisible();
   });
 
+  test("changing RSVP language to Spanish preserves typed values, query and event-written title", async ({
+    page,
+  }) => {
+    await page.goto(`/e/${PUBLIC_EVENT_SLUG}/rsvp?status=GOING`);
+    await page
+      .getByPlaceholder(english.Ui.Rsvp.RsvpFlow.nameRequired)
+      .fill("Untranslated draft guest");
+    await page
+      .getByPlaceholder(english.Ui.Rsvp.RsvpFlow.leaveNote)
+      .fill("Keep this guest-written note exactly.");
+    const originalUrl = page.url();
+    await chooseLanguage(page, "es-ES");
+    await expect(page).toHaveURL(originalUrl);
+    await expect(page.getByPlaceholder(spanish.Ui.Rsvp.RsvpFlow.nameRequired)).toHaveValue(
+      "Untranslated draft guest"
+    );
+    await expect(page.getByPlaceholder(spanish.Ui.Rsvp.RsvpFlow.leaveNote)).toHaveValue(
+      "Keep this guest-written note exactly."
+    );
+    await expect(page.getByRole("heading", { name: "E2E Test Event", exact: true })).toBeVisible();
+  });
+
   for (const scenario of [
+    {
+      label: "saved Spanish account beats Dutch browser",
+      account: "es-ES",
+      browser: "nl-NL",
+      expected: "es-ES",
+      saved: "es-ES",
+    },
+    {
+      label: "unset account adopts Spanish only after verification",
+      account: null,
+      browser: "es-ES",
+      expected: "es-ES",
+      saved: "es-ES",
+    },
     {
       label: "saved German account beats Dutch browser",
       account: "de-DE",

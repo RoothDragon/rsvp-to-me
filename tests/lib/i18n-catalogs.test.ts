@@ -67,23 +67,28 @@ describe("registered ICU message catalogs", () => {
     for (const [key, value] of Object.entries(english))
       expect.soft(() => parse(value), key).not.toThrow();
   });
-  it("ships a complete German catalog with the canonical boundary whitespace", () => {
-    const german = flatten(
-      JSON.parse(readFileSync(new URL("../../messages/de-DE.json", import.meta.url), "utf8"))
-    );
-    expect(Object.keys(german).sort()).toEqual(Object.keys(english).sort());
-    for (const [key, value] of Object.entries(german)) {
-      expect
-        .soft(selectors(parse(value)), key + " selectors")
-        .toEqual(selectors(parse(english[key])));
-      expect
-        .soft(value.match(/^\s*/)?.[0], key + " leading whitespace")
-        .toBe(english[key].match(/^\s*/)?.[0]);
-      expect
-        .soft(value.match(/\s*$/)?.[0], key + " trailing whitespace")
-        .toBe(english[key].match(/\s*$/)?.[0]);
+  it.each(["de-DE", "es-ES"])(
+    "ships a complete %s catalog with the canonical boundary whitespace",
+    (locale) => {
+      const translated = flatten(
+        JSON.parse(
+          readFileSync(new URL("../../messages/" + locale + ".json", import.meta.url), "utf8")
+        )
+      );
+      expect(Object.keys(translated).sort()).toEqual(Object.keys(english).sort());
+      for (const [key, value] of Object.entries(translated)) {
+        expect
+          .soft(selectors(parse(value)), key + " selectors")
+          .toEqual(selectors(parse(english[key])));
+        expect
+          .soft(value.match(/^\s*/)?.[0], key + " leading whitespace")
+          .toBe(english[key].match(/^\s*/)?.[0]);
+        expect
+          .soft(value.match(/\s*$/)?.[0], key + " trailing whitespace")
+          .toBe(english[key].match(/\s*$/)?.[0]);
+      }
     }
-  });
+  );
   for (const locale of Object.keys(locales)) {
     it(
       locale +

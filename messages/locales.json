@@ -1,5 +1,22 @@
 {
-  "en-US": { "nativeName": "English (US)", "dir": "ltr", "flag": "/flags/us.svg" },
-  "nl-NL": { "nativeName": "Nederlands", "dir": "ltr", "flag": "/flags/nl.svg" },
-  "de-DE": { "nativeName": "Deutsch", "dir": "ltr", "flag": "/flags/de.svg" }
+  "en-US": {
+    "nativeName": "English (US)",
+    "dir": "ltr",
+    "flag": "/flags/us.svg"
+  },
+  "nl-NL": {
+    "nativeName": "Nederlands",
+    "dir": "ltr",
+    "flag": "/flags/nl.svg"
+  },
+  "de-DE": {
+    "nativeName": "Deutsch",
+    "dir": "ltr",
+    "flag": "/flags/de.svg"
+  },
+  "es-ES": {
+    "nativeName": "Español",
+    "dir": "ltr",
+    "flag": "/flags/es.svg"
+  }
 }

@@ -39,6 +39,16 @@ describe("language selector", () => {
     await waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
+  it("offers the Spanish flag and native name and saves the selection", async () => {
+    render(<LanguageSelector />);
+    fireEvent.click(screen.getByRole("button", { name: "Choose language" }));
+    const spanish = screen.getByRole("menuitemradio", { name: "Español" });
+    expect(spanish.querySelector("img")).toHaveAttribute("src", "/flags/es.svg");
+    fireEvent.click(spanish);
+    await waitFor(() => expect(save).toHaveBeenCalledWith("es-ES"));
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
   it("closes on outside pointer and exposes account setting selector", () => {
     render(<LanguageSelector />);
     fireEvent.click(screen.getByRole("button", { name: "Choose language" }));
