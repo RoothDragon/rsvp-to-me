@@ -7,6 +7,7 @@ describe("localization catalog", () => {
   it("only accepts registered own locale keys", () => {
     expect(isLocale("nl-NL")).toBe(true);
     expect(isLocale("de-DE")).toBe(true);
+    expect(isLocale("es-ES")).toBe(true);
     for (const v of ["nl", "toString", "__proto__", null, {}, 1]) expect(isLocale(v)).toBe(false);
     expect(resolveLocale("unknown")).toBe("en-US");
   });
@@ -21,5 +22,10 @@ describe("localization catalog", () => {
     expect(locales["de-DE"].nativeName).toBe("Deutsch");
     expect((await loadMessages("de-DE")).Ui.Language.label).toBe("Sprache");
     expect((await getTranslator("de-DE"))("Ui.Language.choose")).toBe("Sprache wählen");
+  });
+  it("loads Spanish metadata and creates an explicit Spanish translator", async () => {
+    expect(locales["es-ES"].nativeName).toBe("Español");
+    expect((await loadMessages("es-ES")).Ui.Language.label).toBe("Idioma");
+    expect((await getTranslator("es-ES"))("Ui.Language.choose")).toBe("Elegir idioma");
   });
 });
