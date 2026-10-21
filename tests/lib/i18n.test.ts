@@ -6,6 +6,7 @@ import { getTranslator } from "@/i18n/server";
 describe("localization catalog", () => {
   it("only accepts registered own locale keys", () => {
     expect(isLocale("nl-NL")).toBe(true);
+    expect(isLocale("de-DE")).toBe(true);
     for (const v of ["nl", "toString", "__proto__", null, {}, 1]) expect(isLocale(v)).toBe(false);
     expect(resolveLocale("unknown")).toBe("en-US");
   });
@@ -15,5 +16,10 @@ describe("localization catalog", () => {
   });
   it("creates an explicit translator without request context", async () => {
     expect((await getTranslator("nl-NL"))("Ui.Language.choose")).toBe("Taal kiezen");
+  });
+  it("loads German metadata and creates an explicit German translator", async () => {
+    expect(locales["de-DE"].nativeName).toBe("Deutsch");
+    expect((await loadMessages("de-DE")).Ui.Language.label).toBe("Sprache");
+    expect((await getTranslator("de-DE"))("Ui.Language.choose")).toBe("Sprache wählen");
   });
 });

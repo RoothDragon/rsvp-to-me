@@ -1,4 +1,5 @@
 {
   "en-US": { "nativeName": "English (US)", "dir": "ltr", "flag": "/flags/us.svg" },
-  "nl-NL": { "nativeName": "Nederlands", "dir": "ltr", "flag": "/flags/nl.svg" }
+  "nl-NL": { "nativeName": "Nederlands", "dir": "ltr", "flag": "/flags/nl.svg" },
+  "de-DE": { "nativeName": "Deutsch", "dir": "ltr", "flag": "/flags/de.svg" }
 }
