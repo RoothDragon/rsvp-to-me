@@ -14,7 +14,7 @@ Use the circular flag button in the upper-right header, immediately beside your 
 
 When signed in, the setting is saved to your account and this browser. When signed out, it is saved only in this browser's cookie. The browser preference lasts one year. A saved account preference takes priority over the browser preference. After a successful sign-in, an account without a saved preference adopts the browser's explicit choice. Requesting a sign-in link or submitting a guest RSVP never changes another account's language.
 
-English is the default. Unsupported or removed language selections fall back to English. There is no automatic selection from browser language headers. Event titles, descriptions, questions, guest names, notes, and other user-written content stay exactly as written. Dates use the viewer's language and the event's timezone.
+English is the default. German is available as **Deutsch** in the language menu. Unsupported or removed language selections fall back to English. There is no automatic selection from browser language headers. Event titles, descriptions, questions, guest names, notes, and other user-written content stay exactly as written. Dates use the viewer's language and the event's timezone.
 
 ## Email and SMS Languages
 
