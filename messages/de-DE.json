@@ -211,7 +211,12 @@
         "invalidInviteEmail": "Ungültige E-Mail-Adresse: {entry}",
         "invalidInvitePhone": "Ungültige Telefonnummer: {entry}",
         "inviteSendFailed": "Einladungen konnten nicht gesendet werden: {errors}",
-        "itemsRemaining": "Nur noch {remaining} übrig"
+        "itemsRemaining": "Nur noch {remaining} übrig",
+        "invalidInvitationRecipients": "Prüfe vor dem Senden die Namen und Kontaktdaten der Einladungen.",
+        "invitationConflict": "Mehrere Gäste stimmen mit diesem Kontakt überein. Kläre die Gasteinträge vor dem Senden.",
+        "invitationReviewChanged": "Dieser Gast hat sich seit der Vorschau geändert. Prüfe die Einladung erneut.",
+        "invitationChannelDisabled": "Dieser Einladungskanal ist deaktiviert.",
+        "invitationSendFailed": "Die Einladung konnte nicht gesendet werden. Prüfe diesen Empfänger und versuche es erneut."
       }
     },
     "Event": {
@@ -575,7 +580,8 @@
         "send": "Senden",
         "invitationSentSuccessfully": "✓ Einladung erfolgreich gesendet!",
         "failedSendInvitation": "Einladung konnte nicht gesendet werden",
-        "securityCheckFailed": "Sicherheitsprüfung fehlgeschlagen"
+        "securityCheckFailed": "Sicherheitsprüfung fehlgeschlagen",
+        "nameOptional": "Name (optional)"
       },
       "EventHero": {
         "eventTitle": "Veranstaltungstitel",
@@ -718,7 +724,8 @@
         "noGuestsPhoneNumbersFound": "Keine Gäste mit Telefonnummern gefunden.",
         "inviteSent": "Einladung an {destination} gesendet!",
         "emailSent": "E-Mail an {count, plural, one {# Gast} other {# Gäste}} gesendet.",
-        "smsSent": "SMS an {count, plural, one {# Gast} other {# Gäste}} gesendet."
+        "smsSent": "SMS an {count, plural, one {# Gast} other {# Gäste}} gesendet.",
+        "close": "Schließen"
       },
       "GuestListFilter": {
         "all": "Alle",
@@ -929,6 +936,68 @@
         "openInvitation": "Öffne deine Einladung, um mehr zu erfahren",
         "host": "Veranstalter",
         "hostLine": "Veranstaltet von {name}"
+      },
+      "InvitationComposer": {
+        "composer": "Direkte Einladungen",
+        "help": "Eine Person pro Zeile oder durch Kommas getrennt eingeben. Namen als {syntaxExample} hinzufügen. Namen mit Kommas in Anführungszeichen setzen. Eingefügte Tabellen vor dem Import zuordnen.",
+        "source": "Einladungsentwurf",
+        "undo": "Rückgängig",
+        "spreadsheet": "Tabelle importieren",
+        "pasteTable": "Tabellenzellen einfügen",
+        "header": "Erste Zeile ist eine Überschrift",
+        "mappingHelp": "Eine Kontaktspalte und optional eine Namensspalte wählen. Andere Spalten werden ignoriert. Der Import ersetzt den Entwurf; Rückgängig stellt ihn wieder her.",
+        "column": "Spalte {number}",
+        "ignore": "Ignorieren",
+        "name": "Name (optional)",
+        "contact": "E-Mail oder Telefon",
+        "tableErrors": "Tabelle oder Zuordnung vor dem Import korrigieren ({count, plural, one {# Problem} other {# Probleme}}).",
+        "import": "Geprüfte Spalten importieren",
+        "filter": "Empfänger anzeigen",
+        "all": "Alle ({count})",
+        "named": "Mit Namen ({count})",
+        "missing": "Ohne Namen ({count})",
+        "invalid": "Ungültiger Empfänger",
+        "selectSource": "Quelltext auswählen",
+        "remove": "Entfernen",
+        "repairHelp": "Vorgeschlagener Ersatz (nur nach Ihrer Auswahl angewendet):",
+        "repair": "Ersatz anwenden",
+        "duplicate": "Doppelter Kontakt: {contact}",
+        "duplicateHelp": "Einen Eintrag behalten oder alle entfernen. Namen werden nicht automatisch zusammengeführt.",
+        "keep": "Eintrag {number} behalten",
+        "noName": "Kein Name angegeben",
+        "removeAll": "Alle Einträge entfernen",
+        "review": "Einladungen prüfen",
+        "loading": "Wird geladen…",
+        "resendHelp": "Nur neue Empfänger werden automatisch ausgewählt. Bestehende Eingeladene zum erneuten Senden bewusst auswählen; ihre bisherigen RSVP-Namen bleiben erhalten.",
+        "new": "Neu",
+        "invited": "Bereits eingeladen",
+        "responded": "Beantwortet",
+        "conflict": "Widersprüchliche Datensätze — Senden nicht möglich",
+        "effectiveName": "Name in Anrede und RSVP",
+        "preserved": "Der bestehende RSVP-Name bleibt erhalten. Namensänderungen im Entwurf überschreiben ihn nicht.",
+        "preview": "Personalisierte Vorschau",
+        "language": "Vorschausprache: {locale}",
+        "smsPreview": "SMS enthält keine persönliche Anrede. RSVP-Name",
+        "send": "{count, plural, one {# Einladung} other {# Einladungen}} senden",
+        "sending": "Wird gesendet…",
+        "sent": "Gesendet",
+        "failed": "Fehlgeschlagen",
+        "issues": {
+          "textTooLong": "Der Entwurf ist zu lang. Auf 100.000 Zeichen kürzen.",
+          "tooManyRecipients": "Höchstens 200 Empfänger verwenden.",
+          "unmatchedQuote": "Ein schließendes Anführungszeichen fehlt. Den Namen prüfen.",
+          "invalidName": "Einen Namen mit 1–100 Zeichen ohne Steuerzeichen eingeben.",
+          "invalidContact": "Eine gültige E-Mail-Adresse oder Telefonnummer eingeben.",
+          "invalidMailbox": "Den Namen und die passenden Kontakt-Klammern prüfen.",
+          "missingDelimiter": "Empfänger durch Komma oder Zeilenumbruch trennen.",
+          "tooManyRows": "Höchstens 200 Datenzeilen verwenden.",
+          "tooManyColumns": "Höchstens 32 Spalten verwenden.",
+          "invalidQuote": "Die Anführungszeichen der Zelle prüfen.",
+          "invalidMapping": "Eine Kontaktspalte und eine andere optionale Namensspalte wählen.",
+          "missingCell": "Eine zugeordnete Zelle fehlt. Die gewählten Spalten prüfen."
+        },
+        "row": "Zeile {number}",
+        "unnamedGuest": "Gast"
       }
     },
     "Rsvp": {

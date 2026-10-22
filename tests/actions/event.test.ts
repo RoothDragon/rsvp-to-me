@@ -103,6 +103,10 @@ const {
 
 vi.mock("@/lib/db", () => ({
   db: {
+    async $transaction(action: (client: unknown) => Promise<unknown>) {
+      return action(this);
+    },
+    $executeRaw: vi.fn().mockResolvedValue(1),
     event: { findUnique: mockEventFindUnique, update: mockEventUpdate },
     user: { findFirst: mockUserFindFirst, create: mockUserCreate, findUnique: mockUserFindUnique },
     rSVP: {
@@ -144,6 +148,7 @@ vi.mock("@/lib/db", () => ({
       delete: mockPotluckClaimDelete,
     },
     invitation: {
+      findMany: vi.fn().mockResolvedValue([]),
       createMany: mockInvitationCreateMany,
       create: mockInvitationCreate,
       findFirst: mockInvitationFindFirst,
@@ -1504,6 +1509,7 @@ describe("inviteGuest", () => {
     mockUserFindFirst.mockResolvedValue(null);
     mockUserCreate.mockResolvedValue({ id: "user-new-id" });
     mockRsvpFindFirst.mockResolvedValue(null);
+    mockRsvpFindMany.mockResolvedValue([]);
     mockRsvpCreate.mockResolvedValue({
       id: "rsvp-new-id",
       editToken: "token-new",
@@ -1921,6 +1927,7 @@ describe("inviteFriendAsGuest", () => {
     mockUserFindFirst.mockResolvedValue(null);
     mockUserCreate.mockResolvedValue({ id: "friend-user-id" });
     mockRsvpFindFirst.mockResolvedValue(null);
+    mockRsvpFindMany.mockResolvedValue([]);
     mockRsvpCreate.mockResolvedValue({
       id: "friend-rsvp-id",
       editToken: "friend-edit-token",

@@ -410,6 +410,7 @@ export async function updateRSVP(
       where: { editToken },
       data: {
         status: data.status,
+        ...(data.guestName !== undefined && { guestName: data.guestName }),
         plusOneCount: data.plusOneCount,
         responded: true,
         ...(data.note !== undefined && { note: data.note || null }),
@@ -452,8 +453,8 @@ export async function updateRSVP(
     logActivity(
       rsvp.eventId,
       "check_in_undo",
-      `automatically undid check-in for ${rsvp.guestName} after an RSVP status change`,
-      rsvp.guestName
+      `automatically undid check-in for ${data.guestName ?? rsvp.guestName} after an RSVP status change`,
+      data.guestName ?? rsvp.guestName
     ).catch(logSafe("updateRSVP"));
   }
 
@@ -462,10 +463,11 @@ export async function updateRSVP(
   logActivity(
     rsvp.eventId,
     "rsvp_update",
-    `${rsvp.guestName} updated to ${statusText}`,
-    rsvp.guestName
+    `${data.guestName ?? rsvp.guestName} updated to ${statusText}`,
+    data.guestName ?? rsvp.guestName
   ).catch(logSafe("updateRSVP"));
 
+  revalidatePath(`/e/${rsvp.event.slug}/guests`);
   revalidatePath(`/e/${rsvp.event.slug}`);
   return { success: true, rsvpId: rsvp.id };
 }
@@ -497,6 +499,7 @@ export async function updateRsvpAsHost(
     where: { id: rsvp.id },
     data: {
       status: data.status,
+      ...(data.guestName !== undefined && { guestName: data.guestName }),
       plusOneCount: data.status === "GOING" ? data.plusOneCount : 0,
       responded: true,
       ...(data.note !== undefined && { note: data.note || null }),
@@ -534,7 +537,7 @@ export async function updateRsvpAsHost(
     logActivity(
       rsvp.eventId,
       "check_in_undo",
-      `automatically undid check-in for ${rsvp.guestName} after an RSVP status change`,
+      `automatically undid check-in for ${data.guestName ?? rsvp.guestName} after an RSVP status change`,
       session.email
     ).catch(logSafe("updateRsvpAsHost"));
   }
@@ -544,7 +547,7 @@ export async function updateRsvpAsHost(
   logActivity(
     rsvp.eventId,
     "rsvp_update",
-    `updated ${rsvp.guestName} to ${statusText}`,
+    `updated ${data.guestName ?? rsvp.guestName} to ${statusText}`,
     session.email
   ).catch(logSafe("updateRsvpAsHost"));
   revalidatePath(`/e/${rsvp.event.slug}/guests`);

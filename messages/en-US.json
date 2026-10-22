@@ -211,7 +211,12 @@
         "invalidInviteEmail": "Invalid email: {entry}",
         "invalidInvitePhone": "Invalid phone: {entry}",
         "inviteSendFailed": "Failed to send invites: {errors}",
-        "itemsRemaining": "Only {remaining} remaining"
+        "itemsRemaining": "Only {remaining} remaining",
+        "invalidInvitationRecipients": "Review the invitation names and contacts before sending.",
+        "invitationConflict": "More than one guest matches this contact. Resolve the guest records before sending.",
+        "invitationReviewChanged": "This guest changed since the preview. Review the invitation again.",
+        "invitationChannelDisabled": "This invitation channel is disabled.",
+        "invitationSendFailed": "The invitation could not be sent. Review and retry this recipient."
       }
     },
     "Event": {
@@ -575,7 +580,8 @@
         "send": "Send",
         "invitationSentSuccessfully": "✓ Invitation sent successfully!",
         "failedSendInvitation": "Failed to send invitation",
-        "securityCheckFailed": "Security check failed"
+        "securityCheckFailed": "Security check failed",
+        "nameOptional": "Name (optional)"
       },
       "EventHero": {
         "eventTitle": "Event title",
@@ -718,7 +724,8 @@
         "noGuestsPhoneNumbersFound": "No guests with phone numbers found.",
         "inviteSent": "Invite sent to {destination}!",
         "emailSent": "Sent email to {count, plural, one {# guest} other {# guests}}.",
-        "smsSent": "Sent SMS to {count, plural, one {# guest} other {# guests}}."
+        "smsSent": "Sent SMS to {count, plural, one {# guest} other {# guests}}.",
+        "close": "Close"
       },
       "GuestListFilter": {
         "all": "All",
@@ -929,6 +936,68 @@
         "openInvitation": "Open your invitation to learn more",
         "host": "Event host",
         "hostLine": "Hosted by {name}"
+      },
+      "InvitationComposer": {
+        "composer": "Direct invitations",
+        "help": "Enter one recipient per line, or separate recipients with commas. Add names as {syntaxExample}. Quote names containing commas. Paste spreadsheet cells to choose columns before importing.",
+        "source": "Invitation draft",
+        "undo": "Undo",
+        "spreadsheet": "Import spreadsheet",
+        "pasteTable": "Paste spreadsheet cells",
+        "header": "First row is a header",
+        "mappingHelp": "Choose one contact column and optionally one name column. Other columns are ignored. Import replaces the draft; Undo restores it.",
+        "column": "Column {number}",
+        "ignore": "Ignore",
+        "name": "Name (optional)",
+        "contact": "Email or phone",
+        "tableErrors": "Fix the table or mapping before importing ({count, plural, one {# issue} other {# issues}}).",
+        "import": "Import reviewed columns",
+        "filter": "Show recipients",
+        "all": "All ({count})",
+        "named": "Named ({count})",
+        "missing": "Missing names ({count})",
+        "invalid": "Invalid recipient",
+        "selectSource": "Select source text",
+        "remove": "Remove",
+        "repairHelp": "Suggested replacement (applied only when you choose):",
+        "repair": "Apply replacement",
+        "duplicate": "Duplicate contact: {contact}",
+        "duplicateHelp": "Choose one occurrence to keep, or remove all. Names are not merged automatically.",
+        "keep": "Keep occurrence {number}",
+        "noName": "No name supplied",
+        "removeAll": "Remove all occurrences",
+        "review": "Review invitations",
+        "loading": "Loading…",
+        "resendHelp": "Only new recipients are selected automatically. Select existing invitees deliberately to resend; their established RSVP names stay unchanged.",
+        "new": "New",
+        "invited": "Already invited",
+        "responded": "Responded",
+        "conflict": "Conflicting records — cannot send",
+        "effectiveName": "Greeting and RSVP name",
+        "preserved": "Existing RSVP name is preserved. Draft name changes do not overwrite it.",
+        "preview": "Personalized preview",
+        "language": "Preview language: {locale}",
+        "smsPreview": "SMS has no personalized greeting. RSVP name",
+        "send": "Send {count, plural, one {# invitation} other {# invitations}}",
+        "sending": "Sending…",
+        "sent": "Sent",
+        "failed": "Failed",
+        "issues": {
+          "textTooLong": "Draft is too long. Shorten it to 100,000 characters.",
+          "tooManyRecipients": "Use at most 200 recipients.",
+          "unmatchedQuote": "A closing quote is missing. Check the quoted name.",
+          "invalidName": "Enter a name of 1–100 characters without control characters.",
+          "invalidContact": "Enter a valid email address or phone number.",
+          "invalidMailbox": "Check the name and the matching angle brackets.",
+          "missingDelimiter": "Separate recipients with a comma or a new line.",
+          "tooManyRows": "Use at most 200 data rows.",
+          "tooManyColumns": "Use at most 32 columns.",
+          "invalidQuote": "Check the cell quotation marks.",
+          "invalidMapping": "Choose one contact column and a different optional name column.",
+          "missingCell": "A mapped cell is missing. Check the selected columns."
+        },
+        "row": "Row {number}",
+        "unnamedGuest": "Guest"
       }
     },
     "Rsvp": {

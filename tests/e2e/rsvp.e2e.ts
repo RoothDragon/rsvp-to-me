@@ -121,8 +121,7 @@ test.describe("#712 personalized invitation details journey", () => {
           expect(rsvpUrl.searchParams.get("token")).toBe(editToken);
           expect(rsvpUrl.searchParams.get("status")).toBe(status);
           await expect(page.getByText("RSVP as", { exact: true })).toBeVisible();
-          await expect(page.getByText(guestName, { exact: true })).toBeVisible();
-          await expect(page.getByPlaceholder("Your name (required)")).toHaveCount(0);
+          await expect(page.getByPlaceholder("Your name (required)")).toHaveValue(guestName);
           await expect(page.getByRole("button", { name: label, exact: true })).toHaveAttribute(
             "aria-pressed",
             "true"

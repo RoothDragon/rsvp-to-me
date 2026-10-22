@@ -84,6 +84,10 @@ Guests don't need an account to change their RSVP. Every confirmation email incl
 unique to that guest; clicking it lets them update their status or answers until the event starts. If
 a guest loses their link, see the [FAQ](faq.md).
 
+Guests can also correct their name through their private edit link while editing is allowed.
+Hosts and co-hosts can correct the name when editing the RSVP from the guest list. These changes
+update the guest's name for this event only; they do not rename an account or affect other events.
+
 ---
 
 ## Anti-Abuse

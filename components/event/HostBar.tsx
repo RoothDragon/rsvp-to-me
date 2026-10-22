@@ -2,13 +2,16 @@
 
 import { useTranslations } from "next-intl";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Mail, MessageSquare, Settings, Eye, Globe, Link2, Lock, Check } from "lucide-react";
 import type { ResolvedTheme } from "@/lib/theme";
-import { sendBlast, sendSmsBlast, saveEventSettings, inviteGuest } from "@/app/actions/event";
+import { sendBlast, sendSmsBlast, saveEventSettings } from "@/app/actions/event";
 import Image from "next/image";
 import QRCode from "qrcode";
 import { useCaptcha } from "@/components/ui/CaptchaProvider";
+
+import { Dialog } from "@/components/ui/Dialog";
+import { InvitationComposer } from "./InvitationComposer";
 
 type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
 
@@ -89,38 +92,25 @@ export function HostBar({
   const [visibility, setVisibility] = useState<Visibility>(initialVisibility);
   const [visibilityPending, setVisibilityPending] = useState(false);
 
-  const [inviteInput, setInviteInput] = useState("");
-  const [invitePending, setInvitePending] = useState(false);
-  const [inviteStatus, setInviteStatus] = useState<{ success: boolean; message: string } | null>(
-    null
-  );
   const [copiedLink, setCopiedLink] = useState(false);
-  const { runWithCaptcha } = useCaptcha();
-
-  const handleSendInvite = async () => {
-    if (!inviteInput.trim() || invitePending) return;
-    setInvitePending(true);
-    setInviteStatus(null);
-    try {
-      const result = await runWithCaptcha("host_invite", (token) =>
-        inviteGuest(eventId, inviteInput.trim(), token)
-      );
-      if (result.success) {
-        setInviteStatus({
-          success: true,
-          message: translate("inviteSent", { destination: result.emailOrPhone }),
-        });
-        setInviteInput("");
-      }
-    } catch (err: unknown) {
-      setInviteStatus({
-        success: false,
-        message: err instanceof Error ? err.message : translate("failedSendInvite"),
-      });
-    } finally {
-      setInvitePending(false);
+  useEffect(() => {
+    let cancelled = false;
+    if (activePanel === "invite" && visibility !== "PRIVATE") {
+      QRCode.toDataURL(window.location.href, {
+        width: 220,
+        margin: 1,
+        color: { dark: "#000", light: "#fff" },
+      })
+        .then((url) => {
+          if (!cancelled) setQrDataUrl(url);
+        })
+        .catch(() => {});
     }
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [activePanel, visibility]);
+  const { runWithCaptcha } = useCaptcha();
 
   const VisIcon = visibilityIcon(visibility);
 
@@ -312,32 +302,33 @@ export function HostBar({
 
       {/* Panels */}
       {activePanel === "invite" && (
-        <SlideUp
-          onClose={() => {
-            setActivePanel(null);
-            setInviteInput("");
-            setInviteStatus(null);
+        <Dialog
+          open
+          onClose={() => setActivePanel(null)}
+          titleId="invitation-dialog-title"
+          panelStyle={{
+            width: "min(960px,100%)",
+            maxHeight: "90dvh",
+            overflowY: "auto",
+            background: "rgba(15,15,20,0.98)",
+            color: "#ffffff",
+            padding: "24px",
+            borderRadius: "20px",
           }}
-          title={translate("inviteGuests")}
-          onOpen={
-            visibility !== "PRIVATE"
-              ? async () => {
-                  if (typeof window !== "undefined") {
-                    try {
-                      const url = await QRCode.toDataURL(window.location.href, {
-                        width: 220,
-                        margin: 1,
-                        color: { dark: "#000", light: "#fff" },
-                      });
-                      setQrDataUrl(url);
-                    } catch {
-                      /* no-op */
-                    }
-                  }
-                }
-              : undefined
-          }
         >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 id="invitation-dialog-title" style={{ fontSize: "20px", fontWeight: 700 }}>
+              {translate("inviteGuests")}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setActivePanel(null)}
+              aria-label={translate("close")}
+              style={{ padding: "6px 12px", fontSize: "24px", borderRadius: "8px" }}
+            >
+              ×
+            </button>
+          </div>
           {visibility === "PRIVATE" ? (
             <div
               style={{
@@ -457,91 +448,20 @@ export function HostBar({
             </>
           )}
 
-          {/* Direct Invite Form */}
           {!channelConfig.email && !channelConfig.sms ? (
-            <div
-              style={{
-                marginTop: "16px",
-                borderTop: "1px solid rgba(255,255,255,0.08)",
-                paddingTop: "16px",
-                fontSize: "13px",
-                color: "rgba(255,255,255,0.4)",
-                textAlign: "center",
-              }}
-            >
-              {translate("messagingNotConfiguredServerShareEvent")}
-            </div>
+            <p>{translate("messagingNotConfiguredServerShareEvent")}</p>
           ) : (
-            <div
-              style={{
-                marginTop: "16px",
-                borderTop: "1px solid rgba(255,255,255,0.08)",
-                paddingTop: "16px",
+            <InvitationComposer
+              eventId={eventId}
+              channelConfig={channelConfig}
+              theme={{
+                ...t,
+                inputBg: "rgba(255,255,255,0.06)",
+                inputBorder: "rgba(255,255,255,0.16)",
               }}
-            >
-              <h4 style={{ color: "#fff", fontWeight: 600, fontSize: "14px", marginBottom: "8px" }}>
-                {translate("sendDirectInvite")}
-              </h4>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <input
-                  type="text"
-                  placeholder={
-                    channelConfig.email && channelConfig.sms
-                      ? translate("emailsOrPhonesEGTom")
-                      : channelConfig.sms
-                        ? translate("phoneNumbersEG1555123")
-                        : translate("emailAddressesEGTomMail")
-                  }
-                  value={inviteInput}
-                  onChange={(e) => setInviteInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSendInvite();
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "10px 14px",
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: "10px",
-                    color: "#fff",
-                    fontFamily: "inherit",
-                    fontSize: "13px",
-                    outline: "none",
-                  }}
-                />
-                <button
-                  onClick={handleSendInvite}
-                  disabled={!inviteInput.trim() || invitePending}
-                  style={{
-                    padding: "10px 16px",
-                    background: t.accent,
-                    color: t.accentFg,
-                    border: "none",
-                    borderRadius: "10px",
-                    fontFamily: "inherit",
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    opacity: !inviteInput.trim() || invitePending ? 0.5 : 1,
-                  }}
-                >
-                  {invitePending ? translate("sending") : translate("send")}
-                </button>
-              </div>
-              {inviteStatus && (
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: inviteStatus.success ? "#22c55e" : "#f87171",
-                    marginTop: "6px",
-                  }}
-                >
-                  {inviteStatus.message}
-                </div>
-              )}
-            </div>
+            />
           )}
-        </SlideUp>
+        </Dialog>
       )}
 
       {activePanel === "message" && (

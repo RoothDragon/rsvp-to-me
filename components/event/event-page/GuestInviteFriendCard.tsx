@@ -20,6 +20,7 @@ export function GuestInviteFriendCard({
 }) {
   const translate = useTranslations("Ui.Event.GuestInviteFriendCard");
 
+  const [name, setName] = useState("");
   const [target, setTarget] = useState("");
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
@@ -34,11 +35,12 @@ export function GuestInviteFriendCard({
     startTransition(async () => {
       try {
         const res = await runWithCaptcha("guest_invite", (token) =>
-          inviteFriendAsGuest(eventId, guestToken, val, token)
+          inviteFriendAsGuest(eventId, guestToken, val, token, name.trim() || undefined)
         );
         if (res.success) {
           setStatus("success");
           setTarget("");
+          setName("");
           return;
         }
         setStatus("error");
@@ -67,6 +69,23 @@ export function GuestInviteFriendCard({
       <p style={{ fontSize: "13px", color: t.textSecondary, margin: "0 0 12px", lineHeight: 1.4 }}>
         {translate("eventPrivateCanInviteFriendsBy")}
       </p>
+      <label style={{ display: "block", marginBottom: "10px" }}>
+        {translate("nameOptional")}
+        <input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          maxLength={100}
+          disabled={isPending}
+          style={{
+            width: "100%",
+            padding: "10px",
+            color: t.textPrimary,
+            background: t.inputBg,
+            border: `1px solid ${t.inputBorder}`,
+            borderRadius: t.btnRadius,
+          }}
+        />
+      </label>
       <div style={{ display: "flex", gap: "8px", width: "100%" }}>
         <input
           style={{

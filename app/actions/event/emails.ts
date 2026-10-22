@@ -21,6 +21,7 @@ import { formatEventDateTime } from "@/lib/calendar";
 import { sendRenderedEmail } from "@/lib/email";
 import { assertHostOrCohost } from "./shared";
 import { assertCaptcha } from "@/lib/captcha";
+import { isValidInvitationName } from "@/lib/invitation-draft";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -35,15 +36,21 @@ const EVENT_TEMPLATE_IDS: TemplateId[] = [
 
 const SAMPLE_GUEST = "Alex Sample";
 
-async function renderEventEmail(eventId: string, templateId: TemplateId) {
+async function renderEventEmail(eventId: string, templateId: TemplateId, guestName?: string) {
   if (!EVENT_TEMPLATE_IDS.includes(templateId)) {
     throw new Error(await eventActionMessage("unknownTemplate"));
   }
   await assertHostOrCohost(eventId);
+  if (
+    guestName !== undefined &&
+    (templateId !== "invite" || typeof guestName !== "string" || !isValidInvitationName(guestName))
+  ) {
+    throw new Error(await eventActionMessage("invalidInvitationRecipients"));
+  }
 
   const event = await db.event.findUnique({
     where: { id: eventId },
-    include: { theme: true, host: { select: { name: true } } },
+    include: { theme: true, host: { select: { name: true, email: true } } },
   });
   if (!event) throw new Error(await eventActionMessage("forbidden"));
 
@@ -52,7 +59,11 @@ async function renderEventEmail(eventId: string, templateId: TemplateId) {
 
   // Real event data + the event's real current theme, with a sample guest.
   const theme = resolveEmailTheme(event.theme);
-  const hostName = event.host.name ?? t("Email.yourHost");
+  const hostName =
+    event.hostDisplayName ??
+    event.host.name ??
+    event.host.email?.split("@")[0] ??
+    t("Email.yourHostCapital");
   const eventUrl = `${APP_URL}/e/${event.slug}`;
   const details: EventEmailDetails = {
     id: event.id,
@@ -71,7 +82,7 @@ async function renderEventEmail(eventId: string, templateId: TemplateId) {
   const overrides = await getEmailTemplateSettings(templateId);
   const toggles = mergedToggles(templateId, overrides);
   const vars: Record<string, string> = {
-    guestName: SAMPLE_GUEST,
+    guestName: templateId === "invite" && guestName !== undefined ? guestName.trim() : SAMPLE_GUEST,
     hostName,
     eventTitle: event.title,
     eventDate: formatEventDateTime(event.startAt, event.endAt, event.timezone, locale).date,
@@ -150,8 +161,12 @@ async function renderEventEmail(eventId: string, templateId: TemplateId) {
 }
 
 /** Server-rendered preview for the event settings Emails panel. */
-export async function getEventEmailPreview(eventId: string, templateId: TemplateId) {
-  const { subject, html } = await renderEventEmail(eventId, templateId);
+export async function getEventEmailPreview(
+  eventId: string,
+  templateId: TemplateId,
+  guestName?: string
+) {
+  const { subject, html } = await renderEventEmail(eventId, templateId, guestName);
   return { subject, html };
 }
 

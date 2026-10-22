@@ -16,6 +16,8 @@ October 2026 (`8a8fb7bf`) extends `dependency-security-baseline.test.ts` with up
 
 ## Index
 
+#749 (`01a15e47`) adds `issue-749-invitation-names.test.ts` for event-scoped invitation names, reviewed send validation, private preview boundaries, safe resends, and token/organizer RSVP name corrections.
+
 | File                                                 | Bug description                                                                                                              | Fixed in                       |
 | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
 | `language-selector-focus.test.tsx`                   | Closed language menus stole focus on Escape, including from the other selector on profile pages                              | 01a150ee                       |

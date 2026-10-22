@@ -23,10 +23,14 @@ const { mockGetSession, mockEventFindUnique, mockRateLimit, mockGetClientIp, moc
 
 vi.mock("@/lib/db", () => ({
   db: {
+    async $transaction(action: (client: unknown) => Promise<unknown>) {
+      return action(this);
+    },
+    $executeRaw: vi.fn().mockResolvedValue(1),
     event: { findUnique: mockEventFindUnique },
     user: { findFirst: vi.fn(), create: vi.fn() },
-    rSVP: { findFirst: vi.fn(), create: vi.fn() },
-    invitation: { findFirst: vi.fn(), create: vi.fn() },
+    rSVP: { findMany: vi.fn().mockResolvedValue([]), findFirst: vi.fn(), create: vi.fn() },
+    invitation: { findMany: vi.fn().mockResolvedValue([]), findFirst: vi.fn(), create: vi.fn() },
   },
 }));
 vi.mock("@/lib/session", () => ({ getSession: mockGetSession }));
