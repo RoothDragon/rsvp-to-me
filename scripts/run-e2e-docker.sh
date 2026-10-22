@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-PLAYWRIGHT_IMAGE=mcr.microsoft.com/playwright:v1.64.0-noble
+PLAYWRIGHT_IMAGE=mcr.microsoft.com/playwright:v1.64.1-noble
 
 echo "=== Ensuring E2E Test Database Exists ==="
 docker exec rsvp-to-me-postgres-1 psql -U postgres -c "CREATE DATABASE rsvp_test;" 2>/dev/null || true

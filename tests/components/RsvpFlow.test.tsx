@@ -232,7 +232,7 @@ describe("RsvpFlow — edit mode", () => {
     answers: [],
   };
 
-  it("renders in edit mode with guest name displayed as text", () => {
+  it("renders an editable prefilled guest name", () => {
     render(
       <RsvpFlow
         event={baseEvent}
@@ -241,9 +241,7 @@ describe("RsvpFlow — edit mode", () => {
         sessionUser={null}
       />
     );
-    expect(screen.getByText("Alice")).toBeInTheDocument();
-    // Name input should not be present in edit mode
-    expect(screen.queryByPlaceholderText("Your name (required)")).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Your name (required)")).toHaveValue("Alice");
   });
 
   it("shows 'Update RSVP' button in edit mode", () => {
@@ -269,11 +267,19 @@ describe("RsvpFlow — edit mode", () => {
         sessionUser={null}
       />
     );
+    fireEvent.change(screen.getByPlaceholderText("Your name (required)"), {
+      target: { value: " Alice Jones " },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Update RSVP" }));
 
     await waitFor(() => {
       expect(screen.getByText("RSVP updated!")).toBeInTheDocument();
     });
+    expect(mockUpdateRSVP).toHaveBeenCalledWith(
+      "tok-abc",
+      expect.objectContaining({ guestName: "Alice Jones" }),
+      null
+    );
   });
 
   it("renders a read-only summary after event-start locking", () => {

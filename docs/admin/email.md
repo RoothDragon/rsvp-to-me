@@ -55,6 +55,16 @@ _Note on Host RSVP Alerts:_ When a guest RSVPs, the host and every co-host recei
 
 Personalized guest invitations keep the recipient’s RSVP context in the **View event details** link, just like the response buttons. This applies to newly sent and resent invitations; previously delivered emails are unchanged.
 
+Invitation personalization uses the recipient's name on this event's RSVP. Hosts can supply a
+name for a new recipient; otherwise a generic guest label is used. Resends retain the existing
+event name, and host-supplied names never update account profiles. Guests and organizers can
+correct the event RSVP name later.
+
+The invitation composer can preview an individual recipient's email using the same rendering
+path as the event email preview. It uses the current event theme, saved template overrides and
+content toggles, and the event's host display-name override when set. Preview copy uses the
+viewer's language; delivered copy uses the recipient's resolved language.
+
 _Note on Themed Templates:_ Every event email (invite, RSVP confirmation, approval, update/reminder) is styled from that event's theme — see [Themed Email Templates](#themed-email-templates) below.
 
 ---

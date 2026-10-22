@@ -180,6 +180,7 @@ export function RsvpFlow({
       try {
         if (isEdit && existingRsvp) {
           const input = {
+            guestName: name.trim(),
             status,
             plusOneCount,
             plusOneGuestNames,
@@ -688,16 +689,14 @@ export function RsvpFlow({
           <div style={S.group}>
             <div style={S.label}>{translate("rsvpAs")}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {isEdit ? (
-                <div style={{ ...S.inp, color: t.textSecondary }}>{name}</div>
-              ) : (
-                <input
-                  style={S.inp}
-                  placeholder={translate("nameRequired")}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              )}
+              <input
+                style={S.inp}
+                placeholder={translate("nameRequired")}
+                aria-label={translate("nameRequired")}
+                maxLength={100}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
               {!isEdit && (
                 <>
                   {channelConfig.email && (

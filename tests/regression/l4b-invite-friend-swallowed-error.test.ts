@@ -28,7 +28,12 @@ vi.mock("@/lib/logger", () => ({ logSafe: mockLogSafe, logger: {} }));
 vi.mock("@/lib/activity", () => ({ logActivity: mockLogActivity, iconLabel: vi.fn() }));
 vi.mock("@/lib/db", () => ({
   db: {
+    async $transaction(action: (client: unknown) => Promise<unknown>) {
+      return action(this);
+    },
+    $executeRaw: vi.fn().mockResolvedValue(1),
     rSVP: {
+      findMany: vi.fn().mockResolvedValue([]),
       findUnique: vi.fn().mockResolvedValue({
         id: "rsvp_inviter",
         eventId: "evt_1",
@@ -59,6 +64,7 @@ vi.mock("@/lib/db", () => ({
       create: vi.fn().mockResolvedValue({ id: "user_new" }),
     },
     invitation: {
+      findMany: vi.fn().mockResolvedValue([]),
       findFirst: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockResolvedValue({ id: "inv_1" }),
     },

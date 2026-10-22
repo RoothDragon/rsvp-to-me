@@ -46,13 +46,22 @@ vi.mock("@/lib/rateLimit", () => ({ rateLimit: mockRateLimit }));
 vi.mock("@/lib/clientIp", () => ({ getClientIp: mockGetClientIp }));
 vi.mock("@/lib/db", () => ({
   db: {
+    async $transaction(action: (client: unknown) => Promise<unknown>) {
+      return action(this);
+    },
+    $executeRaw: vi.fn().mockResolvedValue(1),
     rSVP: {
+      findMany: vi.fn().mockResolvedValue([]),
       findUnique: mockRsvpFindUnique,
       findFirst: mockRsvpFindFirst,
       create: mockRsvpCreate,
     },
     user: { findFirst: mockUserFindFirst, create: mockUserCreate },
-    invitation: { findFirst: mockInvitationFindFirst, create: mockInvitationCreate },
+    invitation: {
+      findMany: vi.fn().mockResolvedValue([]),
+      findFirst: mockInvitationFindFirst,
+      create: mockInvitationCreate,
+    },
   },
 }));
 vi.mock("@/lib/session", () => ({ getSession: vi.fn() }));

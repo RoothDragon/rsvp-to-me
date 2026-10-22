@@ -174,6 +174,22 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
   already-verified requests for different actions to remain concurrent. Deletes
   and low-risk state toggles are outside this user-content boundary.
 - Capacity-sensitive RSVP writes use `lib/capacityLock.ts`.
+- `lib/invitation-draft.ts` owns pure invitation syntax, contact normalization,
+  name validation, and source-span editing shared by clients and server actions.
+  `lib/invitation-spreadsheet.ts` parses clipboard TSV and applies explicit
+  contact/name/header mappings before producing draft recipients.
+- `lib/invitation-recipients.ts` validates bounded recipient inputs and resolves
+  names and prior-invitation status from the current event only. `RSVP.guestName`
+  is the event-scoped name authority; host invitation names never update
+  `User.name`, and previews do not query account profiles.
+- Invitation delivery requires a matching current same-channel RSVP contact.
+  Historical `Invitation.rsvpId` links confer no credential authority: missing,
+  mismatched, dangling, or cross-event links produce conflicts.
+  `app/actions/event/invites.ts` serializes recipient preparation with a
+  PostgreSQL transaction advisory lock shared by host, legacy, and guest sends.
+  Resolution, reviewed-name/status checks, and record creation happen inside
+  that transaction; email/SMS delivery happens after it completes. See
+  [ADR 0001](docs/engineering/decisions/0001-invitation-recipient-identity.md).
 
 ### Themes, effects, and email
 

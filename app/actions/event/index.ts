@@ -20,7 +20,13 @@ export {
   reorderRsvpFields,
   getRsvpFieldAnswers,
 } from "./rsvpFields";
-export { inviteGuest, deleteInvitationAsHost, inviteFriendAsGuest } from "./invites";
+export {
+  inviteGuest,
+  deleteInvitationAsHost,
+  inviteFriendAsGuest,
+  previewGuestInvitations,
+  sendGuestInvitations,
+} from "./invites";
 export { sendBlast, sendSmsBlast, addEventUpdate, deleteEventUpdate } from "./blasts";
 export {
   createPoll,

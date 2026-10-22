@@ -211,7 +211,12 @@
         "invalidInviteEmail": "Correo no válido: {entry}",
         "invalidInvitePhone": "Teléfono no válido: {entry}",
         "inviteSendFailed": "No se han podido enviar las invitaciones: {errors}",
-        "itemsRemaining": "Solo quedan {remaining}"
+        "itemsRemaining": "Solo quedan {remaining}",
+        "invalidInvitationRecipients": "Revisa los nombres y los datos de contacto de las invitaciones antes de enviarlas.",
+        "invitationConflict": "Varios invitados coinciden con este contacto. Revisa sus registros antes de enviar.",
+        "invitationReviewChanged": "Este invitado ha cambiado desde la vista previa. Revisa la invitación de nuevo.",
+        "invitationChannelDisabled": "Este canal de invitación está desactivado.",
+        "invitationSendFailed": "No se pudo enviar la invitación. Revisa este destinatario y vuelve a intentarlo."
       }
     },
     "Event": {
@@ -575,7 +580,8 @@
         "send": "Enviar",
         "invitationSentSuccessfully": "✓ ¡Invitación enviada correctamente!",
         "failedSendInvitation": "No se ha podido enviar la invitación",
-        "securityCheckFailed": "La comprobación de seguridad ha fallado"
+        "securityCheckFailed": "La comprobación de seguridad ha fallado",
+        "nameOptional": "Nombre (opcional)"
       },
       "EventHero": {
         "eventTitle": "Título del evento",
@@ -718,7 +724,8 @@
         "noGuestsPhoneNumbersFound": "No se han encontrado invitados con número de teléfono.",
         "inviteSent": "¡Invitación enviada a {destination}!",
         "emailSent": "Se ha enviado un correo a {count, plural, one {# invitado} other {# invitados}}.",
-        "smsSent": "Se ha enviado un SMS a {count, plural, one {# invitado} other {# invitados}}."
+        "smsSent": "Se ha enviado un SMS a {count, plural, one {# invitado} other {# invitados}}.",
+        "close": "Cerrar"
       },
       "GuestListFilter": {
         "all": "Todos",
@@ -929,6 +936,68 @@
         "openInvitation": "Abre tu invitación para saber más",
         "host": "Anfitrión del evento",
         "hostLine": "Organizado por {name}"
+      },
+      "InvitationComposer": {
+        "composer": "Invitaciones directas",
+        "help": "Introduce un destinatario por línea o sepáralos con comas. Añade nombres como {syntaxExample}. Pon entre comillas los nombres con comas. Al pegar una tabla, elige las columnas antes de importarla.",
+        "source": "Borrador de invitaciones",
+        "undo": "Deshacer",
+        "spreadsheet": "Importar tabla",
+        "pasteTable": "Pegar celdas de una tabla",
+        "header": "La primera fila es un encabezado",
+        "mappingHelp": "Elige una columna de contacto y, si quieres, una de nombre. Las demás se ignoran. La importación reemplaza el borrador; Deshacer lo restaura.",
+        "column": "Columna {number}",
+        "ignore": "Ignorar",
+        "name": "Nombre (opcional)",
+        "contact": "Correo o teléfono",
+        "tableErrors": "Corrige la tabla o las columnas antes de importar ({count, plural, one {# problema} other {# problemas}}).",
+        "import": "Importar columnas revisadas",
+        "filter": "Mostrar destinatarios",
+        "all": "Todos ({count})",
+        "named": "Con nombre ({count})",
+        "missing": "Sin nombre ({count})",
+        "invalid": "Destinatario no válido",
+        "selectSource": "Seleccionar texto original",
+        "remove": "Eliminar",
+        "repairHelp": "Reemplazo sugerido (solo se aplica si lo eliges):",
+        "repair": "Aplicar reemplazo",
+        "duplicate": "Contacto duplicado: {contact}",
+        "duplicateHelp": "Elige una aparición para conservar o elimínalas todas. Los nombres no se combinan automáticamente.",
+        "keep": "Conservar aparición {number}",
+        "noName": "Sin nombre indicado",
+        "removeAll": "Eliminar todas las apariciones",
+        "review": "Revisar invitaciones",
+        "loading": "Cargando…",
+        "resendHelp": "Solo se seleccionan automáticamente los destinatarios nuevos. Selecciona expresamente a los ya invitados para reenviar; se conservan sus nombres de RSVP.",
+        "new": "Nuevo",
+        "invited": "Ya invitado",
+        "responded": "Ha respondido",
+        "conflict": "Registros en conflicto — no se puede enviar",
+        "effectiveName": "Nombre del saludo y del RSVP",
+        "preserved": "Se conserva el nombre del RSVP existente. Los cambios del borrador no lo reemplazan.",
+        "preview": "Vista previa personalizada",
+        "language": "Idioma de la vista previa: {locale}",
+        "smsPreview": "El SMS no incluye un saludo personalizado. Nombre del RSVP",
+        "send": "Enviar {count, plural, one {# invitación} other {# invitaciones}}",
+        "sending": "Enviando…",
+        "sent": "Enviado",
+        "failed": "Error",
+        "issues": {
+          "textTooLong": "El borrador es demasiado largo. Redúcelo a 100.000 caracteres.",
+          "tooManyRecipients": "Usa como máximo 200 destinatarios.",
+          "unmatchedQuote": "Falta una comilla de cierre. Revisa el nombre entre comillas.",
+          "invalidName": "Introduce un nombre de 1–100 caracteres sin caracteres de control.",
+          "invalidContact": "Introduce un correo o teléfono válido.",
+          "invalidMailbox": "Revisa el nombre y los signos de contacto correspondientes.",
+          "missingDelimiter": "Separa los destinatarios con una coma o un salto de línea.",
+          "tooManyRows": "Usa como máximo 200 filas de datos.",
+          "tooManyColumns": "Usa como máximo 32 columnas.",
+          "invalidQuote": "Revisa las comillas de la celda.",
+          "invalidMapping": "Elige una columna de contacto y otra distinta para el nombre opcional.",
+          "missingCell": "Falta una celda asignada. Revisa las columnas elegidas."
+        },
+        "row": "Fila {number}",
+        "unnamedGuest": "Invitado"
       }
     },
     "Rsvp": {

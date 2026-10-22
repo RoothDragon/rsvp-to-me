@@ -113,8 +113,8 @@ describe("lib/cron-scheduler.ts", () => {
 
     // Trigger backup callback
     await callbacks.backup?.();
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(mockRunBackup).toHaveBeenCalled();
+    // Lock acquisition is asynchronous; fixed delays race under full-suite load.
+    await vi.waitFor(() => expect(mockRunBackup).toHaveBeenCalled());
   });
 
   it("does not schedule backup when pattern is disabled or false", async () => {

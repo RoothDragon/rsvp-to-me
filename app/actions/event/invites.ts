@@ -2,8 +2,8 @@
 
 import { eventActionMessage } from "./localization";
 
-import { resolveLocale } from "@/i18n/config";
-import { getTranslator } from "@/i18n/server";
+import { resolveLocale, type Locale } from "@/i18n/config";
+import { getTranslator, getRequestTranslator } from "@/i18n/server";
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
@@ -15,8 +15,263 @@ import { logSafe } from "@/lib/logger";
 import { rateLimit } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/clientIp";
 import { assertHostOrCohost } from "./shared";
-import { normalizePhone } from "@/lib/auth";
 import { assertCaptcha } from "@/lib/captcha";
+import { getChannelConfig } from "@/lib/config";
+import {
+  parseInvitationDraft,
+  isValidInvitationName,
+  normalizeInvitationContact,
+  type InvitationRecipient,
+} from "@/lib/invitation-draft";
+import {
+  validateInvitationRecipients,
+  resolveInvitationRecipients,
+  type ResolvedInvitationRecipient,
+} from "@/lib/invitation-recipients";
+import type { InvitationSendResult, ReviewedInvitationRecipient } from "@/lib/invitation-types";
+import type { Prisma } from "@/app/generated/prisma/client";
+import { InvitationStateError } from "@/lib/invitation-recipients";
+
+async function unnamedGuestLabel() {
+  return (await getRequestTranslator())("Ui.Event.InvitationComposer.unnamedGuest");
+}
+
+async function validateInput(raw: unknown, reviewed: true): Promise<ReviewedInvitationRecipient[]>;
+async function validateInput(raw: unknown): Promise<InvitationRecipient[]>;
+async function validateInput(raw: unknown, reviewed?: true) {
+  try {
+    return reviewed ? validateInvitationRecipients(raw, true) : validateInvitationRecipients(raw);
+  } catch {
+    throw new Error(await eventActionMessage("invalidInvitationRecipients"));
+  }
+}
+
+async function hostLimits(userId: string, eventId: string) {
+  const ip = await getClientIp();
+  if (!(await rateLimit(`host-invite:ip:${ip}`, 15, 3600)).success) {
+    throw new Error(await eventActionMessage("inviteRateLimited"));
+  }
+  if (!(await rateLimit(`host-invite:${userId}:${eventId}`, 10, 3600)).success) {
+    throw new Error(await eventActionMessage("eventInviteRateLimited"));
+  }
+}
+
+async function prepareInvitationRsvpInTransaction(
+  eventId: string,
+  recipient: InvitationRecipient,
+  resolved: ResolvedInvitationRecipient,
+  approved: boolean,
+  client: Pick<Prisma.TransactionClient, "rSVP" | "invitation" | "user">
+) {
+  if (resolved.preview.disposition === "conflict") {
+    throw new InvitationStateError("invitationConflict");
+  }
+  const isEmail = recipient.contact.includes("@");
+  let locale: Locale;
+  let rsvp;
+  if (resolved.rsvp) {
+    // Reuse the event contact match even when it has never been associated to a User.
+    rsvp = await client.rSVP.findFirst({
+      where: { id: resolved.rsvp.id, eventId },
+      include: { user: { select: { preferredLocale: true } } },
+    });
+    if (!rsvp) throw new InvitationStateError("invitationReviewChanged");
+    if (
+      rsvp.guestName !== resolved.rsvp.guestName ||
+      rsvp.status !== resolved.rsvp.status ||
+      rsvp.responded !== resolved.rsvp.responded ||
+      normalizeInvitationContact((isEmail ? rsvp.guestEmail : rsvp.guestPhone) ?? "") !==
+        recipient.contact
+    ) {
+      throw new InvitationStateError("invitationReviewChanged");
+    }
+    locale = resolveLocale(rsvp.user?.preferredLocale);
+  } else {
+    let user = await client.user.findFirst({
+      where: isEmail
+        ? { email: { equals: recipient.contact, mode: "insensitive" } }
+        : { phone: recipient.contact },
+    });
+    if (!user) {
+      // Host-supplied event names must never change account-wide identity.
+      user = await client.user.create({
+        data: isEmail
+          ? { email: recipient.contact, role: "GUEST" }
+          : { phone: recipient.contact, role: "GUEST" },
+      });
+    }
+    locale = resolveLocale(user.preferredLocale);
+    rsvp = await client.rSVP.create({
+      data: {
+        eventId,
+        guestName: resolved.preview.guestName,
+        guestEmail: isEmail ? recipient.contact : null,
+        guestPhone: isEmail ? null : recipient.contact,
+        status: "INVITED",
+        responded: false,
+        approved,
+        userId: user.id,
+      },
+    });
+  }
+  if (resolved.invitationIds.length === 0) {
+    await client.invitation.create({
+      data: {
+        eventId,
+        sentTo: recipient.contact,
+        channel: isEmail ? "EMAIL" : "SMS",
+        rsvpId: rsvp.id,
+      },
+    });
+  } else {
+    // Repair orphaned delivery history only within this event and contact's matching ids.
+    await client.invitation.updateMany({
+      where: { eventId, id: { in: resolved.invitationIds }, rsvpId: null },
+      data: { rsvpId: rsvp.id },
+    });
+  }
+  return { rsvp, locale };
+}
+
+async function prepareLockedInvitation(
+  eventId: string,
+  recipient: InvitationRecipient,
+  approved: boolean,
+  reviewed?: ReviewedInvitationRecipient
+) {
+  const unnamedGuest = await unnamedGuestLabel();
+  return db.$transaction(async (client) => {
+    // Transaction-scoped locks are shared by host, legacy, and guest sends.
+    // Parameterized values cannot become SQL, and distinct contacts can proceed independently.
+    await client.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"invitation:" + eventId}), hashtext(${recipient.contact}))`;
+    const [resolved] = await resolveInvitationRecipients(
+      eventId,
+      [recipient],
+      unnamedGuest,
+      client
+    );
+    if (resolved.preview.disposition === "conflict")
+      throw new InvitationStateError("invitationConflict");
+    if (
+      reviewed &&
+      (resolved.preview.disposition !== reviewed.expectedDisposition ||
+        resolved.preview.guestName !== reviewed.expectedGuestName)
+    ) {
+      throw new InvitationStateError("invitationReviewChanged");
+    }
+    return prepareInvitationRsvpInTransaction(eventId, recipient, resolved, approved, client);
+  });
+}
+
+async function deliverHostInvitation(
+  eventId: string,
+  recipient: InvitationRecipient,
+  prepared: Awaited<ReturnType<typeof prepareLockedInvitation>>
+) {
+  const { rsvp, locale } = prepared;
+  const event = await db.event.findUnique({
+    where: { id: eventId },
+    include: { theme: true, host: { select: { name: true, email: true } } },
+  });
+  if (!event) throw new Error(await eventActionMessage("forbidden"));
+  const t = await getTranslator(locale);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const rsvpBaseUrl = `${appUrl}/e/${event.slug}/rsvp?token=${rsvp.editToken}`;
+  const hostName =
+    event.hostDisplayName ??
+    event.host?.name ??
+    event.host?.email?.split("@")[0] ??
+    t("Email.yourHostCapital");
+  if (recipient.contact.includes("@")) {
+    await sendEventInviteEmail(recipient.contact, {
+      locale,
+      guestName: rsvp.guestName,
+      hostName,
+      eventTitle: event.title ?? t("Email.eventFallback"),
+      eventSlug: event.slug,
+      eventId,
+      startAt: event.startAt ?? new Date(),
+      endAt: event.endAt,
+      timezone: event.timezone,
+      locationType: event.locationType,
+      locationName: event.locationName,
+      locationAddress: event.locationAddress,
+      virtualUrl: event.virtualUrl,
+      rsvpBaseUrl,
+      maybeEnabled: event.maybeEnabled ?? true,
+      theme: event.theme,
+      replyTo: event.host?.email || undefined,
+    });
+  } else {
+    await sendEventInviteSms(recipient.contact, {
+      locale,
+      hostName,
+      eventTitle: event.title ?? t("Email.eventFallback"),
+      rsvpBaseUrl,
+      maybeEnabled: event.maybeEnabled ?? true,
+    });
+  }
+  return rsvp.guestName;
+}
+
+function recordHostInvites(eventId: string, email: string | undefined | null, count: number) {
+  if (count === 0) return;
+  const hostLabel = email?.split("@")[0] ?? "A host";
+  logActivity(
+    eventId,
+    "guest_invite",
+    `${hostLabel} invited ${count} guest${count === 1 ? "" : "s"}`,
+    hostLabel
+  ).catch(logSafe("inviteGuest"));
+}
+
+export async function previewGuestInvitations(eventId: string, recipients: unknown) {
+  await assertHostOrCohost(eventId);
+  const validated = await validateInput(recipients);
+  const resolved = await resolveInvitationRecipients(eventId, validated, await unnamedGuestLabel());
+  return { recipients: resolved.map(({ preview }) => preview) };
+}
+
+export async function sendGuestInvitations(
+  eventId: string,
+  recipients: unknown,
+  captchaToken?: string | null
+): Promise<InvitationSendResult> {
+  const session = await getSession();
+  if (!session) throw new Error(await eventActionMessage("unauthorized"));
+  const event = await assertHostOrCohost(eventId);
+  const validated = await validateInput(recipients, true);
+  await assertCaptcha("host_invite", captchaToken);
+  await hostLimits(session.userId, eventId);
+  const results: InvitationSendResult["results"] = [];
+  for (const recipient of validated) {
+    try {
+      const channels = await getChannelConfig();
+      if (!(recipient.contact.includes("@") ? channels.email : channels.sms)) {
+        throw new InvitationStateError("invitationChannelDisabled");
+      }
+      const prepared = await prepareLockedInvitation(eventId, recipient, true, recipient);
+      const guestName = await deliverHostInvitation(eventId, recipient, prepared);
+      results.push({ contact: recipient.contact, status: "sent", guestName });
+    } catch (error) {
+      // Only explicitly generated domain errors cross this boundary. Delivery errors
+      // may contain SMTP details or private provider data and are intentionally generic.
+      results.push({
+        contact: recipient.contact,
+        status: "failed",
+        error:
+          error instanceof InvitationStateError
+            ? await eventActionMessage(error.code)
+            : await eventActionMessage("invitationSendFailed"),
+      });
+    }
+  }
+  const sent = results.filter((result) => result.status === "sent").length;
+  recordHostInvites(eventId, session.email, sent);
+  revalidatePath(`/e/${event.slug}`);
+  revalidatePath(`/e/${event.slug}/guests`);
+  return { success: sent > 0, results };
+}
 
 export async function inviteGuest(
   eventId: string,
@@ -27,201 +282,45 @@ export async function inviteGuest(
   if (!session) throw new Error(await eventActionMessage("unauthorized"));
   await assertCaptcha("host_invite", captchaToken);
   const event = await assertHostOrCohost(eventId);
-
-  const entries = emailOrPhone
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-
-  if (entries.length === 0) {
-    throw new Error(await eventActionMessage("noInviteTargets"));
+  if (typeof emailOrPhone !== "string")
+    throw new Error(await eventActionMessage("invalidInvitationRecipients"));
+  const draft = parseInvitationDraft(emailOrPhone);
+  if (draft.issues.some((issue) => issue.code === "tooManyRecipients")) {
+    throw new Error(await eventActionMessage("inviteBatchTooLarge", { max: 200 }));
   }
-
-  // SEC-29: inviteGuest fans out email/SMS per recipient with no bound. Even
-  // though it is host-authorized, an abusive or hijacked host session could
-  // drive large spam blasts and Twilio cost. Cap the batch size and throttle
-  // per host+event and per IP, mirroring inviteFriendAsGuest (SEC-18). The
-  // per-recipient duplicate-invitation guard below further limits repeats.
-  const MAX_INVITE_BATCH = 200;
-  if (entries.length > MAX_INVITE_BATCH) {
-    throw new Error(await eventActionMessage("inviteBatchTooLarge", { max: MAX_INVITE_BATCH }));
-  }
-  const ip = await getClientIp();
-  const ipLimit = await rateLimit(`host-invite:ip:${ip}`, 15, 3600);
-  if (!ipLimit.success) {
-    throw new Error(await eventActionMessage("inviteRateLimited"));
-  }
-  const eventLimit = await rateLimit(`host-invite:${session.userId}:${eventId}`, 10, 3600);
-  if (!eventLimit.success) {
-    throw new Error(await eventActionMessage("eventInviteRateLimited"));
-  }
-
+  if (draft.issues.some((issue) => issue.code === "textTooLong"))
+    throw new Error(await eventActionMessage("invalidInvitationRecipients"));
+  if (draft.rawCount === 0) throw new Error(await eventActionMessage("noInviteTargets"));
+  await hostLimits(session.userId, eventId);
   const invited: string[] = [];
-  const errors: string[] = [];
-
-  for (const entry of entries) {
+  const errors = await Promise.all(
+    draft.issues.map((issue) => {
+      const entry = emailOrPhone.slice(issue.start, issue.end).trim();
+      return eventActionMessage(entry.includes("@") ? "invalidInviteEmail" : "invalidInvitePhone", {
+        entry,
+      });
+    })
+  );
+  for (const recipient of draft.entries) {
     try {
-      const isEmail = entry.includes("@");
-
-      // Basic input validation
-      if (isEmail) {
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(entry)) {
-          throw new Error(await eventActionMessage("invalidInviteEmail", { entry }));
-        }
-      } else {
-        if (!/^\+?[0-9\s\-()]{7,}$/.test(entry)) {
-          throw new Error(await eventActionMessage("invalidInvitePhone", { entry }));
-        }
-      }
-
-      const target = isEmail ? entry : normalizePhone(entry);
-
-      let user = await db.user.findFirst({
-        where: isEmail ? { email: entry } : { phone: target },
-      });
-      if (!user) {
-        user = await db.user.create({
-          data: isEmail ? { email: entry, role: "GUEST" } : { phone: target, role: "GUEST" },
-        });
-      }
-
-      let rsvp = await db.rSVP.findFirst({
-        where: { eventId, userId: user.id },
-      });
-
-      if (!rsvp) {
-        const namePrefix = isEmail ? entry.split("@")[0] : target;
-        rsvp = await db.rSVP.create({
-          data: {
-            eventId,
-            guestName: namePrefix,
-            guestEmail: isEmail ? entry : null,
-            guestPhone: isEmail ? null : target,
-            status: "INVITED",
-            responded: false,
-            approved: true,
-            userId: user.id,
-          },
-        });
-      }
-
-      // Prevent duplicate invitations for the same target
-      const existingInvitation = await db.invitation.findFirst({
-        where: { eventId, sentTo: target },
-      });
-
-      if (!existingInvitation) {
-        await db.invitation.create({
-          data: {
-            eventId,
-            sentTo: target,
-            channel: isEmail ? "EMAIL" : "SMS",
-            rsvpId: rsvp.id,
-          },
-        });
-      }
-
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-      const rsvpBaseUrl = `${appUrl}/e/${event.slug}/rsvp?token=${rsvp.editToken}`;
-
-      if (isEmail) {
-        const eventDetails = await db.event.findUnique({
-          where: { id: eventId },
-          select: {
-            title: true,
-            startAt: true,
-            endAt: true,
-            timezone: true,
-            locationType: true,
-            locationName: true,
-            locationAddress: true,
-            virtualUrl: true,
-            maybeEnabled: true,
-            theme: true,
-            hostDisplayName: true,
-            host: { select: { name: true, email: true } },
-          },
-        });
-        await sendEventInviteEmail(entry, {
-          locale: resolveLocale(user.preferredLocale),
-          guestName: rsvp.guestName,
-          hostName:
-            eventDetails?.hostDisplayName ??
-            eventDetails?.host?.name ??
-            session.email?.split("@")[0] ??
-            (await getTranslator(resolveLocale(user.preferredLocale)))("Email.yourHostCapital"),
-          eventTitle:
-            eventDetails?.title ??
-            (await getTranslator(resolveLocale(user.preferredLocale)))("Email.eventFallback"),
-          eventSlug: event.slug,
-          eventId,
-          startAt: eventDetails?.startAt ?? new Date(),
-          endAt: eventDetails?.endAt,
-          timezone: eventDetails?.timezone,
-          locationType: eventDetails?.locationType,
-          locationName: eventDetails?.locationName,
-          locationAddress: eventDetails?.locationAddress,
-          virtualUrl: eventDetails?.virtualUrl,
-          rsvpBaseUrl,
-          maybeEnabled: eventDetails?.maybeEnabled ?? true,
-          theme: eventDetails?.theme,
-          replyTo: eventDetails?.host?.email || undefined,
-        });
-      } else {
-        const eventDetails = await db.event.findUnique({
-          where: { id: eventId },
-          select: {
-            title: true,
-            maybeEnabled: true,
-            hostDisplayName: true,
-            host: { select: { name: true } },
-          },
-        });
-        await sendEventInviteSms(target, {
-          locale: resolveLocale(user.preferredLocale),
-          hostName:
-            eventDetails?.hostDisplayName ??
-            eventDetails?.host?.name ??
-            session.email?.split("@")[0] ??
-            (await getTranslator(resolveLocale(user.preferredLocale)))("Email.yourHostCapital"),
-          eventTitle:
-            eventDetails?.title ??
-            (await getTranslator(resolveLocale(user.preferredLocale)))("Email.eventFallback"),
-          rsvpBaseUrl,
-          maybeEnabled: eventDetails?.maybeEnabled ?? true,
-        });
-      }
-
-      invited.push(target);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      errors.push(message);
+      const prepared = await prepareLockedInvitation(eventId, recipient, true);
+      await deliverHostInvitation(eventId, recipient, prepared);
+      invited.push(recipient.contact);
+    } catch {
+      errors.push(await eventActionMessage("invitationSendFailed"));
     }
   }
-
-  if (invited.length === 0) {
+  if (invited.length === 0)
     throw new Error(await eventActionMessage("inviteSendFailed", { errors: errors.join("; ") }));
-  }
-
-  // SEC-46: attribute host/co-host invite issuance in the activity log. Without
-  // this, invites sent via inviteGuest were the only invite path with no audit
-  // trail (inviteFriendAsGuest already logs), leaving co-host-driven invite
-  // blasts unattributable. Fire-and-forget with logSafe, matching addRSVP.
-  const hostLabel = session.email?.split("@")[0] ?? "A host";
-  logActivity(
-    eventId,
-    "guest_invite",
-    `${hostLabel} invited ${invited.length} guest${invited.length === 1 ? "" : "s"}`,
-    hostLabel
-  ).catch(logSafe("inviteGuest"));
-
+  recordHostInvites(eventId, session.email, invited.length);
+  revalidatePath(`/e/${event.slug}`);
+  revalidatePath(`/e/${event.slug}/guests`);
   return {
     success: true,
     emailOrPhone: invited.join(", "),
     errors: errors.length > 0 ? errors : undefined,
   };
 }
-
 export async function deleteInvitationAsHost(invitationId: string) {
   // Match RSVP deletion's SEC-42 pattern: authenticate before looking up the
   // caller-supplied id, then make missing and unauthorized records indistinct.
@@ -245,7 +344,8 @@ export async function inviteFriendAsGuest(
   eventId: string,
   editToken: string,
   emailOrPhone: string,
-  captchaToken?: string | null
+  captchaToken?: string | null,
+  name?: string
 ): Promise<{ success: boolean; error?: string }> {
   await assertCaptcha("guest_invite", captchaToken);
   // SEC-18: this action is authorized only by a guest editToken yet fans out to
@@ -280,22 +380,34 @@ export async function inviteFriendAsGuest(
     return { success: false, error: await eventActionMessage("guestInvitesDisabled") };
   }
 
-  const entry = emailOrPhone.trim();
-  if (!entry) {
-    return { success: false, error: await eventActionMessage("noInviteTarget") };
+  const draft = typeof emailOrPhone === "string" ? parseInvitationDraft(emailOrPhone) : null;
+  if (
+    !draft ||
+    draft.rawCount !== 1 ||
+    draft.issues.length !== 0 ||
+    draft.entries.length !== 1 ||
+    (name !== undefined && (typeof name !== "string" || !isValidInvitationName(name)))
+  ) {
+    return { success: false, error: await eventActionMessage("invalidInvitationRecipients") };
   }
-
+  const parsedRecipient = draft.entries[0];
+  if (
+    name !== undefined &&
+    parsedRecipient.name !== undefined &&
+    name.trim() !== parsedRecipient.name
+  ) {
+    return { success: false, error: await eventActionMessage("invalidInvitationRecipients") };
+  }
+  const recipient: InvitationRecipient = {
+    contact: parsedRecipient.contact,
+    ...(name !== undefined
+      ? { name: name.trim() }
+      : parsedRecipient.name !== undefined
+        ? { name: parsedRecipient.name }
+        : {}),
+  };
+  const entry = recipient.contact;
   const isEmail = entry.includes("@");
-  if (isEmail) {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(entry)) {
-      return { success: false, error: await eventActionMessage("invalidInviteEmail", { entry }) };
-    }
-  } else {
-    if (!/^\+?[0-9\s\-()]{7,}$/.test(entry)) {
-      return { success: false, error: await eventActionMessage("invalidInvitePhone", { entry }) };
-    }
-  }
-
   // SEC-18: per-token burst limit + per-RSVP daily cap. Checked only after the
   // token is validated/authorized and the target is well-formed, so legitimate
   // rejections (bad token, typo'd address) don't burn the inviting guest's cap.
@@ -314,56 +426,22 @@ export async function inviteFriendAsGuest(
     };
   }
 
-  const target = isEmail ? entry : normalizePhone(entry);
-
-  let user = await db.user.findFirst({
-    where: isEmail ? { email: entry } : { phone: target },
-  });
-  if (!user) {
-    user = await db.user.create({
-      data: isEmail ? { email: entry, role: "GUEST" } : { phone: target, role: "GUEST" },
-    });
+  const target = entry;
+  let prepared: Awaited<ReturnType<typeof prepareLockedInvitation>>;
+  try {
+    prepared = await prepareLockedInvitation(eventId, recipient, false);
+  } catch (error) {
+    if (error instanceof InvitationStateError)
+      return { success: false, error: await eventActionMessage(error.code) };
+    throw error;
   }
-
-  let rsvp = await db.rSVP.findFirst({
-    where: { eventId, userId: user.id },
-  });
-  if (!rsvp) {
-    const namePrefix = isEmail ? entry.split("@")[0] : target;
-    rsvp = await db.rSVP.create({
-      data: {
-        eventId,
-        guestName: namePrefix,
-        guestEmail: isEmail ? entry : null,
-        guestPhone: isEmail ? null : target,
-        status: "INVITED",
-        responded: false,
-        approved: false,
-        userId: user.id,
-      },
-    });
-  }
-
-  const existingInvitation = await db.invitation.findFirst({
-    where: { eventId, sentTo: target },
-  });
-  if (!existingInvitation) {
-    await db.invitation.create({
-      data: {
-        eventId,
-        sentTo: target,
-        channel: isEmail ? "EMAIL" : "SMS",
-        rsvpId: rsvp.id,
-      },
-    });
-  }
-
+  const { rsvp, locale } = prepared;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const rsvpBaseUrl = `${appUrl}/e/${event.slug}/rsvp?token=${rsvp.editToken}`;
 
   if (isEmail) {
     await sendEventInviteEmail(entry, {
-      locale: resolveLocale(user.preferredLocale),
+      locale: locale,
       guestName: rsvp.guestName,
       hostName: invitingRsvp.guestName,
       eventTitle: event.title,
@@ -383,7 +461,7 @@ export async function inviteFriendAsGuest(
     });
   } else {
     await sendEventInviteSms(target, {
-      locale: resolveLocale(user.preferredLocale),
+      locale: locale,
       hostName: invitingRsvp.guestName,
       eventTitle: event.title,
       rsvpBaseUrl,

@@ -123,6 +123,7 @@ export const SaveEventSettingsSchema = z.object({
 });
 
 export const UpdateRsvpSchema = z.object({
+  guestName: z.string().trim().min(1).check(maxCodeUnits(100)).optional(),
   status: z.enum(["GOING", "MAYBE", "NO"]),
   plusOneCount: z.number().int().min(0).max(10).default(0),
   plusOneGuestNames: z.array(z.string().trim().check(maxCodeUnits(100))).optional(),
