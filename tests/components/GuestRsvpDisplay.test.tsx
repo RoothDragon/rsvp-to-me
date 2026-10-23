@@ -15,7 +15,8 @@ vi.mock("@/app/actions/event", () => ({
   declineRsvp: vi.fn(),
   deleteInvitationAsHost: vi.fn(),
   deleteRsvpAsHost: vi.fn(),
-  inviteGuest: vi.fn(),
+  previewGuestInvitations: vi.fn(),
+  sendGuestInvitations: vi.fn(),
   undoCheckIn: vi.fn(),
 }));
 vi.mock("next/image", () => ({ default: () => null }));

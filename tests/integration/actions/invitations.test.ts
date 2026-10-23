@@ -17,7 +17,6 @@ vi.mock("@/lib/email", () => ({ sendEventInviteEmail: mocks.email }));
 vi.mock("@/lib/sms", () => ({ sendEventInviteSms: mocks.sms }));
 
 import {
-  inviteGuest,
   inviteFriendAsGuest,
   previewGuestInvitations,
   sendGuestInvitations,
@@ -81,7 +80,7 @@ describe("#749 invitations — PostgreSQL serialization", () => {
     );
   });
 
-  it("shares the same lock across legacy host and guest invitations", async () => {
+  it("shares the same lock across reviewed host and guest invitations", async () => {
     const { guest, event } = await fixture();
     const inviter = await db.rSVP.create({
       data: {
@@ -92,21 +91,31 @@ describe("#749 invitations — PostgreSQL serialization", () => {
         approved: true,
       },
     });
-    const results = await Promise.all([
-      inviteGuest(event.id, `"Host supplied" <${guest.email}>`),
+    const [host, friend] = await Promise.all([
+      sendGuestInvitations(event.id, [
+        {
+          contact: guest.email!,
+          name: "Host supplied",
+          expectedDisposition: "new",
+          expectedGuestName: "Host supplied",
+        },
+      ]),
       inviteFriendAsGuest(event.id, inviter.editToken, guest.email!, null, "Friend supplied"),
     ]);
-    expect(results.every((result) => result.success)).toBe(true);
+    expect(friend.success).toBe(true);
     const rows = await db.rSVP.findMany({ where: { eventId: event.id, userId: guest.id } });
     expect(rows).toHaveLength(1);
-    expect(["Host supplied", "Friend supplied"]).toContain(rows[0].guestName);
     expect(await db.invitation.count({ where: { eventId: event.id, sentTo: guest.email! } })).toBe(
       1
     );
-    expect(mocks.email).toHaveBeenCalledTimes(2);
-    expect(mocks.email.mock.calls.map((call) => call[1].rsvpBaseUrl)).toEqual([
-      expect.stringContaining(rows[0].editToken),
-      expect.stringContaining(rows[0].editToken),
-    ]);
+    // Whichever request takes the lock first creates the RSVP. A reviewed host send that
+    // loses the race must ask for another review instead of sending under its stale name.
+    const hostSent = host.results[0].status === "sent";
+    expect(rows[0].guestName).toBe(hostSent ? "Host supplied" : "Friend supplied");
+    expect(host.results[0].error ?? "").toMatch(hostSent ? /^$/ : /changed/);
+    expect(mocks.email).toHaveBeenCalledTimes(hostSent ? 2 : 1);
+    expect(mocks.email.mock.calls.map((call) => call[1].rsvpBaseUrl)).toEqual(
+      mocks.email.mock.calls.map(() => expect.stringContaining(rows[0].editToken))
+    );
   });
 });

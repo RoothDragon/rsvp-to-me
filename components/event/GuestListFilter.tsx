@@ -11,7 +11,8 @@ import {
   deleteInvitationAsHost,
   declineRsvp,
   deleteRsvpAsHost,
-  inviteGuest,
+  previewGuestInvitations,
+  sendGuestInvitations,
   undoCheckIn,
 } from "@/app/actions/event";
 import Image from "next/image";
@@ -441,13 +442,42 @@ export function GuestListFilter({
     setResendPendingId(guest.id);
     startTransition(async () => {
       try {
-        const result = await runWithCaptcha("host_invite", (token) =>
-          inviteGuest(eventId, guest.sentTo, token)
+        const {
+          recipients: [current],
+        } = await previewGuestInvitations(eventId, [{ contact: guest.sentTo }]);
+        // This card is the host's review. A reply, rename, or record conflict since the
+        // list loaded must be reviewed again rather than resent under stale assumptions.
+        if (current.disposition === "conflict") {
+          setInvitationMessage(translate("resendConflict"));
+          return;
+        }
+        if (
+          current.disposition !== "invited" ||
+          (guest.guestName !== undefined && current.guestName !== guest.guestName)
+        ) {
+          setInvitationMessage(translate("resendReviewChanged"));
+          return;
+        }
+        // The server re-checks this expectation under the invitation lock before sending.
+        const {
+          results: [result],
+        } = await runWithCaptcha("host_invite", (token) =>
+          sendGuestInvitations(
+            eventId,
+            [
+              {
+                contact: current.contact,
+                expectedDisposition: "invited",
+                expectedGuestName: current.guestName,
+              },
+            ],
+            token
+          )
         );
         setInvitationMessage(
-          result.errors?.length
-            ? translate("inviteWarning", { warning: result.errors.join("; ") })
-            : translate("inviteResent", { destination: guest.sentTo })
+          result?.status === "sent"
+            ? translate("inviteResent", { destination: guest.sentTo })
+            : (result?.error ?? translate("unableResendInvite"))
         );
       } catch (error) {
         setInvitationMessage(

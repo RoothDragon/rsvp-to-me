@@ -7,7 +7,8 @@ vi.mock("@/app/actions/event", () => ({
   sendBlast,
   sendSmsBlast: vi.fn(),
   saveEventSettings: vi.fn(),
-  inviteGuest: vi.fn(),
+  previewGuestInvitations: vi.fn(),
+  sendGuestInvitations: vi.fn(),
 }));
 import { HostBar } from "@/components/event/HostBar";
 describe("localized host messaging", () => {

@@ -9,6 +9,9 @@ import "@/tests/helpers/english-request-locale";
 //
 // Fix: cap the batch size and throttle per host+event and per IP before the
 // send loop, mirroring inviteFriendAsGuest / verifyEventPassword.
+//
+// 8be23944 retired inviteGuest. These guards now protect sendGuestInvitations,
+// the only host send path, so the cases below target it.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -53,11 +56,17 @@ vi.mock("@/lib/sms", () => ({
   sendEventInviteSms: vi.fn(),
 }));
 
-import { inviteGuest } from "@/app/actions/event";
+import { sendGuestInvitations } from "@/app/actions/event";
+import { MAX_INVITATION_RECIPIENTS } from "@/lib/invitation-draft";
 
 const EVENT_ID = "evt-1";
+const reviewed = (contact: string) => ({
+  contact,
+  expectedDisposition: "new" as const,
+  expectedGuestName: "Guest",
+});
 
-describe("SEC-29: inviteGuest batch cap + rate limiting", () => {
+describe("SEC-29: host invitation batch cap + rate limiting", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetSession.mockResolvedValue({ userId: "host-1", email: "h@x.com", role: "HOST" });
@@ -67,9 +76,12 @@ describe("SEC-29: inviteGuest batch cap + rate limiting", () => {
   });
 
   it("rejects a batch larger than the cap before any rate-limit check or send", async () => {
-    const huge = Array.from({ length: 201 }, (_, i) => `g${i}@x.com`).join(",");
+    expect(MAX_INVITATION_RECIPIENTS).toBe(200);
+    const huge = Array.from({ length: 201 }, (_, i) => reviewed(`g${i}@x.com`));
 
-    await expect(inviteGuest(EVENT_ID, huge)).rejects.toThrow(/max 200/i);
+    await expect(sendGuestInvitations(EVENT_ID, huge)).rejects.toThrow(
+      /review the invitation names and contacts/i
+    );
     expect(mockRateLimit).not.toHaveBeenCalled();
     expect(mockInviteEmail).not.toHaveBeenCalled();
   });
@@ -82,7 +94,9 @@ describe("SEC-29: inviteGuest batch cap + rate limiting", () => {
       reset: new Date(),
     });
 
-    await expect(inviteGuest(EVENT_ID, "a@x.com")).rejects.toThrow(/too many invites sent/i);
+    await expect(sendGuestInvitations(EVENT_ID, [reviewed("a@x.com")])).rejects.toThrow(
+      /too many invites sent/i
+    );
     expect(mockInviteEmail).not.toHaveBeenCalled();
     expect(mockRateLimit).toHaveBeenCalledWith("host-invite:ip:1.2.3.4", 15, 3600);
   });
@@ -92,7 +106,7 @@ describe("SEC-29: inviteGuest batch cap + rate limiting", () => {
       .mockResolvedValueOnce({ success: true, limit: 15, remaining: 14, reset: new Date() })
       .mockResolvedValueOnce({ success: false, limit: 10, remaining: 0, reset: new Date() });
 
-    await expect(inviteGuest(EVENT_ID, "a@x.com")).rejects.toThrow(
+    await expect(sendGuestInvitations(EVENT_ID, [reviewed("a@x.com")])).rejects.toThrow(
       /too many invites sent for this event/i
     );
     expect(mockInviteEmail).not.toHaveBeenCalled();

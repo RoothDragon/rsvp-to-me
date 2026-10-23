@@ -192,7 +192,9 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
   Historical `Invitation.rsvpId` links confer no credential authority: missing,
   mismatched, dangling, or cross-event links produce conflicts.
   `app/actions/event/invites.ts` serializes recipient preparation with a
-  PostgreSQL transaction advisory lock shared by host, legacy, and guest sends.
+  PostgreSQL transaction advisory lock shared by host and guest sends. Every
+  host send (the invitation composer and guest-list Resend) carries a reviewed
+  name and status from `previewGuestInvitations`.
   Resolution, reviewed-name/status checks, and record creation happen inside
   that transaction; email/SMS delivery happens after it completes. See
   [ADR 0001](docs/engineering/decisions/0001-invitation-recipient-identity.md).
