@@ -94,7 +94,7 @@
     "*.{ts,tsx}": "prettier --write"
   },
   "devDependencies": {
-    "@formatjs/icu-messageformat-parser": "^3.5.21",
+    "@formatjs/icu-messageformat-parser": "^3.5.22",
     "@playwright/test": "^1.64.0",
     "@react-email/ui": "^6.11.3",
     "@playwright/test": "^1.64.1",
