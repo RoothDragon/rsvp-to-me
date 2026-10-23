@@ -121,6 +121,9 @@ export default async function RsvpPage({ params, searchParams }: Props) {
           note: rsvp.note,
           plusOneGuests: rsvp.plusOneGuests,
           answers: rsvp.answers.map((a) => ({ rsvpFieldId: a.rsvpFieldId, value: a.value })),
+          // #754: pass only whether a contact exists, never the contact itself.
+          hasContact: !!(rsvp.guestEmail || rsvp.guestPhone),
+          responded: rsvp.responded,
         }}
         initialStatus={initialStatus}
         returnPath={returnTo === "guests" ? `/e/${slug}/guests` : undefined}

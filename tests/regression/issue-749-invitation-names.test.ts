@@ -36,6 +36,7 @@ const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
+  updateMany: vi.fn(),
   historyFind: vi.fn(),
   historyCreate: vi.fn(),
   historyUpdate: vi.fn(),
@@ -64,6 +65,7 @@ vi.mock("@/lib/db", () => ({
       findUnique: mocks.findUnique,
       create: mocks.create,
       update: mocks.update,
+      updateMany: mocks.updateMany,
     },
     invitation: {
       findMany: mocks.historyFind,
@@ -86,8 +88,12 @@ vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidate }));
 vi.mock("@/lib/email", () => ({
   sendEventInviteEmail: mocks.email,
   sendRenderedEmail: mocks.rendered,
+  sendRsvpConfirmationEmail: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock("@/lib/sms", () => ({ sendEventInviteSms: mocks.sms }));
+vi.mock("@/lib/sms", () => ({
+  sendEventInviteSms: mocks.sms,
+  sendRsvpConfirmationSms: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("@/lib/email-settings", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/email-settings")>()),
   getEmailTemplateSettings: vi.fn().mockResolvedValue({}),
@@ -184,6 +190,7 @@ beforeEach(() => {
   mocks.historyCreate.mockResolvedValue({});
   mocks.historyUpdate.mockResolvedValue({ count: 1 });
   mocks.update.mockResolvedValue({});
+  mocks.updateMany.mockResolvedValue({ count: 1 });
   mocks.activity.mockResolvedValue(undefined);
   mocks.email.mockResolvedValue(undefined);
   mocks.sms.mockResolvedValue(undefined);
@@ -508,7 +515,11 @@ describe("#749 reviewed invitation sends and compatibility", () => {
 
 describe("#749 RSVP name corrections", () => {
   it("saves token-authorized guest names and uses the effective name in current activity", async () => {
-    mocks.findUnique.mockResolvedValue({ ...row(), event, checkIn: { id: "check" } });
+    mocks.findUnique.mockResolvedValue({
+      ...row({ status: "GOING", responded: true }),
+      event,
+      checkIn: { id: "check" },
+    });
     expect(
       (await updateRSVP("secret-token", { status: "NO", guestName: "  Corrected Name  " })).success
     ).toBe(true);

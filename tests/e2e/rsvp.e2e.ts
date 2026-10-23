@@ -126,8 +126,12 @@ test.describe("#712 personalized invitation details journey", () => {
             "aria-pressed",
             "true"
           );
-          await page.getByRole("button", { name: "Update RSVP", exact: true }).click();
-          await expect(page.getByText("RSVP updated!", { exact: true })).toBeVisible();
+          // A first answer through an invitation link is an RSVP, not an update.
+          await page.getByRole("button", { name: "Confirm RSVP", exact: true }).click();
+          const heading = { GOING: "You're in!", MAYBE: "Noted!", NO: "Got it." }[status];
+          await expect(page.getByText(heading, { exact: true })).toBeVisible();
+          // No email or phone on this RSVP, so the copy-link fallback still shows (#754).
+          await expect(page.getByText("⚠️ Save your Edit Link", { exact: true })).toBeVisible();
 
           const saved = await pool.query<{
             id: string;

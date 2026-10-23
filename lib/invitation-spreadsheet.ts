@@ -1,16 +1,18 @@
-import {
-  formatInvitationRecipient,
-  isValidInvitationName,
-  MAX_INVITATION_RECIPIENTS,
-  MAX_INVITATION_TEXT,
-  normalizeInvitationContact,
-  type InvitationRecipient,
-} from "./invitation-draft";
+import { MAX_INVITATION_RECIPIENTS, normalizeInvitationContact } from "./invitation-draft";
+import type { PastedRecipient } from "./invitation-paste";
+
+export type InvitationSpreadsheetDelimiter = "\t" | "," | ";";
+
+/** Contact-app exports (Google, Outlook) carry many columns and long rows. */
+export const MAX_INVITATION_COLUMNS = 256;
+export const MAX_INVITATION_IMPORT_TEXT = 2_000_000;
 
 export interface InvitationSpreadsheetMapping {
-  contactColumn: number;
-  nameColumn?: number;
   hasHeader: boolean;
+  /** Joined with spaces in this order; at most three (e.g. first, middle, last). */
+  nameColumns: number[];
+  /** The first cell holding a valid contact wins; at most two (e.g. email, then mobile). */
+  contactColumns: number[];
 }
 
 export type InvitationSpreadsheetIssueCode =
@@ -19,10 +21,7 @@ export type InvitationSpreadsheetIssueCode =
   | "tooManyColumns"
   | "invalidQuote"
   | "unmatchedQuote"
-  | "invalidMapping"
-  | "missingCell"
-  | "invalidName"
-  | "invalidContact";
+  | "invalidMapping";
 
 export interface InvitationSpreadsheetIssue {
   code: InvitationSpreadsheetIssueCode;
@@ -36,9 +35,32 @@ export interface InvitationSpreadsheet {
   issues: InvitationSpreadsheetIssue[];
 }
 
-/** Parse clipboard TSV, preserving quoted cell newlines and escaped double quotes. */
-export function parseInvitationSpreadsheet(text: string): InvitationSpreadsheet {
-  if (text.length > MAX_INVITATION_TEXT) return { rows: [], issues: [{ code: "textTooLong" }] };
+function stripBom(text: string): string {
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+
+/** Tabs (clipboard cells) win; otherwise the more frequent of `;` and `,` in the first row. */
+export function detectInvitationDelimiter(text: string): InvitationSpreadsheetDelimiter {
+  const counts = { "\t": 0, ",": 0, ";": 0 };
+  let quoted = false;
+  for (const char of stripBom(text)) {
+    if (char === '"') quoted = !quoted;
+    else if (!quoted && (char === "\n" || char === "\r")) break;
+    else if (!quoted && char in counts) counts[char as InvitationSpreadsheetDelimiter]++;
+  }
+  if (counts["\t"] > 0) return "\t";
+  return counts[";"] > counts[","] ? ";" : ",";
+}
+
+/** Parse delimited text, preserving quoted delimiters/newlines and `""` escapes. */
+export function parseInvitationSpreadsheet(
+  source: string,
+  delimiter: InvitationSpreadsheetDelimiter = "\t"
+): InvitationSpreadsheet {
+  const text = stripBom(source);
+  if (text.length > MAX_INVITATION_IMPORT_TEXT) {
+    return { rows: [], issues: [{ code: "textTooLong" }] };
+  }
   const rows: string[][] = [];
   const issues: InvitationSpreadsheetIssue[] = [];
   let row: string[] = [];
@@ -72,9 +94,9 @@ export function parseInvitationSpreadsheet(text: string): InvitationSpreadsheet 
       } else cell += char;
       continue;
     }
-    if (char === "\t") {
+    if (char === delimiter) {
       pushCell();
-      if (row.length >= 32)
+      if (row.length >= MAX_INVITATION_COLUMNS)
         return { rows, issues: [...issues, { code: "tooManyColumns", row: rows.length }] };
     } else if (char === "\n" || char === "\r") {
       if (char === "\r" && text[i + 1] === "\n") i++;
@@ -98,74 +120,134 @@ export function parseInvitationSpreadsheet(text: string): InvitationSpreadsheet 
   return { rows, issues };
 }
 
+export function invitationSpreadsheetWidth(rows: string[][]): number {
+  return rows.reduce((width, row) => Math.max(width, row.length), 0);
+}
+
+export function isValidInvitationSpreadsheetMapping(
+  mapping: InvitationSpreadsheetMapping,
+  width: number
+): boolean {
+  const columns = [...mapping.nameColumns, ...mapping.contactColumns];
+  return (
+    typeof mapping.hasHeader === "boolean" &&
+    mapping.contactColumns.length >= 1 &&
+    mapping.contactColumns.length <= 2 &&
+    mapping.nameColumns.length <= 3 &&
+    columns.every((column) => Number.isInteger(column) && column >= 0 && column < width) &&
+    new Set(columns).size === columns.length
+  );
+}
+
+type ContactKind = "email" | "phone";
+
+function contactKind(cell: string | undefined, strictPhone = false): ContactKind | null {
+  const contact = normalizeInvitationContact(cell ?? "");
+  if (!contact) return null;
+  if (contact.includes("@")) return "email";
+  // Without a phone header, short digit runs are more likely dates or IDs.
+  if (strictPhone && !contact.startsWith("+") && contact.length < 10) return null;
+  return "phone";
+}
+
+const HEADERS = {
+  fullName: /^(full |display )?name$/,
+  firstName: /^(first|given)[ _-]?name$/,
+  middleName: /^(middle|additional)[ _-]?name$/,
+  lastName: /^((last|family)[ _-]?name|surname)$/,
+  email: /e-?mail/,
+  phone: /phone|mobile|cell|^tel/,
+};
+
+/**
+ * A starting mapping for the host to confirm or change: header names first,
+ * then the cell values themselves. Import still requires an explicit mapping.
+ */
+export function suggestInvitationSpreadsheetMapping(
+  rows: string[][]
+): InvitationSpreadsheetMapping {
+  const width = invitationSpreadsheetWidth(rows);
+  const columns = Array.from({ length: width }, (_, column) => column);
+  const first = rows[0] ?? [];
+  const hasHeader =
+    rows.length > 1 &&
+    !first.some((cell) => contactKind(cell)) &&
+    first.some((cell) => /\p{L}/u.test(cell)) &&
+    rows.slice(1).some((row) => row.some((cell) => contactKind(cell)));
+  const data = hasHeader ? rows.slice(1) : rows;
+  const header = hasHeader ? first.map((cell) => cell.trim().toLowerCase()) : [];
+  const named = (pattern: RegExp) => columns.filter((column) => pattern.test(header[column] ?? ""));
+  const filled = (column: number) => data.some((row) => row[column]?.trim());
+
+  const best = (candidates: number[], kind: ContactKind, strictPhone: boolean) =>
+    candidates
+      .map((column) => ({
+        column,
+        count: data.filter((row) => contactKind(row[column], strictPhone) === kind).length,
+      }))
+      .filter(({ count }) => count > 0)
+      .sort((a, b) => b.count - a.count || a.column - b.column)[0]?.column;
+  const email = best(named(HEADERS.email), "email", false) ?? best(columns, "email", false);
+  const phone = best(named(HEADERS.phone), "phone", false) ?? best(columns, "phone", true);
+  const contactColumns = [email, phone].filter((column) => column !== undefined);
+
+  let nameColumns: number[] = [];
+  const fullName = named(HEADERS.fullName).find(filled);
+  if (fullName !== undefined) nameColumns = [fullName];
+  else if (hasHeader) {
+    nameColumns = [HEADERS.firstName, HEADERS.middleName, HEADERS.lastName]
+      .map((pattern) => named(pattern).find(filled))
+      .filter((column) => column !== undefined);
+  }
+  if (!nameColumns.length) {
+    // No usable header: the column with the most text that is not a contact.
+    const text = columns
+      .filter((column) => !contactColumns.includes(column))
+      .map((column) => ({
+        column,
+        count: data.filter((row) => /\p{L}/u.test(row[column] ?? "") && !contactKind(row[column]))
+          .length,
+      }))
+      .filter(({ count }) => count > 0)
+      .sort((a, b) => b.count - a.count || a.column - b.column)[0];
+    if (text) nameColumns = [text.column];
+  }
+  return {
+    hasHeader,
+    nameColumns: nameColumns.filter((column) => !contactColumns.includes(column)),
+    contactColumns,
+  };
+}
+
 export interface InvitationSpreadsheetImport {
-  /** Empty whenever there are issues: an invalid import never replaces the draft. */
-  text: string;
-  recipients: InvitationRecipient[];
+  /** Raw rows for the draft; invalid names or contacts are flagged there, not dropped. */
+  recipients: PastedRecipient[];
   issues: InvitationSpreadsheetIssue[];
 }
 
-/** Explicit mapping is mandatory; this function never infers which cells are identities. */
 export function importInvitationSpreadsheet(
-  text: string,
+  rows: string[][],
   mapping: InvitationSpreadsheetMapping
 ): InvitationSpreadsheetImport {
-  const parsed = parseInvitationSpreadsheet(text);
-  const issues = [...parsed.issues];
-  if (
-    !mapping ||
-    typeof mapping.hasHeader !== "boolean" ||
-    !Number.isInteger(mapping.contactColumn) ||
-    mapping.contactColumn < 0 ||
-    mapping.contactColumn >= 32 ||
-    (mapping.nameColumn !== undefined &&
-      (!Number.isInteger(mapping.nameColumn) ||
-        mapping.nameColumn < 0 ||
-        mapping.nameColumn >= 32 ||
-        mapping.nameColumn === mapping.contactColumn))
-  ) {
-    return { text: "", recipients: [], issues: [...issues, { code: "invalidMapping" }] };
+  if (!isValidInvitationSpreadsheetMapping(mapping, invitationSpreadsheetWidth(rows))) {
+    return { recipients: [], issues: [{ code: "invalidMapping" }] };
   }
-  const recipients: InvitationRecipient[] = [];
-  let rawCount = 0;
-  for (let index = mapping.hasHeader ? 1 : 0; index < parsed.rows.length; index++) {
-    const row = parsed.rows[index];
-    if (row.every((cell) => !cell.trim())) continue;
-    rawCount++;
-    const rawContact = row[mapping.contactColumn];
-    const rawName = mapping.nameColumn === undefined ? undefined : row[mapping.nameColumn];
-    if (rawContact === undefined || (mapping.nameColumn !== undefined && rawName === undefined)) {
-      issues.push({ code: "missingCell", row: index });
-      continue;
-    }
-    const contact = normalizeInvitationContact(rawContact);
-    if (!contact)
-      issues.push({ code: "invalidContact", row: index, column: mapping.contactColumn });
-    // Empty name cells mean an explicitly unnamed recipient; control-only cells do not.
-    const hasName =
-      rawName !== undefined &&
-      rawName !== "" &&
-      (rawName.trim() !== "" || /[\u0000-\u001f\u007f-\u009f]/.test(rawName));
-    const validName = !hasName || isValidInvitationName(rawName!);
-    if (!validName) issues.push({ code: "invalidName", row: index, column: mapping.nameColumn });
-    if (contact && validName)
-      recipients.push({ contact, ...(hasName ? { name: rawName!.trim() } : {}) });
+  const mapped = [...mapping.nameColumns, ...mapping.contactColumns];
+  const recipients: PastedRecipient[] = [];
+  for (const row of rows.slice(mapping.hasHeader ? 1 : 0)) {
+    if (mapped.every((column) => !row[column]?.trim())) continue;
+    const name = mapping.nameColumns
+      .map((column) => row[column]?.trim() ?? "")
+      .filter(Boolean)
+      .join(" ");
+    const contacts = mapping.contactColumns
+      .map((column) => row[column]?.trim() ?? "")
+      .filter(Boolean);
+    const contact = contacts.find((cell) => normalizeInvitationContact(cell)) ?? contacts[0] ?? "";
+    recipients.push({ name, contact });
   }
-  if (rawCount > MAX_INVITATION_RECIPIENTS) issues.push({ code: "tooManyRows" });
-  // A mapping outside a nonempty grid is an error even when it has only a header.
-  if (
-    parsed.rows.length > 0 &&
-    !parsed.rows.some(
-      (row) =>
-        mapping.contactColumn < row.length &&
-        (mapping.nameColumn === undefined || mapping.nameColumn < row.length)
-    )
-  ) {
-    issues.push({ code: "invalidMapping" });
+  if (recipients.length > MAX_INVITATION_RECIPIENTS) {
+    return { recipients: [], issues: [{ code: "tooManyRows" }] };
   }
-  if (issues.length > 0) return { text: "", recipients: [], issues };
-  const canonical = recipients.map(formatInvitationRecipient).join("\n");
-  if (canonical.length > MAX_INVITATION_TEXT)
-    return { text: "", recipients: [], issues: [{ code: "textTooLong" }] };
-  return { text: canonical, recipients, issues: [] };
+  return { recipients, issues: [] };
 }

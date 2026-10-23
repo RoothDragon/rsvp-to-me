@@ -80,9 +80,18 @@ Answers appear with each guest and are included in the [CSV export](guest-list.m
 
 ## Guest Edit Links
 
-Guests don't need an account to change their RSVP. Every confirmation email includes a private link
-unique to that guest; clicking it lets them update their status or answers until the event starts. If
-a guest loses their link, see the [FAQ](faq.md).
+Guests don't need an account to change their RSVP. Every invitation and confirmation includes a
+private link unique to that guest; clicking it lets them update their status or answers until the
+event starts. If a guest loses their link, see the [FAQ](faq.md).
+
+An invited guest's first answer through their invitation link counts as their RSVP: they see the
+usual "You're in!" confirmation, get a confirmation email or text at the contact you invited, and
+you get a **New RSVP** alert (see [Messaging Guests & Reminders](messaging-and-reminders.md)).
+
+After responding, a guest whose RSVP has an email or phone is told they can change it from the
+link in their invitation or confirmation. Only a guest who RSVPs without any contact is asked to
+copy and save their edit link. When you edit such a guest's RSVP from the guest list, the
+confirmation shows **This guest's edit link** so you can copy it and send it to them yourself.
 
 Guests can also correct their name through their private edit link while editing is allowed.
 Hosts and co-hosts can correct the name when editing the RSVP from the guest list. These changes

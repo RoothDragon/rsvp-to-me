@@ -71,35 +71,6 @@ export function formatInvitationRecipient(recipient: InvitationRecipient): strin
   return `"${name}" <${contact}>`;
 }
 
-export function replaceInvitationSpan(
-  text: string,
-  start: number,
-  end: number,
-  replacement: string,
-  expectedSource?: string
-): string {
-  if (
-    !Number.isInteger(start) ||
-    !Number.isInteger(end) ||
-    start < 0 ||
-    end < start ||
-    end > text.length
-  ) {
-    throw new RangeError("Invalid invitation source span");
-  }
-  // Do not allow a repair to split a surrogate pair.
-  const splitsPair = (offset: number) =>
-    offset > 0 &&
-    offset < text.length &&
-    /[\ud800-\udbff]/.test(text[offset - 1]) &&
-    /[\udc00-\udfff]/.test(text[offset]);
-  if (splitsPair(start) || splitsPair(end)) throw new RangeError("Source span splits a character");
-  if (expectedSource !== undefined && text.slice(start, end) !== expectedSource) {
-    throw new RangeError("Invitation source span is stale");
-  }
-  return text.slice(0, start) + replacement + text.slice(end);
-}
-
 function decodeName(source: string): string | null {
   if (!source.startsWith('"')) return source.includes('"') ? null : source;
   let name = "";

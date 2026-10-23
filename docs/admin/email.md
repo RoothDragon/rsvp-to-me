@@ -41,8 +41,8 @@ Email dispatches are triggered by the following application events:
 | -------------------------------------------------- | -------------------------------------------------------------- |
 | User requests login link                           | The requesting user (magic link)                               |
 | Host invites guests                                | The invited guests                                             |
-| Guest submits an RSVP                              | The guest (confirmation)                                       |
-| Guest submits an RSVP (host alert)                 | The host and co-hosts (when the host-alert email toggle is on) |
+| Guest submits an RSVP or first answers an invite   | The guest (confirmation)                                       |
+| Guest submits an RSVP or first answers an invite   | The host and co-hosts (when the host-alert email toggle is on) |
 | Host approves/declines a pending RSVP              | The approved/declined guest                                    |
 | Host sends an event update blast                   | All Going and Maybe guests (if notify is selected)             |
 | Automated reminder (7 days, 1 day, N hours before) | All Going and Maybe guests with notifications enabled          |
@@ -59,6 +59,17 @@ Invitation personalization uses the recipient's name on this event's RSVP. Hosts
 name for a new recipient; otherwise a generic guest label is used. Resends retain the existing
 event name, and host-supplied names never update account profiles. Guests and organizers can
 correct the event RSVP name later.
+
+An invited guest's first answer through their invitation link is treated like a new public RSVP:
+the confirmation goes to the email or phone already on that RSVP and hosts get the alert. The
+first answer is claimed atomically, so repeated or concurrent submits notify once; later edits
+send nothing.
+
+Hosts add invitation recipients as editable rows, by typing, pasting lists (`Name <email>`,
+`Name email`, `Name, email`, separated by new lines, commas, or semicolons), or importing CSV/TSV
+files and pasted spreadsheet cells. Imports suggest name and contact columns from headers and
+values; the host confirms the mapping. Paste parsing and imports run in the browser only; the
+server still validates every reviewed recipient.
 
 The invitation composer can preview an individual recipient's email using the same rendering
 path as the event email preview. It uses the current event theme, saved template overrides and

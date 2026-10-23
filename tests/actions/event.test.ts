@@ -116,6 +116,8 @@ vi.mock("@/lib/db", () => ({
       findUnique: mockRsvpFindUnique,
       findFirst: mockRsvpFindFirst,
       update: mockRsvpUpdate,
+      // updateRSVP's first-response claim; these fixtures edit answered RSVPs.
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
       delete: mockRsvpDelete,
     },
     comment: { create: mockCommentCreate, findFirst: mockCommentFindFirst },

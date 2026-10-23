@@ -106,6 +106,86 @@ async function linkUnlinkedInvitation(
   }
 }
 
+type RsvpAlertRecipient = {
+  email: string | null;
+  phone: string | null;
+  preferredLocale: string | null;
+};
+
+// Host "New RSVP" alerts — fire-and-forget so a notification failure never
+// blocks the guest's RSVP. Per-event toggles gate each channel; the email
+// alert is intentionally immune to the guest email_enabled channel toggle
+// (see Guest Messaging Channel Toggles, PR #181) while the SMS alert stays
+// behind sms_enabled inside sendHostRsvpAlertSms.
+function sendHostRsvpAlerts(
+  event: {
+    id: string;
+    title: string;
+    slug: string;
+    theme: Parameters<typeof sendHostRsvpAlertEmail>[1]["theme"];
+    hostAlertEmail: boolean;
+    hostAlertSms: boolean;
+    host: RsvpAlertRecipient;
+    coHosts: { user: RsvpAlertRecipient }[];
+  },
+  alert: {
+    guestName: string;
+    status: "GOING" | "MAYBE" | "NO";
+    plusOneCount: number;
+    note: string | null;
+  },
+  source: string
+) {
+  if (!event.hostAlertEmail && !event.hostAlertSms) return;
+  const recipients = [event.host, ...event.coHosts.map((c) => c.user)];
+  const alertBase = { ...alert, eventTitle: event.title, eventSlug: event.slug };
+  (async () => {
+    const counts = await db.rSVP.groupBy({
+      by: ["status"],
+      where: { eventId: event.id, status: { in: ["GOING", "MAYBE", "NO"] } },
+      _count: { _all: true },
+    });
+    const countFor = (status: string) => counts.find((c) => c.status === status)?._count._all ?? 0;
+    for (const recipient of recipients) {
+      if (event.hostAlertEmail && recipient.email) {
+        sendHostRsvpAlertEmail(recipient.email, {
+          locale: resolveLocale(recipient.preferredLocale),
+          ...alertBase,
+          goingCount: countFor("GOING"),
+          maybeCount: countFor("MAYBE"),
+          noCount: countFor("NO"),
+          theme: event.theme,
+        }).catch(logSafe(source));
+      }
+      if (event.hostAlertSms && recipient.phone) {
+        sendHostRsvpAlertSms(recipient.phone, {
+          ...alertBase,
+          locale: resolveLocale(recipient.preferredLocale),
+        }).catch(logSafe(source));
+      }
+    }
+  })().catch(logSafe(source));
+}
+
+/** Guest RSVP confirmation (with the edit link) to each contact the RSVP has. */
+function sendRsvpConfirmations(
+  contact: { email?: string | null; phone?: string | null },
+  opts: Parameters<typeof sendRsvpConfirmationEmail>[1],
+  source: string
+) {
+  if (contact.email) sendRsvpConfirmationEmail(contact.email, opts).catch(logSafe(source));
+  if (contact.phone) {
+    sendRsvpConfirmationSms(contact.phone, {
+      locale: opts.locale,
+      guestName: opts.guestName,
+      eventTitle: opts.eventTitle,
+      eventSlug: opts.eventSlug,
+      status: opts.status,
+      editToken: opts.editToken,
+    }).catch(logSafe(source));
+  }
+}
+
 export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
   const parsed = AddRsvpSchema.safeParse(rawInput);
   if (!parsed.success) {
@@ -274,8 +354,9 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
     : `${data.guestName} is ${statusText}${plusStr}`;
   logActivity(data.eventId, "rsvp_new", detail, data.guestName).catch(logSafe("addRSVP"));
 
-  if (data.guestEmail) {
-    sendRsvpConfirmationEmail(data.guestEmail, {
+  sendRsvpConfirmations(
+    { email: data.guestEmail, phone: data.guestPhone },
+    {
       locale: recipientLocale,
       guestName: data.guestName,
       eventTitle: event.title,
@@ -292,62 +373,20 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
       virtualUrl: event.virtualUrl,
       theme: event.theme,
       replyTo: event.host.email || undefined,
-    }).catch(logSafe("addRSVP"));
-  }
-  if (data.guestPhone) {
-    sendRsvpConfirmationSms(data.guestPhone, {
-      locale: recipientLocale,
-      guestName: data.guestName,
-      eventTitle: event.title,
-      eventSlug: event.slug,
-      status: data.status,
-      editToken: rsvp.editToken,
-    }).catch(logSafe("addRSVP"));
-  }
+    },
+    "addRSVP"
+  );
 
-  // Host "New RSVP" alerts — fire-and-forget so a notification failure never
-  // blocks the guest's RSVP. Per-event toggles gate each channel; the email
-  // alert is intentionally immune to the guest email_enabled channel toggle
-  // (see Guest Messaging Channel Toggles, PR #181) while the SMS alert stays
-  // behind sms_enabled inside sendHostRsvpAlertSms.
-  if (event.hostAlertEmail || event.hostAlertSms) {
-    const recipients = [event.host, ...event.coHosts.map((c) => c.user)];
-    const alertBase = {
+  sendHostRsvpAlerts(
+    event,
+    {
       guestName: data.guestName,
       status: data.status,
       plusOneCount: data.plusOneCount,
       note: data.note || null,
-      eventTitle: event.title,
-      eventSlug: event.slug,
-    };
-    (async () => {
-      const counts = await db.rSVP.groupBy({
-        by: ["status"],
-        where: { eventId: data.eventId, status: { in: ["GOING", "MAYBE", "NO"] } },
-        _count: { _all: true },
-      });
-      const countFor = (status: string) =>
-        counts.find((c) => c.status === status)?._count._all ?? 0;
-      for (const recipient of recipients) {
-        if (event.hostAlertEmail && recipient.email) {
-          sendHostRsvpAlertEmail(recipient.email, {
-            locale: resolveLocale(recipient.preferredLocale),
-            ...alertBase,
-            goingCount: countFor("GOING"),
-            maybeCount: countFor("MAYBE"),
-            noCount: countFor("NO"),
-            theme: event.theme,
-          }).catch(logSafe("addRSVP"));
-        }
-        if (event.hostAlertSms && recipient.phone) {
-          sendHostRsvpAlertSms(recipient.phone, {
-            ...alertBase,
-            locale: resolveLocale(recipient.preferredLocale),
-          }).catch(logSafe("addRSVP"));
-        }
-      }
-    })().catch(logSafe("addRSVP"));
-  }
+    },
+    "addRSVP"
+  );
 
   revalidatePath(`/e/${event.slug}`);
   return { success: true, id: rsvp.id, editToken: rsvp.editToken };
@@ -370,12 +409,28 @@ export async function updateRSVP(
     where: { editToken },
     include: {
       checkIn: { select: { id: true } },
+      user: { select: { preferredLocale: true } },
       event: {
         select: {
+          id: true,
           slug: true,
+          title: true,
           capacity: true,
           rsvpDeadline: true,
           startAt: true,
+          endAt: true,
+          timezone: true,
+          locationType: true,
+          locationName: true,
+          locationAddress: true,
+          virtualUrl: true,
+          theme: true,
+          hostAlertEmail: true,
+          hostAlertSms: true,
+          host: { select: { email: true, phone: true, preferredLocale: true } },
+          coHosts: {
+            select: { user: { select: { email: true, phone: true, preferredLocale: true } } },
+          },
           rsvpFields: { select: { id: true } },
         },
       },
@@ -406,6 +461,17 @@ export async function updateRSVP(
       if (goingCount >= rsvp.event.capacity) return { atCapacity: true as const };
     }
 
+    // An invited guest's first answer arrives here, through their edit link.
+    // Claim it atomically so concurrent submits notify only once.
+    const firstResponse =
+      !rsvp.responded &&
+      (
+        await db.rSVP.updateMany({
+          where: { id: rsvp.id, responded: false },
+          data: { responded: true },
+        })
+      ).count === 1;
+
     await db.rSVP.update({
       where: { editToken },
       data: {
@@ -416,7 +482,7 @@ export async function updateRSVP(
         ...(data.note !== undefined && { note: data.note || null }),
       },
     });
-    return { atCapacity: false as const };
+    return { atCapacity: false as const, firstResponse };
   });
 
   if (locked.atCapacity) return { success: false, error: await eventActionMessage("atCapacity") };
@@ -458,14 +524,58 @@ export async function updateRSVP(
     ).catch(logSafe("updateRSVP"));
   }
 
+  const guestName = data.guestName ?? rsvp.guestName;
   const statusText =
     data.status === "GOING" ? "going" : data.status === "MAYBE" ? "maybe" : "not going";
-  logActivity(
-    rsvp.eventId,
-    "rsvp_update",
-    `${data.guestName ?? rsvp.guestName} updated to ${statusText}`,
-    data.guestName ?? rsvp.guestName
-  ).catch(logSafe("updateRSVP"));
+  if (locked.firstResponse) {
+    // Same notifications and activity as a public-page RSVP (addRSVP); the
+    // confirmation goes only to the contact already on the RSVP.
+    const note = (data.note !== undefined ? data.note : rsvp.note)?.trim() || null;
+    const plusStr = data.plusOneCount > 0 ? ` +${data.plusOneCount}` : "";
+    logActivity(
+      rsvp.eventId,
+      "rsvp_new",
+      note
+        ? `${guestName} is ${statusText}${plusStr}\n${note}`
+        : `${guestName} is ${statusText}${plusStr}`,
+      guestName
+    ).catch(logSafe("updateRSVP"));
+    const { event } = rsvp;
+    sendRsvpConfirmations(
+      { email: rsvp.guestEmail, phone: rsvp.guestPhone },
+      {
+        locale: resolveLocale(rsvp.user?.preferredLocale),
+        guestName,
+        eventTitle: event.title,
+        eventSlug: event.slug,
+        eventId: event.id,
+        status: data.status,
+        editToken: rsvp.editToken,
+        startAt: event.startAt,
+        endAt: event.endAt,
+        timezone: event.timezone,
+        locationType: event.locationType,
+        locationName: event.locationName,
+        locationAddress: event.locationAddress,
+        virtualUrl: event.virtualUrl,
+        theme: event.theme,
+        replyTo: event.host.email || undefined,
+      },
+      "updateRSVP"
+    );
+    sendHostRsvpAlerts(
+      event,
+      { guestName, status: data.status, plusOneCount: data.plusOneCount, note },
+      "updateRSVP"
+    );
+  } else {
+    logActivity(
+      rsvp.eventId,
+      "rsvp_update",
+      `${guestName} updated to ${statusText}`,
+      guestName
+    ).catch(logSafe("updateRSVP"));
+  }
 
   revalidatePath(`/e/${rsvp.event.slug}/guests`);
   revalidatePath(`/e/${rsvp.event.slug}`);
