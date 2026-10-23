@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => ({
   checkInRsvp: vi.fn(),
   undoCheckIn: vi.fn(),
   addWalkIn: vi.fn(),
-  inviteGuest: vi.fn(),
 }));
 
 vi.mock("@/app/actions/event", () => ({
@@ -16,7 +15,8 @@ vi.mock("@/app/actions/event", () => ({
   checkInRsvp: mocks.checkInRsvp,
   declineRsvp: vi.fn(),
   deleteRsvpAsHost: vi.fn(),
-  inviteGuest: mocks.inviteGuest,
+  previewGuestInvitations: vi.fn(),
+  sendGuestInvitations: vi.fn(),
   undoCheckIn: mocks.undoCheckIn,
 }));
 vi.mock("next/image", () => ({ default: () => null }));

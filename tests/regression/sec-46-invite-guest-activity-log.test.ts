@@ -9,6 +9,9 @@ import "@/tests/helpers/english-request-locale";
 //
 // Fix: log a "guest_invite" ActivityEvent on successful issuance, attributed to
 // the acting host, fire-and-forget with logSafe (matching addRSVP).
+//
+// 8be23944 retired inviteGuest. Attribution now applies to sendGuestInvitations,
+// the only host send path, so the cases below target it.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -80,12 +83,21 @@ vi.mock("@/lib/sms", () => ({
   sendApprovalSms: vi.fn(),
   sendEventInviteSms: vi.fn(),
 }));
+vi.mock("@/lib/config", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/config")>()),
+  getChannelConfig: vi.fn().mockResolvedValue({ email: true, sms: true }),
+}));
 
-import { inviteGuest } from "@/app/actions/event";
+import { sendGuestInvitations } from "@/app/actions/event";
 
 const EVENT_ID = "evt-1";
+const reviewed = (expectedDisposition: "new" | "invited") => ({
+  contact: "newguest@example.com",
+  expectedDisposition,
+  expectedGuestName: "Guest",
+});
 
-describe("SEC-46: inviteGuest writes an attributed activity-log entry", () => {
+describe("SEC-46: host invitations write an attributed activity-log entry", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetSession.mockResolvedValue({ userId: "host-1", email: "alice@x.com", role: "HOST" });
@@ -108,7 +120,7 @@ describe("SEC-46: inviteGuest writes an attributed activity-log entry", () => {
   });
 
   it("logs a guest_invite ActivityEvent attributed to the acting host on success", async () => {
-    const result = await inviteGuest(EVENT_ID, "newguest@example.com");
+    const result = await sendGuestInvitations(EVENT_ID, [reviewed("new")]);
 
     expect(result.success).toBe(true);
     expect(mockActivityCreate).toHaveBeenCalledTimes(1);
@@ -124,9 +136,19 @@ describe("SEC-46: inviteGuest writes an attributed activity-log entry", () => {
   });
 
   it("does not log anything when the invite batch fails entirely", async () => {
-    // A single invalid entry produces zero successful sends → the action throws
-    // and no activity is recorded.
-    await expect(inviteGuest(EVENT_ID, "not-an-email")).rejects.toThrow(/Failed to send invites/);
+    // A stale review produces zero successful sends → nothing is delivered and no
+    // activity is recorded.
+    const result = await sendGuestInvitations(EVENT_ID, [reviewed("invited")]);
+
+    expect(result.success).toBe(false);
+    expect(mockInviteEmail).not.toHaveBeenCalled();
+    expect(mockActivityCreate).not.toHaveBeenCalled();
+  });
+
+  it("does not log anything when the batch is rejected as malformed", async () => {
+    await expect(
+      sendGuestInvitations(EVENT_ID, [{ ...reviewed("new"), contact: "not-an-email" }])
+    ).rejects.toThrow(/review the invitation names and contacts/i);
     expect(mockActivityCreate).not.toHaveBeenCalled();
   });
 });

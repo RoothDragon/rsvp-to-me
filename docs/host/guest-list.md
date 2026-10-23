@@ -50,11 +50,17 @@ optionally an enabled email or SMS contact. The host-only action creates an appr
 checks the party in without sending a message. If the contact matches an existing RSVP, that party
 is checked in instead of creating a duplicate.
 
-Unanswered invitees also have a **Resend invite** action. Resending retains the guest's current
-event RSVP name and the normal delivery validation, rate limits, and activity history. The
-destination must match the RSVP's current email or phone; historical delivery records do not
-authorize sending a private edit link to an old contact. Conflicting records must be resolved
-before sending.
+Unanswered invitees also have a **Resend invite** action. Before sending, Resend checks the
+guest's current record the same way **Invite guests** reviews a list: it sends only if the guest
+still has not replied and still has the name shown on their card. If the guest replied, their
+event name changed, or another record started sharing their contact after you opened the list,
+nothing is sent. The list asks you to refresh and review the guest again instead. The same check
+runs again at the moment of sending, so a change that lands in between is also caught.
+
+Resending retains the guest's current event RSVP name and the normal delivery validation,
+CAPTCHA check, rate limits, and activity history. The destination must match the RSVP's current
+email or phone; historical delivery records do not authorize sending a private edit link to an old
+contact. Conflicting records must be resolved before sending.
 
 If an older invitation record is no longer connected to an RSVP, you can remove that invitation
 history without removing a guest's RSVP. An unlinked invitation can also reconnect when a guest

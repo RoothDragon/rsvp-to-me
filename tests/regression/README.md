@@ -20,6 +20,7 @@ October 2026 (`8a8fb7bf`) extends `dependency-security-baseline.test.ts` with up
 
 | File                                                 | Bug description                                                                                                              | Fixed in                       |
 | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `guest-list-stale-resend.test.tsx`                   | Guest-list Resend used unreviewed `inviteGuest`, so a stale card resent silently after a reply, rename, or conflict          | 8be23944                       |
 | `language-selector-focus.test.tsx`                   | Closed language menus stole focus on Escape, including from the other selector on profile pages                              | 01a150ee                       |
 | `issue-712-invite-details-token.test.ts`             | Invitation details links dropped recipient RSVP tokens in rendered HTML and plain text                                       | #712                           |
 | `issue-606-docs-images.test.tsx`                     | Repository-relative screenshot URLs did not resolve to local assets in the in-app guides                                     | #606                           |

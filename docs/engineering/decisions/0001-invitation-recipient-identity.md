@@ -33,3 +33,8 @@ the later request must review the changed state. Historical delivery records
 cannot grant an old contact access to a current RSVP. Delivery failures can
 leave prepared invitation records, so retries resolve and review current state
 before sending again. External delivery does not hold database locks.
+
+Every host entry point sends a reviewed expectation. The invitation composer
+and the guest-list Resend both preview first and send the reviewed disposition
+and name. The unreviewed host `inviteGuest` action was retired in `8be23944`.
+Guest-to-guest invitations are not reviewed, but they share the same lock.

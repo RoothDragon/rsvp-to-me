@@ -162,7 +162,6 @@
         "unknownTemplate": "Onbekend e-mailsjabloon voor evenement",
         "accountNoEmail": "Je account heeft geen e-mailadres.",
         "testEmailRateLimited": "Te veel testmails. Probeer het later opnieuw.",
-        "noInviteTargets": "Geen geldige e-mailadressen of telefoonnummers opgegeven.",
         "inviteRateLimited": "Te veel uitnodigingen verstuurd. Probeer het later opnieuw.",
         "eventInviteRateLimited": "Te veel uitnodigingen voor dit evenement verstuurd. Probeer het later opnieuw.",
         "invalidGuestToken": "Ongeldig gasttoken",
@@ -207,10 +206,6 @@
         "hostDisplayNameDenied": "Geen toegang: alleen de organisator kan de weergavenaam wijzigen",
         "alreadyDeleted": "Het evenement is al verwijderd",
         "ambiguousContact": "Deze contactgegevens horen bij meerdere aanmeldingen. Zoek in de gastenlijst.",
-        "inviteBatchTooLarge": "Te veel ontvangers in één verzoek (maximaal {max}).",
-        "invalidInviteEmail": "Ongeldig e-mailadres: {entry}",
-        "invalidInvitePhone": "Ongeldig telefoonnummer: {entry}",
-        "inviteSendFailed": "Uitnodigingen versturen mislukt: {errors}",
         "itemsRemaining": "Nog maar {remaining} beschikbaar"
       }
     },
@@ -777,7 +772,8 @@
         "unableUndoCheck": "De check-in ongedaan maken is mislukt.",
         "unableResendInvite": "De uitnodiging opnieuw versturen is mislukt.",
         "unableAddWalk": "Deze gast toevoegen is mislukt.",
-        "inviteWarning": "Uitnodiging opnieuw verstuurd met een waarschuwing: {warning}",
+        "resendReviewChanged": "Deze gast heeft gereageerd of is gewijzigd sinds de lijst werd geladen. Vernieuw de gastenlijst en controleer die voordat je opnieuw verstuurt.",
+        "resendConflict": "Meerdere gasten komen overeen met dit contact. Los de gastgegevens op voordat je opnieuw verstuurt.",
         "inviteResent": "Uitnodiging opnieuw verstuurd naar {destination}.",
         "attendanceSummary": "{checkedParties} van {parties} gezelschappen · {checkedPeople} van {people} personen aangekomen",
         "collapsedHint": "Selecteer hierboven {responses} om de namen te zien."

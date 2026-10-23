@@ -155,6 +155,7 @@ Search for events by title, slug, or the host's email, and filter by status.
 - Public event pages and their related settings and RSVP screens use a responsive, single-column layout capped at 600px; compact authentication, confirmation, and modal surfaces remain narrower by design.
 - After access is granted, the public event page, RSVP form, guest list, and event settings share the host-selected background effect. Password/private gates, dashboards, exports, social images, and emails remain static and do not expose or animate event effects.
 - Admins can use the host guest-list check-in, undo, walk-in, invitation resend, search, attendance summary, and CSV export controls. Check-in is available for every RSVP status, including no-reply, Can't make it, and awaiting-approval guests. These actions are attributed in the host-only activity feed.
+- Invitation resend uses the same reviewed preview-and-send path as **Invite guests**, including its CAPTCHA, rate limits, and invitation lock. It sends nothing when the guest has replied, been renamed, or started conflicting with another record since the list loaded, and asks the organizer to refresh and review instead. The older unreviewed host invite action has been removed; every host invitation is now sent through the reviewed path.
 - The guest list's **All** filter includes both RSVP responses and invited guests who have not responded.
 
 ---

@@ -94,7 +94,6 @@ vi.mock("@/lib/email-settings", async (importOriginal) => ({
 }));
 
 import {
-  inviteGuest,
   inviteFriendAsGuest,
   previewGuestInvitations,
   sendGuestInvitations,
@@ -482,21 +481,8 @@ describe("#749 reviewed invitation sends and compatibility", () => {
     expect(mocks.email.mock.calls[0][0]).toBe("b@example.com");
   });
 
-  it("retains legacy partial-invalid string semantics and named mailbox support", async () => {
-    const result = await inviteGuest(EVENT, '"Doe, Jane" <JANE@EXAMPLE.COM>, invalid');
-    expect(result).toMatchObject({
-      success: true,
-      emailOrPhone: "jane@example.com",
-      errors: [expect.stringContaining("Invalid phone")],
-    });
-    expect(mocks.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ guestName: "Doe, Jane" }),
-    });
-    expect(mocks.email).toHaveBeenCalledTimes(1);
-  });
-
   it("uses generic labels for new unnamed guests and validates friend trailing name without changing CAPTCHA position", async () => {
-    await inviteGuest(EVENT, "guest@example.com");
+    await sendGuestInvitations(EVENT, [await reviewed()]);
     expect(mocks.rows[0].guestName).toBe("Guest");
     mocks.findUnique.mockResolvedValue({ ...row({ status: "GOING" }), event });
     const result = await inviteFriendAsGuest(

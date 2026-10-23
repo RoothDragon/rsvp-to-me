@@ -141,7 +141,7 @@ async function prepareLockedInvitation(
 ) {
   const unnamedGuest = await unnamedGuestLabel();
   return db.$transaction(async (client) => {
-    // Transaction-scoped locks are shared by host, legacy, and guest sends.
+    // Transaction-scoped locks are shared by reviewed host sends and guest sends.
     // Parameterized values cannot become SQL, and distinct contacts can proceed independently.
     await client.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"invitation:" + eventId}), hashtext(${recipient.contact}))`;
     const [resolved] = await resolveInvitationRecipients(
@@ -222,7 +222,7 @@ function recordHostInvites(eventId: string, email: string | undefined | null, co
     "guest_invite",
     `${hostLabel} invited ${count} guest${count === 1 ? "" : "s"}`,
     hostLabel
-  ).catch(logSafe("inviteGuest"));
+  ).catch(logSafe("sendGuestInvitations"));
 }
 
 export async function previewGuestInvitations(eventId: string, recipients: unknown) {
@@ -273,54 +273,6 @@ export async function sendGuestInvitations(
   return { success: sent > 0, results };
 }
 
-export async function inviteGuest(
-  eventId: string,
-  emailOrPhone: string,
-  captchaToken?: string | null
-) {
-  const session = await getSession();
-  if (!session) throw new Error(await eventActionMessage("unauthorized"));
-  await assertCaptcha("host_invite", captchaToken);
-  const event = await assertHostOrCohost(eventId);
-  if (typeof emailOrPhone !== "string")
-    throw new Error(await eventActionMessage("invalidInvitationRecipients"));
-  const draft = parseInvitationDraft(emailOrPhone);
-  if (draft.issues.some((issue) => issue.code === "tooManyRecipients")) {
-    throw new Error(await eventActionMessage("inviteBatchTooLarge", { max: 200 }));
-  }
-  if (draft.issues.some((issue) => issue.code === "textTooLong"))
-    throw new Error(await eventActionMessage("invalidInvitationRecipients"));
-  if (draft.rawCount === 0) throw new Error(await eventActionMessage("noInviteTargets"));
-  await hostLimits(session.userId, eventId);
-  const invited: string[] = [];
-  const errors = await Promise.all(
-    draft.issues.map((issue) => {
-      const entry = emailOrPhone.slice(issue.start, issue.end).trim();
-      return eventActionMessage(entry.includes("@") ? "invalidInviteEmail" : "invalidInvitePhone", {
-        entry,
-      });
-    })
-  );
-  for (const recipient of draft.entries) {
-    try {
-      const prepared = await prepareLockedInvitation(eventId, recipient, true);
-      await deliverHostInvitation(eventId, recipient, prepared);
-      invited.push(recipient.contact);
-    } catch {
-      errors.push(await eventActionMessage("invitationSendFailed"));
-    }
-  }
-  if (invited.length === 0)
-    throw new Error(await eventActionMessage("inviteSendFailed", { errors: errors.join("; ") }));
-  recordHostInvites(eventId, session.email, invited.length);
-  revalidatePath(`/e/${event.slug}`);
-  revalidatePath(`/e/${event.slug}/guests`);
-  return {
-    success: true,
-    emailOrPhone: invited.join(", "),
-    errors: errors.length > 0 ? errors : undefined,
-  };
-}
 export async function deleteInvitationAsHost(invitationId: string) {
   // Match RSVP deletion's SEC-42 pattern: authenticate before looking up the
   // caller-supplied id, then make missing and unauthorized records indistinct.

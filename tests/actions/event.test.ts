@@ -194,6 +194,10 @@ vi.mock("@/lib/rateLimit", () => ({
     .fn()
     .mockResolvedValue({ success: true, limit: 10, remaining: 9, reset: new Date() }),
 }));
+vi.mock("@/lib/config", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/config")>()),
+  getChannelConfig: vi.fn().mockResolvedValue({ email: true, sms: true }),
+}));
 
 import {
   saveEventField,
@@ -217,7 +221,7 @@ import {
   removePotluckItem,
   claimPotluckItem,
   unclaimPotluckItem,
-  inviteGuest,
+  sendGuestInvitations,
   verifyEventPassword,
   saveEventTheme,
   saveCoverImage,
@@ -1493,9 +1497,15 @@ describe("unclaimPotluckItem", () => {
   });
 });
 
-describe("inviteGuest", () => {
+describe("sendGuestInvitations", () => {
   const INVITE_EMAIL = "newguest@example.com";
   const INVITE_PHONE = "+15559876543";
+  // A new, unnamed recipient as the host reviewed it in the preview.
+  const reviewed = (contact: string) => ({
+    contact,
+    expectedDisposition: "new" as const,
+    expectedGuestName: "Guest",
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -1520,14 +1530,19 @@ describe("inviteGuest", () => {
 
   it("throws error if unauthorized", async () => {
     mockGetSession.mockResolvedValue(null);
-    await expect(inviteGuest(EVENT_ID, INVITE_EMAIL)).rejects.toThrow("Unauthorized");
+    await expect(sendGuestInvitations(EVENT_ID, [reviewed(INVITE_EMAIL)])).rejects.toThrow(
+      "Unauthorized"
+    );
   });
 
-  it("sends an email invite for email inputs", async () => {
+  it("sends an email invite for email recipients", async () => {
     const { sendEventInviteEmail } = await import("@/lib/email");
-    const result = await inviteGuest(EVENT_ID, INVITE_EMAIL);
+    const result = await sendGuestInvitations(EVENT_ID, [reviewed(INVITE_EMAIL)]);
 
-    expect(result).toEqual({ success: true, emailOrPhone: INVITE_EMAIL });
+    expect(result).toEqual({
+      success: true,
+      results: [{ contact: INVITE_EMAIL, status: "sent", guestName: "newguest" }],
+    });
     expect(mockUserCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: { email: INVITE_EMAIL, role: "GUEST" },
@@ -1549,11 +1564,14 @@ describe("inviteGuest", () => {
     expect(sendEventInviteEmail).toHaveBeenCalled();
   });
 
-  it("sends an SMS invite for phone inputs", async () => {
+  it("sends an SMS invite for phone recipients", async () => {
     const { sendEventInviteSms } = await import("@/lib/sms");
-    const result = await inviteGuest(EVENT_ID, INVITE_PHONE);
+    const result = await sendGuestInvitations(EVENT_ID, [reviewed(INVITE_PHONE)]);
 
-    expect(result).toEqual({ success: true, emailOrPhone: INVITE_PHONE });
+    expect(result).toEqual({
+      success: true,
+      results: [{ contact: INVITE_PHONE, status: "sent", guestName: "newguest" }],
+    });
     expect(mockUserCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: { phone: INVITE_PHONE, role: "GUEST" },
@@ -1567,13 +1585,16 @@ describe("inviteGuest", () => {
     expect(sendEventInviteSms).toHaveBeenCalled();
   });
 
-  it("normalizes raw phone inputs before saving and sending SMS in inviteGuest", async () => {
+  it("normalizes raw phone contacts before saving and sending SMS", async () => {
     const { sendEventInviteSms } = await import("@/lib/sms");
     const rawPhone = " (555) 867-5309 ";
     const normalized = "5558675309";
-    const result = await inviteGuest(EVENT_ID, rawPhone);
+    const result = await sendGuestInvitations(EVENT_ID, [reviewed(rawPhone)]);
 
-    expect(result).toEqual({ success: true, emailOrPhone: normalized });
+    expect(result).toEqual({
+      success: true,
+      results: [{ contact: normalized, status: "sent", guestName: "newguest" }],
+    });
     expect(mockUserCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: { phone: normalized, role: "GUEST" },
@@ -1587,24 +1608,34 @@ describe("inviteGuest", () => {
     expect(sendEventInviteSms).toHaveBeenCalledWith(normalized, expect.any(Object));
   });
 
-  it("handles mixed comma-separated entries with some valid and some invalid", async () => {
+  it("sends a mixed batch on each recipient's own channel", async () => {
     const { sendEventInviteEmail } = await import("@/lib/email");
     const { sendEventInviteSms } = await import("@/lib/sms");
 
-    const result = await inviteGuest(EVENT_ID, `${INVITE_EMAIL}, invalid_entry, ${INVITE_PHONE}`);
+    const result = await sendGuestInvitations(EVENT_ID, [
+      reviewed(INVITE_EMAIL),
+      reviewed(INVITE_PHONE),
+    ]);
 
     expect(result.success).toBe(true);
-    expect(result.emailOrPhone).toContain(INVITE_EMAIL);
-    expect(result.emailOrPhone).toContain(INVITE_PHONE);
-    expect(result.errors).toBeDefined();
-    expect(result.errors?.[0]).toContain("Invalid phone");
-
-    expect(sendEventInviteEmail).toHaveBeenCalled();
-    expect(sendEventInviteSms).toHaveBeenCalled();
+    expect(result.results.map(({ contact, status }) => [contact, status])).toEqual([
+      [INVITE_EMAIL, "sent"],
+      [INVITE_PHONE, "sent"],
+    ]);
+    expect(sendEventInviteEmail).toHaveBeenCalledWith(INVITE_EMAIL, expect.any(Object));
+    expect(sendEventInviteSms).toHaveBeenCalledWith(INVITE_PHONE, expect.any(Object));
   });
 
-  it("throws error when all inputs are invalid and no guests are invited", async () => {
-    await expect(inviteGuest(EVENT_ID, "invalid_entry")).rejects.toThrow("Failed to send invites:");
+  it("rejects the whole batch before sending when any contact is malformed", async () => {
+    const { sendEventInviteEmail } = await import("@/lib/email");
+    const { sendEventInviteSms } = await import("@/lib/sms");
+
+    await expect(
+      sendGuestInvitations(EVENT_ID, [reviewed(INVITE_EMAIL), reviewed("invalid_entry")])
+    ).rejects.toThrow("Review the invitation names and contacts before sending.");
+    expect(sendEventInviteEmail).not.toHaveBeenCalled();
+    expect(sendEventInviteSms).not.toHaveBeenCalled();
+    expect(mockRsvpCreate).not.toHaveBeenCalled();
   });
 });
 

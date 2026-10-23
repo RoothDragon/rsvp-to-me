@@ -5,7 +5,8 @@
 // finding an existing RSVP, despite promising to add and check in the guest.
 //
 // Fix: expose attendance controls for every linked RSVP status and let the host
-// resend unanswered invitations from the same guest card.
+// resend unanswered invitations from the same guest card. Since 8be23944 that
+// resend uses the reviewed invitation actions (see guest-list-stale-resend).
 
 // @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor, within } from "@/tests/components/render";
@@ -14,7 +15,8 @@ import { testTheme } from "@/tests/components/helpers/theme";
 
 const mocks = vi.hoisted(() => ({
   checkInRsvp: vi.fn(),
-  inviteGuest: vi.fn(),
+  previewGuestInvitations: vi.fn(),
+  sendGuestInvitations: vi.fn(),
 }));
 
 vi.mock("@/app/actions/event", () => ({
@@ -23,7 +25,8 @@ vi.mock("@/app/actions/event", () => ({
   checkInRsvp: mocks.checkInRsvp,
   declineRsvp: vi.fn(),
   deleteRsvpAsHost: vi.fn(),
-  inviteGuest: mocks.inviteGuest,
+  previewGuestInvitations: mocks.previewGuestInvitations,
+  sendGuestInvitations: mocks.sendGuestInvitations,
   undoCheckIn: vi.fn(),
 }));
 vi.mock("next/image", () => ({ default: () => null }));
@@ -88,8 +91,21 @@ describe("guest check-in for every RSVP status", () => {
     expect(within(invitedCard!).getByRole("button", { name: "Resend invite" })).not.toBeNull();
   });
 
-  it("resends an unanswered invitation through the existing invite action", async () => {
-    mocks.inviteGuest.mockResolvedValue({ success: true, emailOrPhone: invited.sentTo });
+  it("resends an unanswered invitation through the reviewed invite actions", async () => {
+    mocks.previewGuestInvitations.mockResolvedValue({
+      recipients: [
+        {
+          contact: invited.sentTo,
+          guestName: invited.guestName,
+          disposition: "invited",
+          channel: "EMAIL",
+        },
+      ],
+    });
+    mocks.sendGuestInvitations.mockResolvedValue({
+      success: true,
+      results: [{ contact: invited.sentTo, status: "sent", guestName: invited.guestName }],
+    });
     render(
       <GuestListFilter
         going={[]}
@@ -107,7 +123,18 @@ describe("guest check-in for every RSVP status", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Resend invite" }));
     await waitFor(() =>
-      expect(mocks.inviteGuest).toHaveBeenCalledWith("event-1", "invited@example.com", null)
+      expect(mocks.sendGuestInvitations).toHaveBeenCalledWith(
+        "event-1",
+        [
+          {
+            contact: "invited@example.com",
+            expectedDisposition: "invited",
+            expectedGuestName: "Invited Guest",
+          },
+        ],
+        null
+      )
     );
+    expect(await screen.findByText("Invite resent to invited@example.com.")).toBeTruthy();
   });
 });

@@ -21,7 +21,6 @@ export {
   getRsvpFieldAnswers,
 } from "./rsvpFields";
 export {
-  inviteGuest,
   deleteInvitationAsHost,
   inviteFriendAsGuest,
   previewGuestInvitations,
