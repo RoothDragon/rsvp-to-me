@@ -174,10 +174,16 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
   already-verified requests for different actions to remain concurrent. Deletes
   and low-risk state toggles are outside this user-content boundary.
 - Capacity-sensitive RSVP writes use `lib/capacityLock.ts`.
-- `lib/invitation-draft.ts` owns pure invitation syntax, contact normalization,
-  name validation, and source-span editing shared by clients and server actions.
-  `lib/invitation-spreadsheet.ts` parses clipboard TSV and applies explicit
-  contact/name/header mappings before producing draft recipients.
+- `lib/invitation-draft.ts` owns the strict invitation syntax, contact
+  normalization, and name validation shared by clients and server actions.
+  The host composer works on editable rows: `lib/invitation-draft-rows.ts` owns
+  the row reducer, structural undo, duplicate skipping, and per-row validation;
+  `lib/invitation-paste.ts` (client-only, lenient) turns pasted lists into rows;
+  `lib/invitation-spreadsheet.ts` parses CSV/TSV, suggests name/contact column
+  mappings, and imports with the host-confirmed mapping. `HostBar` owns the draft
+  so closing the Invite dialog keeps it until the page reloads;
+  `components/event/InvitationComposer.tsx` and `components/event/invitations/`
+  render the add → review → send steps.
 - `lib/invitation-recipients.ts` validates bounded recipient inputs and resolves
   names and prior-invitation status from the current event only. `RSVP.guestName`
   is the event-scoped name authority; host invitation names never update

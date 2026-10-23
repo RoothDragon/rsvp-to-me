@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { parseInvitationDraft } from "@/lib/invitation-draft";
 import {
+  detectInvitationDelimiter,
   importInvitationSpreadsheet,
   parseInvitationSpreadsheet,
+  suggestInvitationSpreadsheetMapping,
 } from "@/lib/invitation-spreadsheet";
 
-describe("invitation spreadsheet clipboard", () => {
+const grid = (text: string) => parseInvitationSpreadsheet(text, detectInvitationDelimiter(text));
+
+describe("invitation spreadsheet parsing", () => {
   it("parses quoted tabs/newlines, double quotes and CRLF without splitting cells", () => {
     const result = parseInvitationSpreadsheet(
       'Name\tContact\r\n"Doe, ""Jane"""\ta@example.com\r\n"A\tB\nC"\tb@example.com\r\n'
@@ -20,119 +23,116 @@ describe("invitation spreadsheet clipboard", () => {
     });
   });
 
-  it("imports reversed explicit columns and optional header into canonical draft text", () => {
-    const result = importInvitationSpreadsheet(
-      "Email\tIgnored\tName\r\nA@EXAMPLE.COM\tnotes\tDoe, Jane\r\n555-123-4567\tnotes\tSam",
-      { contactColumn: 0, nameColumn: 2, hasHeader: true }
-    );
-    expect(result.issues).toEqual([]);
-    expect(result.recipients).toEqual([
-      { contact: "a@example.com", name: "Doe, Jane" },
-      { contact: "5551234567", name: "Sam" },
+  it("detects tab, comma and semicolon files and strips a byte-order mark", () => {
+    expect(detectInvitationDelimiter("a\tb,c")).toBe("\t");
+    expect(detectInvitationDelimiter('"x;y",b,c')).toBe(",");
+    expect(detectInvitationDelimiter("Name;Email\nA;a@example.com")).toBe(";");
+    expect(grid('﻿Name,Email\n"Doe, Jane",jane@example.com').rows).toEqual([
+      ["Name", "Email"],
+      ["Doe, Jane", "jane@example.com"],
     ]);
-    expect(result.text).toBe('"Doe, Jane" <a@example.com>\n"Sam" <5551234567>');
-    expect(parseInvitationDraft(result.text).issues).toEqual([]);
-    const reversed = importInvitationSpreadsheet("Sam\tSAM@EXAMPLE.COM", {
-      contactColumn: 1,
-      nameColumn: 0,
-      hasHeader: false,
-    });
-    expect(reversed.recipients).toEqual([{ name: "Sam", contact: "sam@example.com" }]);
   });
 
-  it("does not infer headers or drop invalid mapped rows", () => {
-    const noHeader = importInvitationSpreadsheet("Name\tEmail\nJane\ta@example.com", {
-      contactColumn: 1,
-      nameColumn: 0,
-      hasHeader: false,
-    });
-    expect(noHeader.issues).toContainEqual({ code: "invalidContact", row: 0, column: 1 });
-    expect(noHeader.text).toBe("");
-    expect(noHeader.recipients).toEqual([]);
-    const missing = importInvitationSpreadsheet("Jane\ta@example.com\nSam", {
-      contactColumn: 1,
-      nameColumn: 0,
-      hasHeader: false,
-    });
-    expect(missing.issues).toContainEqual({ code: "missingCell", row: 1 });
-  });
-
-  it("allows empty optional names and ignored cells but preserves duplicate contacts", () => {
-    const result = importInvitationSpreadsheet("\ta@example.com\n \tA@EXAMPLE.COM\n\t\n", {
-      contactColumn: 1,
-      nameColumn: 0,
-      hasHeader: false,
-    });
-    expect(result.issues).toEqual([]);
-    expect(result.recipients).toEqual([{ contact: "a@example.com" }, { contact: "a@example.com" }]);
-    const ignoredName = importInvitationSpreadsheet("any\ta@example.com", {
-      contactColumn: 1,
-      hasHeader: false,
-    });
-    expect(ignoredName.recipients).toEqual([{ contact: "a@example.com" }]);
-  });
-
-  it.each([
-    { contactColumn: -1, hasHeader: false },
-    { contactColumn: 0.5, hasHeader: false },
-    { contactColumn: 0, nameColumn: 0, hasHeader: false },
-    { contactColumn: 32, hasHeader: false },
-    { contactColumn: 0, nameColumn: -1, hasHeader: false },
-  ])("rejects malformed mapping %j", (mapping) => {
-    expect(importInvitationSpreadsheet("a@example.com", mapping).issues).toContainEqual({
-      code: "invalidMapping",
-    });
-  });
-
-  it("reports mapping outside the grid and quote corruption", () => {
-    expect(
-      importInvitationSpreadsheet("a@example.com", { contactColumn: 2, hasHeader: false }).issues
-    ).toContainEqual({ code: "invalidMapping" });
-    for (const text of [
-      '"Jane\ta@example.com',
-      'Ja"ne\ta@example.com',
-      '"Jane"oops\ta@example.com',
-    ]) {
-      const result = importInvitationSpreadsheet(text, {
-        contactColumn: 1,
-        nameColumn: 0,
-        hasHeader: false,
-      });
-      expect(result.issues.length).toBeGreaterThan(0);
-      expect(result.text).toBe("");
+  it("reports quote corruption", () => {
+    for (const text of ['"Jane\ta@example.com', 'Ja"ne\ta@example.com', '"Jane"oops\ta']) {
+      expect(parseInvitationSpreadsheet(text).issues.length).toBeGreaterThan(0);
     }
   });
 
-  it("rejects control characters inside otherwise legal quoted name cells", () => {
-    for (const name of ["A\nB", "A\tB", "\n"]) {
-      const result = importInvitationSpreadsheet(`"${name}"\ta@example.com`, {
-        contactColumn: 1,
-        nameColumn: 0,
-        hasHeader: false,
-      });
-      expect(result.issues).toContainEqual({ code: "invalidName", row: 0, column: 0 });
-      expect(result.text).toBe("");
-    }
-  });
-
-  it("bounds input, raw rows and columns", () => {
-    expect(parseInvitationSpreadsheet("x".repeat(100_001)).issues[0].code).toBe("textTooLong");
-    expect(parseInvitationSpreadsheet(Array(33).fill("x").join("\t")).issues[0].code).toBe(
+  it("bounds input, raw rows and columns for contact-app exports", () => {
+    expect(parseInvitationSpreadsheet("x".repeat(2_000_001)).issues[0].code).toBe("textTooLong");
+    expect(parseInvitationSpreadsheet(Array(255).fill("x").join(",") + "\n", ",").issues).toEqual(
+      []
+    );
+    expect(parseInvitationSpreadsheet(Array(257).fill("x").join(","), ",").issues[0].code).toBe(
       "tooManyColumns"
     );
-    const noHeader = importInvitationSpreadsheet(Array(201).fill("a@example.com").join("\n"), {
-      contactColumn: 0,
-      hasHeader: false,
-    });
-    expect(noHeader.issues).toContainEqual({ code: "tooManyRows" });
-    const withHeader = importInvitationSpreadsheet(
-      "Email\n" + Array(200).fill("a@example.com").join("\n"),
-      { contactColumn: 0, hasHeader: true }
-    );
-    expect(withHeader.recipients).toHaveLength(200);
-    expect(withHeader.issues).toEqual([]);
     expect(parseInvitationSpreadsheet(Array(202).fill("x").join("\n")).issues).toContainEqual({
       code: "tooManyRows",
     });
+  });
+});
+
+describe("invitation spreadsheet mapping suggestions", () => {
+  it("maps a simple Name/Email header", () => {
+    expect(
+      suggestInvitationSpreadsheetMapping(grid("Name,Email\nJane,jane@example.com").rows)
+    ).toEqual({ hasHeader: true, nameColumns: [0], contactColumns: [1] });
+  });
+
+  it("maps Google Contacts exports: first/middle/last names, email then phone", () => {
+    const text = [
+      "First Name,Middle Name,Last Name,E-mail 1 - Label,E-mail 1 - Value,Phone 1 - Label,Phone 1 - Value",
+      "Jane,,Doe,* Home,jane@example.com,Mobile,+1 555 123 4567",
+      "Sam,Q,Lee,,,Mobile,(555) 222-1234",
+    ].join("\n");
+    expect(suggestInvitationSpreadsheetMapping(grid(text).rows)).toEqual({
+      hasHeader: true,
+      nameColumns: [0, 1, 2],
+      contactColumns: [4, 6],
+    });
+  });
+
+  it("sniffs columns from values when there is no header", () => {
+    const rows = grid("jane@example.com,Jane Doe,2026-10-23\nsam@example.com,Sam,2026-10-24").rows;
+    expect(suggestInvitationSpreadsheetMapping(rows)).toEqual({
+      hasHeader: false,
+      nameColumns: [1],
+      contactColumns: [0],
+    });
+  });
+});
+
+describe("invitation spreadsheet import", () => {
+  it("joins name columns and falls back from email to phone per row", () => {
+    const { rows } = grid(
+      "First,Last,Email,Mobile\nJane,Doe,jane@example.com,555-123-4567\nSam,,,555-222-1234\n,,,\n"
+    );
+    expect(
+      importInvitationSpreadsheet(rows, {
+        hasHeader: true,
+        nameColumns: [0, 1],
+        contactColumns: [2, 3],
+      })
+    ).toEqual({
+      recipients: [
+        { name: "Jane Doe", contact: "jane@example.com" },
+        { name: "Sam", contact: "555-222-1234" },
+      ],
+      issues: [],
+    });
+  });
+
+  it("keeps invalid or missing contacts as rows for the host to fix", () => {
+    const { rows } = grid("Jane,not-an-email\nSam,\n");
+    expect(
+      importInvitationSpreadsheet(rows, { hasHeader: false, nameColumns: [0], contactColumns: [1] })
+        .recipients
+    ).toEqual([
+      { name: "Jane", contact: "not-an-email" },
+      { name: "Sam", contact: "" },
+    ]);
+  });
+
+  it.each([
+    { hasHeader: false, nameColumns: [], contactColumns: [] },
+    { hasHeader: false, nameColumns: [0], contactColumns: [0] },
+    { hasHeader: false, nameColumns: [], contactColumns: [2] },
+    { hasHeader: false, nameColumns: [], contactColumns: [0.5] },
+    { hasHeader: false, nameColumns: [0, 0], contactColumns: [1] },
+    { hasHeader: false, nameColumns: [], contactColumns: [0, 1, 1] },
+  ])("rejects malformed mapping %j", (mapping) => {
+    expect(importInvitationSpreadsheet([["a", "b@example.com"]], mapping).issues).toEqual([
+      { code: "invalidMapping" },
+    ]);
+  });
+
+  it("refuses more than 200 recipients after the header", () => {
+    const rows = [["Email"], ...Array.from({ length: 200 }, (_, i) => [`g${i}@example.com`])];
+    const mapping = { hasHeader: true, nameColumns: [], contactColumns: [0] };
+    expect(importInvitationSpreadsheet(rows, mapping).recipients).toHaveLength(200);
+    expect(importInvitationSpreadsheet([...rows, ["extra@example.com"]], mapping).issues).toEqual([
+      { code: "tooManyRows" },
+    ]);
   });
 });

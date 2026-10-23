@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useReducer, useState } from "react";
 import { Mail, MessageSquare, Settings, Eye, Globe, Link2, Lock, Check } from "lucide-react";
 import type { ResolvedTheme } from "@/lib/theme";
 import { sendBlast, sendSmsBlast, saveEventSettings } from "@/app/actions/event";
@@ -11,6 +11,7 @@ import QRCode from "qrcode";
 import { useCaptcha } from "@/components/ui/CaptchaProvider";
 
 import { Dialog } from "@/components/ui/Dialog";
+import { emptyInvitationDraft, invitationDraftReducer } from "@/lib/invitation-draft-rows";
 import { InvitationComposer } from "./InvitationComposer";
 
 type Visibility = "PUBLIC" | "UNLISTED" | "PRIVATE";
@@ -63,6 +64,14 @@ export function HostBar({
   ];
 
   const [activePanel, setActivePanel] = useState<string | null>(null);
+  // Owned here so closing the dialog keeps unsent recipients until the page reloads.
+  const [inviteDraft, dispatchInvite] = useReducer(invitationDraftReducer, emptyInvitationDraft);
+  const messagingOn = channelConfig.email || channelConfig.sms;
+  const [inviteTab, setInviteTab] = useState<"invite" | "share">(messagingOn ? "invite" : "share");
+  const inviteTabs = [
+    { id: "invite", label: translate("tabInvite") },
+    { id: "share", label: translate("tabShare") },
+  ] as const;
   const [messageText, setMessageText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [blastResult, setBlastResult] = useState<string | null>(null);
@@ -307,7 +316,7 @@ export function HostBar({
           onClose={() => setActivePanel(null)}
           titleId="invitation-dialog-title"
           panelStyle={{
-            width: "min(960px,100%)",
+            width: "min(760px,100%)",
             maxHeight: "90dvh",
             overflowY: "auto",
             background: "rgba(15,15,20,0.98)",
@@ -329,138 +338,198 @@ export function HostBar({
               ×
             </button>
           </div>
-          {visibility === "PRIVATE" ? (
-            <div
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "12px",
-                padding: "16px",
-                marginBottom: "16px",
-                textAlign: "center",
-              }}
-            >
-              <p
-                style={{
-                  color: "rgba(255,255,255,0.6)",
-                  fontSize: "14px",
-                  marginBottom: "10px",
-                  lineHeight: 1.6,
-                }}
-              >
-                {translate("privateEventGuestsMustInvitedDirectly")}
-              </p>
-              <a
-                href={`/e/${eventSlug}/settings?section=privacy`}
-                style={{
-                  color: t.accent,
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  textDecoration: "none",
-                }}
-              >
-                {translate("changeDisplayOptions")}
-              </a>
-            </div>
-          ) : (
-            <>
-              <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px", marginBottom: "16px" }}>
-                {translate("shareEventLinkOrSendInvites")}
-              </p>
-              <div
-                style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: "12px",
-                  padding: "12px 16px",
-                  fontSize: "14px",
-                  marginBottom: "12px",
-                  wordBreak: "break-all",
-                  color: "rgba(255,255,255,0.9)",
-                }}
-              >
-                {typeof window !== "undefined" ? window.location.href : ""}
-              </div>
-              <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+          <div
+            role="tablist"
+            aria-label={translate("inviteTabs")}
+            style={{
+              display: "flex",
+              gap: "4px",
+              margin: "12px 0 18px",
+              borderBottom: "1px solid rgba(255,255,255,0.12)",
+            }}
+          >
+            {inviteTabs.map((tab, index) => {
+              const selected = inviteTab === tab.id;
+              return (
                 <button
-                  onClick={() => {
-                    if (typeof navigator !== "undefined") {
-                      navigator.clipboard.writeText(window.location.href);
-                      setCopiedLink(true);
-                      setTimeout(() => setCopiedLink(false), 2000);
-                    }
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  id={`invite-tab-${tab.id}`}
+                  aria-selected={selected}
+                  aria-controls={`invite-panel-${tab.id}`}
+                  tabIndex={selected ? 0 : -1}
+                  onClick={() => setInviteTab(tab.id)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+                    event.preventDefault();
+                    const step = event.key === "ArrowRight" ? 1 : inviteTabs.length - 1;
+                    const next = inviteTabs[(index + step) % inviteTabs.length];
+                    setInviteTab(next.id);
+                    document.getElementById(`invite-tab-${next.id}`)?.focus();
                   }}
                   style={{
-                    flex: 1,
-                    padding: "12px",
-                    background: copiedLink ? "#22c55e" : t.accent,
-                    color: "#ffffff",
+                    padding: "10px 14px",
+                    marginBottom: "-1px",
                     border: "none",
-                    borderRadius: "12px",
-                    fontFamily: "inherit",
+                    borderBottom: `2px solid ${selected ? t.accent : "transparent"}`,
+                    background: "transparent",
+                    color: selected ? "#ffffff" : "rgba(255,255,255,0.6)",
+                    font: "inherit",
                     fontSize: "14px",
                     fontWeight: 700,
                     cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                    transition: "all 0.15s ease-in-out",
                   }}
                 >
-                  {copiedLink ? <Check size={16} /> : null}
-                  {copiedLink ? translate("copied") : translate("copyLink")}
+                  {tab.label}
                 </button>
-                {qrDataUrl && (
-                  <a
-                    href={qrDataUrl}
-                    download="event-qr.png"
+              );
+            })}
+          </div>
+          <div
+            role="tabpanel"
+            id={`invite-panel-${inviteTab}`}
+            aria-labelledby={`invite-tab-${inviteTab}`}
+          >
+            {inviteTab === "invite" ? (
+              !messagingOn ? (
+                <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "14px" }}>
+                  {translate("messagingNotConfiguredServerShareEvent")}
+                </p>
+              ) : (
+                <InvitationComposer
+                  eventId={eventId}
+                  channelConfig={channelConfig}
+                  theme={{
+                    ...t,
+                    inputBg: "rgba(255,255,255,0.06)",
+                    inputBorder: "rgba(255,255,255,0.16)",
+                  }}
+                  draft={inviteDraft}
+                  dispatch={dispatchInvite}
+                />
+              )
+            ) : visibility === "PRIVATE" ? (
+              <div
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "12px",
+                  padding: "16px",
+                  marginBottom: "16px",
+                  textAlign: "center",
+                }}
+              >
+                <p
+                  style={{
+                    color: "rgba(255,255,255,0.6)",
+                    fontSize: "14px",
+                    marginBottom: "10px",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {translate("privateEventGuestsMustInvitedDirectly")}
+                </p>
+                <a
+                  href={`/e/${eventSlug}/settings?section=privacy`}
+                  style={{
+                    color: t.accent,
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                  }}
+                >
+                  {translate("changeDisplayOptions")}
+                </a>
+              </div>
+            ) : (
+              <>
+                <p
+                  style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px", marginBottom: "16px" }}
+                >
+                  {translate("shareEventLinkOrSendInvites")}
+                </p>
+                <div
+                  style={{
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "12px",
+                    padding: "12px 16px",
+                    fontSize: "14px",
+                    marginBottom: "12px",
+                    wordBreak: "break-all",
+                    color: "rgba(255,255,255,0.9)",
+                  }}
+                >
+                  {typeof window !== "undefined" ? window.location.href : ""}
+                </div>
+                <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+                  <button
+                    onClick={() => {
+                      if (typeof navigator !== "undefined") {
+                        navigator.clipboard.writeText(window.location.href);
+                        setCopiedLink(true);
+                        setTimeout(() => setCopiedLink(false), 2000);
+                      }
+                    }}
                     style={{
-                      padding: "12px 16px",
-                      background: "rgba(255,255,255,0.06)",
-                      border: "1px solid rgba(255,255,255,0.1)",
+                      flex: 1,
+                      padding: "12px",
+                      background: copiedLink ? "#22c55e" : t.accent,
+                      color: "#ffffff",
+                      border: "none",
                       borderRadius: "12px",
-                      color: "rgba(255,255,255,0.8)",
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      textDecoration: "none",
+                      fontFamily: "inherit",
+                      fontSize: "14px",
+                      fontWeight: 700,
+                      cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
-                      whiteSpace: "nowrap",
+                      justifyContent: "center",
+                      gap: "6px",
+                      transition: "all 0.15s ease-in-out",
                     }}
                   >
-                    {translate("qr")}
-                  </a>
-                )}
-              </div>
-              {qrDataUrl && (
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-                  <Image
-                    src={qrDataUrl}
-                    alt={translate("eventQrCode")}
-                    width={160}
-                    height={160}
-                    unoptimized
-                    style={{ borderRadius: "12px" }}
-                  />
+                    {copiedLink ? <Check size={16} /> : null}
+                    {copiedLink ? translate("copied") : translate("copyLink")}
+                  </button>
+                  {qrDataUrl && (
+                    <a
+                      href={qrDataUrl}
+                      download="event-qr.png"
+                      style={{
+                        padding: "12px 16px",
+                        background: "rgba(255,255,255,0.06)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "12px",
+                        color: "rgba(255,255,255,0.8)",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        textDecoration: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {translate("qr")}
+                    </a>
+                  )}
                 </div>
-              )}
-            </>
-          )}
-
-          {!channelConfig.email && !channelConfig.sms ? (
-            <p>{translate("messagingNotConfiguredServerShareEvent")}</p>
-          ) : (
-            <InvitationComposer
-              eventId={eventId}
-              channelConfig={channelConfig}
-              theme={{
-                ...t,
-                inputBg: "rgba(255,255,255,0.06)",
-                inputBorder: "rgba(255,255,255,0.16)",
-              }}
-            />
-          )}
+                {qrDataUrl && (
+                  <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+                    <Image
+                      src={qrDataUrl}
+                      alt={translate("eventQrCode")}
+                      width={160}
+                      height={160}
+                      unoptimized
+                      style={{ borderRadius: "12px" }}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </Dialog>
       )}
 

@@ -25,6 +25,7 @@ vi.mock("@/lib/db", () => ({
       findUnique: mockRsvpFindUnique,
       count: mockRsvpCount,
       update: mockRsvpUpdate,
+      updateMany: vi.fn(),
     },
     plusOneGuest: { deleteMany: vi.fn(), createMany: vi.fn() },
     rSVPAnswer: { upsert: vi.fn() },
@@ -69,6 +70,7 @@ function rsvpRow(overrides: Record<string, unknown> = {}) {
     guestName: "Ada",
     status: "MAYBE",
     approved: true,
+    responded: true,
     event: { slug: "party", capacity: 2, rsvpDeadline: null },
     ...overrides,
   };
