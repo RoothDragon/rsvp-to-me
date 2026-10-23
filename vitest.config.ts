@@ -5,7 +5,14 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    exclude: ["**/node_modules/**", "tests/components/**", "tests/integration/**", "tests/e2e/**"],
+    exclude: [
+      "**/node_modules/**",
+      // Agent worktrees (other checkouts of this repo) live under .claude/.
+      "**/.claude/**",
+      "tests/components/**",
+      "tests/integration/**",
+      "tests/e2e/**",
+    ],
     setupFiles: ["./tests/unit-network-guard.ts", "./tests/setup.ts"],
     testTimeout: 30000,
     hookTimeout: 30000,

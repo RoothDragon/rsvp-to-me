@@ -74,6 +74,9 @@ type ExistingRsvp = {
   note: string | null;
   plusOneGuests: { name: string; order: number }[];
   answers: { rsvpFieldId: string; value: string }[];
+  /** Whether the RSVP row has an email or phone; the contact itself stays server-side. */
+  hasContact: boolean;
+  responded: boolean;
 };
 
 export function RsvpFlow({
@@ -104,6 +107,11 @@ export function RsvpFlow({
 
   const t = theme;
   const isEdit = !!existingRsvp;
+  // An invited guest answers for the first time through their edit link. Pin
+  // that at mount: the post-submit refresh marks the RSVP responded, which must
+  // not flip the done screen to "updated".
+  const [firstResponse] = useState(isEdit && !organizerOverride && !existingRsvp?.responded);
+  const showUpdateCopy = isEdit && !firstResponse;
 
   const [step, setStep] = useState(1);
   const [status, setStatus] = useState<RsvpResponseStatus>(
@@ -135,6 +143,10 @@ export function RsvpFlow({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const { runWithCaptcha } = useCaptcha();
+
+  // Edit links reach guests through the contact on file (invitation or
+  // confirmation), so only a contactless RSVP needs the copy-link fallback.
+  const contactOnFile = existingRsvp ? existingRsvp.hasContact : !!(email.trim() || phone.trim());
 
   const hasQuestionnaire = status !== "NO" && event.rsvpFields.length > 0;
   const maxStep = hasQuestionnaire ? 2 : 1;
@@ -347,7 +359,7 @@ export function RsvpFlow({
         >
           <div style={{ fontSize: "52px", marginBottom: "16px" }}>{RSVP_STATUS_EMOJIS[status]}</div>
           <h2 style={{ fontSize: "22px", fontWeight: 800, marginBottom: "8px" }}>
-            {isEdit && !justCreated
+            {showUpdateCopy && !justCreated
               ? translate("rsvpUpdated")
               : status === "GOING"
                 ? translate("re")
@@ -362,7 +374,19 @@ export function RsvpFlow({
                 ? translate("hopeCanMake")
                 : translate("sorryCanTMake")}
           </p>
-          {!email.trim() && !phone.trim() && savedEditToken && (
+          {contactOnFile && !organizerOverride && (
+            <p
+              style={{
+                fontSize: "13px",
+                color: t.textSecondary,
+                margin: "0 0 24px",
+                lineHeight: 1.5,
+              }}
+            >
+              {translate("editLinkOnFile")}
+            </p>
+          )}
+          {!contactOnFile && savedEditToken && (
             <div
               style={{
                 background: t.inputBg,
@@ -382,7 +406,7 @@ export function RsvpFlow({
                   marginBottom: "8px",
                 }}
               >
-                {translate("saveEditLink")}
+                {translate(organizerOverride ? "guestEditLink" : "saveEditLink")}
               </div>
               <p
                 style={{
@@ -392,7 +416,7 @@ export function RsvpFlow({
                   lineHeight: 1.5,
                 }}
               >
-                {translate("sinceDidnTAddEmailOr")}
+                {translate(organizerOverride ? "guestHasNoContact" : "sinceDidnTAddEmailOr")}
               </p>
               <div style={{ display: "flex", gap: "8px" }}>
                 <input
@@ -655,7 +679,7 @@ export function RsvpFlow({
                 marginBottom: "4px",
               }}
             >
-              {isEdit ? translate("updateRsvp") : translate("rsvp")}
+              {showUpdateCopy ? translate("updateRsvp") : translate("rsvp")}
             </div>
             <h1 style={{ fontSize: "22px", fontWeight: 800, margin: "0 0 4px", lineHeight: 1.2 }}>
               {event.title}
@@ -834,7 +858,7 @@ export function RsvpFlow({
               ? translate("saving")
               : step < maxStep
                 ? translate("continue")
-                : isEdit
+                : showUpdateCopy
                   ? translate("updateRsvp")
                   : translate("confirmRsvp")}
           </button>
@@ -963,7 +987,11 @@ export function RsvpFlow({
           disabled={requiredUnanswered.length > 0 || isPending}
           style={{ ...S.primaryBtn, opacity: requiredUnanswered.length > 0 || isPending ? 0.5 : 1 }}
         >
-          {isPending ? translate("saving") : isEdit ? translate("updateRsvp") : translate("submit")}
+          {isPending
+            ? translate("saving")
+            : showUpdateCopy
+              ? translate("updateRsvp")
+              : translate("submit")}
         </button>
       </div>
     </div>

@@ -34,7 +34,12 @@ export function Dialog({
     const previousFocus = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    panelRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    // Content can name its own starting field; dialog children mount first.
+    const panel = panelRef.current;
+    (
+      panel?.querySelector<HTMLElement>("[data-autofocus]") ??
+      panel?.querySelector<HTMLElement>(FOCUSABLE)
+    )?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {

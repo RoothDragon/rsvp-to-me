@@ -211,6 +211,8 @@ describe("RsvpFlow — confirmation heading race (create → RSC refresh)", () =
           note: null,
           plusOneGuests: [],
           answers: [],
+          hasContact: false,
+          responded: true,
         }}
       />
     );
@@ -230,6 +232,8 @@ describe("RsvpFlow — edit mode", () => {
     note: null,
     plusOneGuests: [],
     answers: [],
+    hasContact: true,
+    responded: true,
   };
 
   it("renders an editable prefilled guest name", () => {

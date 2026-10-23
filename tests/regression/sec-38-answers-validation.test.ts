@@ -42,6 +42,7 @@ vi.mock("@/lib/db", () => ({
       findUnique: mockRsvpFindUnique,
       findFirst: mockRsvpFindFirst,
       update: mockRsvpUpdate,
+      updateMany: vi.fn(),
       count: vi.fn(),
     },
     rSVPAnswer: { createMany: mockAnswerCreateMany, upsert: mockAnswerUpsert },
@@ -130,6 +131,7 @@ describe("SEC-38: answer keys scoped to the event's own questions", () => {
       eventId: "evt-1",
       guestName: "Alice",
       status: "GOING",
+      responded: true,
       event: {
         slug: "party",
         capacity: null,

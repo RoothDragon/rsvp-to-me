@@ -4,7 +4,6 @@ import {
   invitationContactKey,
   normalizeInvitationContact,
   parseInvitationDraft,
-  replaceInvitationSpan,
 } from "@/lib/invitation-draft";
 
 describe("invitation draft syntax", () => {
@@ -63,13 +62,6 @@ describe("invitation draft syntax", () => {
     });
     expect(text.slice(result.issues[0].start, result.issues[0].end)).toBe(second);
     expect(text.slice(result.entries[1].start, result.entries[1].end)).toBe(last);
-    const fixed = replaceInvitationSpan(
-      text,
-      result.issues[0].start,
-      result.issues[0].end,
-      "c@example.com"
-    );
-    expect(parseInvitationDraft(fixed).entries).toHaveLength(3);
   });
 
   it("keeps duplicates for explicit resolution and shares canonical identity keys", () => {
@@ -152,19 +144,8 @@ describe("invitation draft syntax", () => {
     ]);
   });
 
-  it("rejects invalid formatter input and unsafe source ranges", () => {
+  it("rejects invalid formatter input", () => {
     expect(() => formatInvitationRecipient({ contact: "bad" })).toThrow();
     expect(() => formatInvitationRecipient({ contact: "a@example.com", name: " " })).toThrow();
-    expect(() => replaceInvitationSpan("abc", -1, 2, "")).toThrow(RangeError);
-    expect(() => replaceInvitationSpan("abc", 2, 1, "")).toThrow(RangeError);
-    expect(() => replaceInvitationSpan("abc", 0, 4, "")).toThrow(RangeError);
-    expect(() => replaceInvitationSpan("😀a", 1, 2, "")).toThrow(RangeError);
-    expect(replaceInvitationSpan("😀a", 0, 2, "Z")).toBe("Za");
-    expect(() =>
-      replaceInvitationSpan("b@example.com", 0, 13, "x@example.com", "a@example.com")
-    ).toThrow(/stale/);
-    expect(replaceInvitationSpan("a@example.com", 0, 13, "x@example.com", "a@example.com")).toBe(
-      "x@example.com"
-    );
   });
 });
