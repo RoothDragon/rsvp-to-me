@@ -126,7 +126,9 @@ function InvitationFlow({
       : !last
         ? ""
         : "tooMany" in last
-          ? t("tooMany", { count: last.tooMany, room: last.room })
+          ? last.room === 0
+            ? t("full")
+            : t("tooMany", { count: last.tooMany, room: last.room })
           : [
               t("added", { count: last.added }),
               last.skipped ? t("skipped", { count: last.skipped }) : "",

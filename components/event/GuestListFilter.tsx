@@ -451,6 +451,12 @@ export function GuestListFilter({
           setInvitationMessage(translate("resendConflict"));
           return;
         }
+        // A reload can leave this card unanswered while the guest's record has a
+        // reply, so point to the reviewed flow that can resend to them on purpose.
+        if (current.disposition === "responded") {
+          setInvitationMessage(translate("resendResponded"));
+          return;
+        }
         if (
           current.disposition !== "invited" ||
           (guest.guestName !== undefined && current.guestName !== guest.guestName)

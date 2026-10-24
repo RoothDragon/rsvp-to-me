@@ -36,6 +36,9 @@ const {
 
 vi.mock("@/lib/db", () => ({
   db: {
+    async $transaction(action: (client: unknown) => Promise<unknown>) {
+      return action(this);
+    },
     event: { findUnique: mockEventFindUnique },
     rSVP: {
       create: mockRsvpCreate,

@@ -108,6 +108,42 @@ describe("invitation draft rows", () => {
     expect(filled(over)).toHaveLength(150);
   });
 
+  it("refuses typing a 201st recipient but keeps the listed rows editable", () => {
+    const full = run({
+      type: "add",
+      at: null,
+      recipients: Array.from({ length: 200 }, (_, i) => ({
+        name: "",
+        contact: `a${i}@example.com`,
+      })),
+    });
+    const blank = full.rows.at(-1)!;
+    const refused = invitationDraftReducer(full, {
+      type: "edit",
+      id: blank.id,
+      field: "name",
+      value: "L",
+    });
+    expect(refused.rows).toBe(full.rows);
+    expect(refused.lastAdd).toEqual({ tooMany: 1, room: 0 });
+
+    const renamed = invitationDraftReducer(full, {
+      type: "edit",
+      id: full.rows[0].id,
+      field: "name",
+      value: "Ann",
+    });
+    expect(renamed.rows[0].name).toBe("Ann");
+    const removed = invitationDraftReducer(full, { type: "remove", id: full.rows[0].id });
+    const typed = invitationDraftReducer(removed, {
+      type: "edit",
+      id: removed.rows.at(-1)!.id,
+      field: "contact",
+      value: "z@example.com",
+    });
+    expect(filled(typed)).toHaveLength(200);
+  });
+
   it("undoes structural changes, and sent contacts never come back", () => {
     const added = run({
       type: "add",

@@ -40,6 +40,45 @@ describe("invitation paste parsing", () => {
     ]);
   });
 
+  it("pairs each name with the contact before it when the line starts with a contact", () => {
+    expect(rows("alice@example.com, Alice, bob@example.com, Bob")).toEqual([
+      { name: "Alice", contact: "alice@example.com" },
+      { name: "Bob", contact: "bob@example.com" },
+    ]);
+    expect(rows('a@example.com, "Smith, Alice", b@example.com, Jones, Bob')).toEqual([
+      { name: "Smith, Alice", contact: "a@example.com" },
+      { name: "Jones, Bob", contact: "b@example.com" },
+    ]);
+    expect(rows("555-0100, Dee, 555-0101, Eve")).toEqual([
+      { name: "Dee", contact: "555-0100" },
+      { name: "Eve", contact: "555-0101" },
+    ]);
+  });
+
+  it("keeps name-first lists, and names at either end, with their only contact", () => {
+    expect(rows('"Smith, Alice", a@example.com, Jones, Bob, b@example.com')).toEqual([
+      { name: "Smith, Alice", contact: "a@example.com" },
+      { name: "Jones, Bob", contact: "b@example.com" },
+    ]);
+    expect(rows("Alice, a@example.com, b@example.com, Bob")).toEqual([
+      { name: "Alice", contact: "a@example.com" },
+      { name: "Bob", contact: "b@example.com" },
+    ]);
+  });
+
+  it("leaves a name between two contacts as its own row instead of guessing whose it is", () => {
+    expect(rows("a@example.com, Alice, b@example.com")).toEqual([
+      { name: "", contact: "a@example.com" },
+      { name: "Alice", contact: "" },
+      { name: "", contact: "b@example.com" },
+    ]);
+    expect(rows("Alice, a@example.com, Bob, b@example.com, Carol")).toEqual([
+      { name: "Alice", contact: "a@example.com" },
+      { name: "Bob", contact: "" },
+      { name: "Carol", contact: "b@example.com" },
+    ]);
+  });
+
   it("ends a recipient right after its contact when no separator comes before the next", () => {
     expect(rows("Alice <a@example.com> Bob <b@example.com>")).toEqual([
       { name: "Alice", contact: "a@example.com" },

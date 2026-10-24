@@ -159,6 +159,34 @@ const HEADERS = {
   phone: /phone|mobile|cell|^tel/,
 };
 
+// Words that make up name and contact column labels in common contact exports,
+// in the app's languages. A first row is only guessed to be a header when one of
+// its cells consists of these words; a guest's name or a mistyped contact is not.
+const HEADER_WORDS = new Set(
+  [
+    // English
+    "name names full display first given middle additional last family surname guest invitee",
+    "email address phone mobile cell tel telephone number contact home work business primary",
+    "other label value type",
+    // German
+    "vorname nachname familienname gast adresse telefon telefonnummer mobil mobiltelefon",
+    "handy kontakt",
+    // Spanish
+    "nombre nombres apellido apellidos invitado invitada correo electrónico electronico",
+    "dirección direccion teléfono telefono número numero de móvil movil celular contacto",
+    // Dutch
+    "naam voornaam achternaam emailadres adres telefoon telefoonnummer mobiel",
+  ].flatMap((line) => line.split(" "))
+);
+
+function isHeaderLabel(cell: string): boolean {
+  const words = cell
+    .toLowerCase()
+    .replace(/(^|[^\p{L}])e[ -]?mail/gu, "$1email")
+    .match(/\p{L}+/gu);
+  return !!words && words.every((word) => HEADER_WORDS.has(word));
+}
+
 /**
  * A starting mapping for the host to confirm or change: header names first,
  * then the cell values themselves. Import still requires an explicit mapping.
@@ -169,10 +197,12 @@ export function suggestInvitationSpreadsheetMapping(
   const width = invitationSpreadsheetWidth(rows);
   const columns = Array.from({ length: width }, (_, column) => column);
   const first = rows[0] ?? [];
+  // Any other first row stays a recipient (flagged if invalid) until the host
+  // says it holds column names.
   const hasHeader =
     rows.length > 1 &&
     !first.some((cell) => contactKind(cell)) &&
-    first.some((cell) => /\p{L}/u.test(cell)) &&
+    first.some(isHeaderLabel) &&
     rows.slice(1).some((row) => row.some((cell) => contactKind(cell)));
   const data = hasHeader ? rows.slice(1) : rows;
   const header = hasHeader ? first.map((cell) => cell.trim().toLowerCase()) : [];

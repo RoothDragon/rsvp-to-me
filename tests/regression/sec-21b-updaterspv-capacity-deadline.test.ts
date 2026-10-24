@@ -21,6 +21,9 @@ const { mockRsvpFindUnique, mockRsvpCount, mockRsvpUpdate, mockWithLock } = vi.h
 
 vi.mock("@/lib/db", () => ({
   db: {
+    async $transaction(action: (client: unknown) => Promise<unknown>) {
+      return action(this);
+    },
     rSVP: {
       findUnique: mockRsvpFindUnique,
       count: mockRsvpCount,

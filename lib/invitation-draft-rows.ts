@@ -176,7 +176,18 @@ export function invitationDraftReducer(
   action: InvitationDraftAction
 ): InvitationDraftState {
   switch (action.type) {
-    case "edit":
+    case "edit": {
+      // Typing into a blank row adds a recipient, so it obeys the bulk-add cap.
+      const target = state.rows.find((row) => row.id === action.id);
+      const used = state.rows.filter((row) => !isBlankInvitationRow(row)).length;
+      if (
+        target &&
+        isBlankInvitationRow(target) &&
+        action.value.trim() &&
+        used >= MAX_INVITATION_RECIPIENTS
+      ) {
+        return { ...state, lastAdd: { tooMany: 1, room: 0 } };
+      }
       return withTrailingBlank({
         ...state,
         lastAdd: null,
@@ -184,6 +195,7 @@ export function invitationDraftReducer(
           row.id === action.id ? { ...row, [action.field]: action.value } : row
         ),
       });
+    }
     case "add":
       return add(state, action.at, action.recipients);
     case "remove":

@@ -9,6 +9,18 @@
 //   as an unexplained disabled checkbox.
 // The rows-first composer keys rows by stable id, HostBar owns the draft, and
 // rows explain disabled channels in place.
+//
+// Follow-up (de78391d, QC of #755): only bulk adds checked the 200-recipient
+// batch cap, so typing into the trailing blank row after a 200-person import
+// offered a 201-person review the server always rejects. Typing a new recipient
+// into a full batch is now refused with the same status-line feedback.
+//
+// Follow-up (de78391d, QC of #755): imports moved names onto the wrong guest or
+// dropped one. Any letter-bearing first row was guessed to be a header, so an
+// invalid first guest vanished; and in `a@x, Alice, b@y, Bob` each name was
+// attached to the following contact. Headers are now guessed only from known
+// column labels, contact-first lists pair each name with its own contact, and a
+// name that could belong to either neighbour stays its own row to fix.
 import "@testing-library/jest-dom/vitest";
 import { describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -69,5 +81,47 @@ describe("invitation composer QA regressions", () => {
     await user.type(contact, "+1 555 000 0099");
     await user.tab();
     expect(contact).toHaveAccessibleDescription("Text invitations are turned off on this site.");
+  });
+
+  it("keeps each pasted name with its own contact in a contact-first list", () => {
+    openInvite();
+    fireEvent.paste(screen.getByRole("textbox", { name: "Name for recipient 1" }), {
+      clipboardData: { getData: () => "alice@example.com, Alice, bob@example.com, Bob" },
+    });
+    expect(screen.getByRole("textbox", { name: "Name for recipient 1" })).toHaveValue("Alice");
+    expect(screen.getByRole("textbox", { name: "Email or phone for recipient 1" })).toHaveValue(
+      "alice@example.com"
+    );
+    expect(screen.getByRole("textbox", { name: "Name for recipient 2" })).toHaveValue("Bob");
+  });
+
+  it("imports an invalid first spreadsheet row as a recipient to fix", () => {
+    openInvite();
+    fireEvent.paste(screen.getByRole("textbox", { name: "Name for recipient 1" }), {
+      clipboardData: { getData: () => "Alice\tnot-an-address\nBob\tbob@example.com" },
+    });
+    expect(screen.getByLabelText("First row has column names")).not.toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: "Add 2 recipients" }));
+    expect(screen.getByRole("textbox", { name: "Name for recipient 1" })).toHaveValue("Alice");
+    expect(screen.getByRole("textbox", { name: "Email or phone for recipient 1" })).toHaveValue(
+      "not-an-address"
+    );
+    expect(screen.getByRole("textbox", { name: "Name for recipient 2" })).toHaveValue("Bob");
+  });
+
+  it("refuses typing a 201st recipient after a full import", () => {
+    openInvite();
+    const list = Array.from({ length: 200 }, (_, i) => `guest${i}@example.com`).join("\n");
+    fireEvent.paste(screen.getByRole("textbox", { name: "Name for recipient 1" }), {
+      clipboardData: { getData: () => list },
+    });
+    const next = screen.getByRole("textbox", { name: "Name for recipient 201" });
+    fireEvent.change(next, { target: { value: "Late Guest" } });
+
+    expect(next).toHaveValue("");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "This batch already has 200 people. Review and send it, then add more."
+    );
+    expect(screen.getByRole("button", { name: "Review 200 invitations" })).toBeEnabled();
   });
 });

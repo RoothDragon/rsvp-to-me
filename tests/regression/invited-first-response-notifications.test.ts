@@ -7,6 +7,12 @@
 // as an update. The first response is now claimed atomically
 // (`responded: false` → `true`) so it notifies exactly once, using the contact
 // already on the RSVP.
+//
+// Follow-up (de78391d, QC of #755): the claim committed on its own, before the
+// RSVP update and its plus-one/answer/check-in writes. A failed save left the
+// RSVP INVITED but claimed, so the retry succeeded silently as an "update". The
+// claim now commits in one transaction with the save, and notifications start
+// only after it commits.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -20,6 +26,7 @@ const {
   mockAlertEmail,
   mockAlertSms,
   mockActivity,
+  claim,
 } = vi.hoisted(() => ({
   mockRsvpFindUnique: vi.fn(),
   mockRsvpUpdate: vi.fn(),
@@ -30,10 +37,21 @@ const {
   mockAlertEmail: vi.fn(),
   mockAlertSms: vi.fn(),
   mockActivity: vi.fn(),
+  // The committed `responded` flag for stateful cases; a failed transaction restores it.
+  claim: { responded: false },
 }));
 
 vi.mock("@/lib/db", () => ({
   db: {
+    async $transaction(action: (client: unknown) => Promise<unknown>) {
+      const committed = claim.responded;
+      try {
+        return await action(this);
+      } catch (error) {
+        claim.responded = committed;
+        throw error;
+      }
+    },
     rSVP: {
       findUnique: mockRsvpFindUnique,
       update: mockRsvpUpdate,
@@ -115,6 +133,7 @@ async function flushAsync() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  claim.responded = false;
   mockRsvpUpdate.mockResolvedValue({});
   mockRsvpUpdateMany.mockResolvedValue({ count: 1 });
   mockRsvpGroupBy.mockResolvedValue([{ status: "GOING", _count: { _all: 4 } }]);
@@ -208,6 +227,33 @@ describe("an invited guest's first response through the edit link", () => {
       "event-1",
       "rsvp_update",
       "Alice QA updated to maybe",
+      "Alice QA"
+    );
+  });
+
+  it("leaves the first response unclaimed when the save fails, so the retry notifies", async () => {
+    mockRsvpFindUnique.mockImplementation(async () => invitedRsvp({ responded: claim.responded }));
+    mockRsvpUpdateMany.mockImplementation(async () => {
+      if (claim.responded) return { count: 0 };
+      claim.responded = true;
+      return { count: 1 };
+    });
+    mockRsvpUpdate.mockRejectedValueOnce(new Error("connection reset"));
+
+    await expect(updateRSVP("tok-1", ANSWER)).rejects.toThrow("connection reset");
+    expect(claim.responded).toBe(false);
+    await flushAsync();
+    expect(mockConfirmEmail).not.toHaveBeenCalled();
+    expect(mockAlertEmail).not.toHaveBeenCalled();
+    expect(mockActivity).not.toHaveBeenCalled();
+
+    expect((await updateRSVP("tok-1", ANSWER)).success).toBe(true);
+    expect(mockConfirmEmail).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(mockAlertEmail).toHaveBeenCalledTimes(2));
+    expect(mockActivity).toHaveBeenCalledWith(
+      "event-1",
+      "rsvp_new",
+      "Alice QA is going +1\nYay",
       "Alice QA"
     );
   });

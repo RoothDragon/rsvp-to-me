@@ -54,8 +54,18 @@ Unanswered invitees also have a **Resend invite** action. Before sending, Resend
 guest's current record the same way **Invite guests** reviews a list: it sends only if the guest
 still has not replied and still has the name shown on their card. If the guest replied, their
 event name changed, or another record started sharing their contact after you opened the list,
-nothing is sent. The list asks you to refresh and review the guest again instead. The same check
-runs again at the moment of sending, so a change that lands in between is also caught.
+nothing is sent, and the list tells you what to do instead:
+
+- **Already responded** — the guest's record has a reply, even if their card still shows them as
+  unanswered. Refreshing won't change that. To send the invitation again anyway, choose
+  **Invite → Invite people**, add their contact, and tick them under **Already responded** when
+  you review.
+- **Changed since the list loaded** — for example, their name changed. Refresh the guest list and
+  try again.
+- **More than one guest matches** — resolve the conflicting guest records first.
+
+The same check runs again at the moment of sending, so a change that lands in between is also
+caught.
 
 Resending retains the guest's current event RSVP name and the normal delivery validation,
 CAPTCHA check, rate limits, and activity history. The destination must match the RSVP's current

@@ -10,6 +10,13 @@
 // longer matches the card, and otherwise sends through sendGuestInvitations with
 // the reviewed disposition and name, which the server re-checks under the
 // invitation lock. Any review failure is shown instead of a success message.
+//
+// Follow-up (de78391d, QC of #758): every refusal said to refresh the list and
+// review, but an INVITED RSVP already marked as answered, or an unlinked
+// invitation whose contact has a responded RSVP, stays an unanswered card after a
+// reload, so Resend refused again with the same advice. A "responded" refusal now
+// directs the host to Invite → Invite people, where already-responded guests can
+// be ticked deliberately; refresh advice is kept for renamed cards.
 
 // @vitest-environment jsdom
 import type { ComponentProps } from "react";
@@ -40,7 +47,9 @@ vi.mock("next/image", () => ({ default: () => null }));
 
 import { GuestListFilter } from "@/components/event/GuestListFilter";
 
-const CHANGED = /replied or changed since the list loaded/;
+const CHANGED = /changed since the list loaded\. Refresh the guest list/;
+const RESPONDED =
+  /already responded\. .*open Invite → Invite people, add this contact, and tick it under “Already responded”/;
 const RESENT = /Invite resent/;
 
 const invitedCard = {
@@ -69,8 +78,15 @@ function preview(overrides: Record<string, unknown> = {}) {
   };
 }
 
+const unlinkedInvitation = {
+  id: "invitation-1",
+  sentTo: "ada@example.com",
+  channel: "EMAIL" as const,
+  sentAt: "2026-10-01T18:00:00.000Z",
+};
+
 function renderCard(card: ComponentProps<typeof GuestListFilter>["invited"][number] = invitedCard) {
-  render(
+  const view = render(
     <GuestListFilter
       going={[]}
       maybe={[]}
@@ -85,25 +101,43 @@ function renderCard(card: ComponentProps<typeof GuestListFilter>["invited"][numb
     />
   );
   fireEvent.click(screen.getByRole("button", { name: "Resend invite" }));
+  return view;
 }
 
 describe("guest-list Resend cannot silently send a stale invitation", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it.each([
-    ["the guest replied after the list loaded", { disposition: "responded" }],
-    ["the guest's event name changed", { guestName: "Ada Renamed" }],
-  ])("does not send when %s", async (_case, changed) => {
+    ["the guest replied after the list loaded", { disposition: "responded" }, RESPONDED],
+    ["the guest's event name changed", { guestName: "Ada Renamed" }, CHANGED],
+  ])("does not send when %s", async (_case, changed, message) => {
     mocks.previewGuestInvitations.mockResolvedValue(preview(changed));
     renderCard();
 
-    expect(await screen.findByText(CHANGED)).toBeTruthy();
+    expect(await screen.findByText(message)).toBeTruthy();
     expect(mocks.previewGuestInvitations).toHaveBeenCalledWith("event-1", [
       { contact: "ada@example.com" },
     ]);
     expect(mocks.sendGuestInvitations).not.toHaveBeenCalled();
     expect(mocks.inviteGuest).not.toHaveBeenCalled();
     expect(screen.queryByText(RESENT)).toBeNull();
+  });
+
+  it.each([
+    ["an invited RSVP already marked as answered", invitedCard],
+    ["an unlinked invitation whose contact has a responded RSVP", unlinkedInvitation],
+  ])("gives %s a recovery path that survives a reload", async (_case, card) => {
+    mocks.previewGuestInvitations.mockResolvedValue(preview({ disposition: "responded" }));
+
+    // A reload renders the same unanswered card again.
+    for (let load = 0; load < 2; load++) {
+      const view = renderCard(card);
+      expect(await screen.findByText(RESPONDED)).toBeTruthy();
+      expect(screen.queryByText(/Refresh the guest list/)).toBeNull();
+      view.unmount();
+    }
+    expect(mocks.sendGuestInvitations).not.toHaveBeenCalled();
+    expect(mocks.inviteGuest).not.toHaveBeenCalled();
   });
 
   it("does not send when the contact now matches conflicting guest records", async () => {
@@ -150,12 +184,7 @@ describe("guest-list Resend cannot silently send a stale invitation", () => {
       success: true,
       results: [{ contact: "ada@example.com", status: "sent", guestName: "Guest" }],
     });
-    renderCard({
-      id: "invitation-1",
-      sentTo: "ada@example.com",
-      channel: "EMAIL",
-      sentAt: "2026-10-01T18:00:00.000Z",
-    });
+    renderCard(unlinkedInvitation);
 
     expect(await screen.findByText("Invite resent to ada@example.com.")).toBeTruthy();
     expect(mocks.sendGuestInvitations).toHaveBeenCalledWith(
