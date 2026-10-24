@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { Prisma } from "@/app/generated/prisma/client";
 import { truncateAll, db } from "../helpers/db";
 
 // Mock only Next.js runtime APIs that don't exist in Node.js
@@ -22,12 +23,14 @@ vi.mock("@/lib/email", () => ({
   sendApprovalEmail: vi.fn().mockResolvedValue(undefined),
   sendBlastEmail: vi.fn().mockResolvedValue(undefined),
   sendEventInviteEmail: vi.fn().mockResolvedValue(undefined),
+  sendHostRsvpAlertEmail: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/sms", () => ({
   sendRsvpConfirmationSms: vi.fn().mockResolvedValue(undefined),
   sendApprovalSms: vi.fn().mockResolvedValue(undefined),
   sendSmsBlast: vi.fn().mockResolvedValue(undefined),
   sendEventInviteSms: vi.fn().mockResolvedValue(undefined),
+  sendHostRsvpAlertSms: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/activity", () => ({
   logActivity: vi.fn().mockResolvedValue(undefined),
@@ -40,7 +43,9 @@ vi.mock("@/lib/redis", () => ({
   isRedisEnabled: vi.fn().mockReturnValue(false),
 }));
 
-import { addRSVP } from "@/app/actions/event";
+import { addRSVP, updateRSVP } from "@/app/actions/event";
+import { logActivity } from "@/lib/activity";
+import { sendRsvpConfirmationEmail } from "@/lib/email";
 
 async function seedHost() {
   return db.user.create({
@@ -211,5 +216,92 @@ describe("addRSVP — real DB integration", () => {
     expect(token).not.toMatch(/^c[a-z0-9]{20,}$/);
     // The token returned to the caller matches the stored one.
     expect(result.editToken).toBe(token);
+  });
+});
+
+type TransactionAction = (tx: Prisma.TransactionClient) => Promise<unknown>;
+
+/** Runs the next transaction's writes for real, then fails it before commit. */
+function failNextTransactionBeforeCommit() {
+  const run = db.$transaction.bind(db) as unknown as (
+    action: TransactionAction
+  ) => Promise<unknown>;
+  return vi.spyOn(db, "$transaction").mockImplementationOnce(((action: TransactionAction) =>
+    run(async (tx) => {
+      await action(tx);
+      throw new Error("injected failure before commit");
+    })) as unknown as typeof db.$transaction);
+}
+
+describe("updateRSVP — an invited guest's first response, real DB", () => {
+  const ANSWER = {
+    status: "GOING" as const,
+    plusOneCount: 1,
+    plusOneGuestNames: ["Bob"],
+    guestName: "Alice",
+  };
+
+  async function seedInvited() {
+    const host = await seedHost();
+    const event = await seedEvent(host.id);
+    const rsvp = await db.rSVP.create({
+      data: {
+        eventId: event.id,
+        guestName: "Alice",
+        guestEmail: "alice@example.com",
+        status: "INVITED",
+        responded: false,
+      },
+    });
+    return { event, rsvp };
+  }
+
+  const firstResponseLogs = () =>
+    vi.mocked(logActivity).mock.calls.filter(([, type]) => type === "rsvp_new");
+
+  beforeEach(() => {
+    vi.mocked(sendRsvpConfirmationEmail).mockClear();
+    vi.mocked(logActivity).mockClear();
+  });
+
+  it("rolls the claim back with a failed save, so the retry still notifies", async () => {
+    const { rsvp } = await seedInvited();
+
+    const failing = failNextTransactionBeforeCommit();
+    await expect(updateRSVP(rsvp.editToken, ANSWER)).rejects.toThrow("injected failure");
+    failing.mockRestore();
+
+    expect(await db.rSVP.findUnique({ where: { id: rsvp.id } })).toMatchObject({
+      status: "INVITED",
+      responded: false,
+      plusOneCount: 0,
+    });
+    expect(await db.plusOneGuest.count({ where: { rsvpId: rsvp.id } })).toBe(0);
+    expect(sendRsvpConfirmationEmail).not.toHaveBeenCalled();
+    expect(firstResponseLogs()).toHaveLength(0);
+
+    expect(await updateRSVP(rsvp.editToken, ANSWER)).toMatchObject({ success: true });
+    expect(await db.rSVP.findUnique({ where: { id: rsvp.id } })).toMatchObject({
+      status: "GOING",
+      responded: true,
+      plusOneCount: 1,
+    });
+    expect(await db.plusOneGuest.count({ where: { rsvpId: rsvp.id } })).toBe(1);
+    expect(sendRsvpConfirmationEmail).toHaveBeenCalledTimes(1);
+    expect(firstResponseLogs()).toHaveLength(1);
+  });
+
+  it("notifies once when two first answers are submitted at the same time", async () => {
+    const { rsvp } = await seedInvited();
+
+    const results = await Promise.all([
+      updateRSVP(rsvp.editToken, ANSWER),
+      updateRSVP(rsvp.editToken, { ...ANSWER, status: "MAYBE" as const }),
+    ]);
+
+    expect(results.map((result) => result.success)).toEqual([true, true]);
+    expect((await db.rSVP.findUnique({ where: { id: rsvp.id } }))?.responded).toBe(true);
+    expect(sendRsvpConfirmationEmail).toHaveBeenCalledTimes(1);
+    expect(firstResponseLogs()).toHaveLength(1);
   });
 });

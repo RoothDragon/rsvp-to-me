@@ -34,7 +34,7 @@ co-hosts so a compromised or abusive organizer account cannot be used to spam gu
 
 ## New-RSVP Alerts
 
-Get notified the moment someone responds. When a guest RSVPs to your event — including an invited guest answering their invitation for the first time — you and any co-hosts receive a **"New RSVP" alert** with the guest's name, their status (Going / Maybe / Can't Go), any plus-ones and note, and your event's running Going / Maybe / Can't-Go totals. Later changes to an existing RSVP don't send another alert.
+Get notified the moment someone responds. When a guest RSVPs to your event — including an invited guest answering their invitation for the first time — you and any co-hosts receive a **"New RSVP" alert** with the guest's name, their status (Going / Maybe / Can't Go), any plus-ones and note, and your event's running Going / Maybe / Can't-Go totals. Later changes to an existing RSVP don't send another alert. If an invited guest's first answer can't be saved, nothing is sent and the answer stays unanswered, so the alert and their confirmation go out when they try again.
 
 Control these under **Settings → RSVP Options → Notification Settings**:
 

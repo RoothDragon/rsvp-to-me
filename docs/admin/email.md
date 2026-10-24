@@ -62,8 +62,11 @@ correct the event RSVP name later.
 
 An invited guest's first answer through their invitation link is treated like a new public RSVP:
 the confirmation goes to the email or phone already on that RSVP and hosts get the alert. The
-first answer is claimed atomically, so repeated or concurrent submits notify once; later edits
-send nothing.
+first answer is claimed in the same database transaction that saves the RSVP and its plus-ones,
+answers, and check-in change, so repeated or concurrent submits notify once, and a save that
+fails leaves the answer unclaimed for the guest's retry. Notifications start only after that
+transaction commits and remain best-effort: a failed send does not undo the RSVP or cause a
+second first-response notification. Later edits send nothing.
 
 Hosts add invitation recipients as editable rows, by typing, pasting lists (`Name <email>`,
 `Name email`, `Name, email`, separated by new lines, commas, or semicolons), or importing CSV/TSV

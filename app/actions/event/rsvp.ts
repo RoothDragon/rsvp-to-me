@@ -462,60 +462,67 @@ export async function updateRSVP(
     }
 
     // An invited guest's first answer arrives here, through their edit link.
-    // Claim it atomically so concurrent submits notify only once.
-    const firstResponse =
-      !rsvp.responded &&
-      (
-        await db.rSVP.updateMany({
-          where: { id: rsvp.id, responded: false },
-          data: { responded: true },
-        })
-      ).count === 1;
+    // The claim commits with the rest of the save: a failed save leaves the
+    // answer unclaimed for a retry, and concurrent submits still notify once.
+    const firstResponse = await db.$transaction(async (tx) => {
+      const claimed =
+        !rsvp.responded &&
+        (
+          await tx.rSVP.updateMany({
+            where: { id: rsvp.id, responded: false },
+            data: { responded: true },
+          })
+        ).count === 1;
 
-    await db.rSVP.update({
-      where: { editToken },
-      data: {
-        status: data.status,
-        ...(data.guestName !== undefined && { guestName: data.guestName }),
-        plusOneCount: data.plusOneCount,
-        responded: true,
-        ...(data.note !== undefined && { note: data.note || null }),
-      },
+      await tx.rSVP.update({
+        where: { editToken },
+        data: {
+          status: data.status,
+          ...(data.guestName !== undefined && { guestName: data.guestName }),
+          plusOneCount: data.plusOneCount,
+          responded: true,
+          ...(data.note !== undefined && { note: data.note || null }),
+        },
+      });
+
+      if (data.plusOneGuestNames !== undefined) {
+        await tx.plusOneGuest.deleteMany({ where: { rsvpId: rsvp.id } });
+        if (data.plusOneGuestNames.length > 0) {
+          await tx.plusOneGuest.createMany({
+            data: data.plusOneGuestNames
+              .filter((n) => n.trim())
+              .map((name, order) => ({ rsvpId: rsvp.id, name: name.trim(), order })),
+          });
+        }
+      }
+
+      if (data.answers && Object.keys(data.answers).length > 0) {
+        // SEC-38: same event-scoped field-id check as addRSVP.
+        const validFieldIds = new Set(rsvp.event.rsvpFields.map((f) => f.id));
+        for (const [rsvpFieldId, value] of Object.entries(data.answers)) {
+          if (!validFieldIds.has(rsvpFieldId) || typeof value !== "string" || !value.trim()) {
+            continue;
+          }
+          await tx.rSVPAnswer.upsert({
+            where: { rsvpId_rsvpFieldId: { rsvpId: rsvp.id, rsvpFieldId } },
+            create: { rsvpId: rsvp.id, rsvpFieldId, value },
+            update: { value },
+          });
+        }
+      }
+
+      if (data.status === "NO" && rsvp.checkIn) {
+        await tx.checkIn.deleteMany({ where: { rsvpId: rsvp.id, eventId: rsvp.eventId } });
+      }
+      return claimed;
     });
     return { atCapacity: false as const, firstResponse };
   });
 
   if (locked.atCapacity) return { success: false, error: await eventActionMessage("atCapacity") };
 
-  if (data.plusOneGuestNames !== undefined) {
-    await db.plusOneGuest.deleteMany({ where: { rsvpId: rsvp.id } });
-    if (data.plusOneGuestNames.length > 0) {
-      await db.plusOneGuest.createMany({
-        data: data.plusOneGuestNames
-          .filter((n) => n.trim())
-          .map((name, order) => ({ rsvpId: rsvp.id, name: name.trim(), order })),
-      });
-    }
-  }
-
-  if (data.answers && Object.keys(data.answers).length > 0) {
-    // SEC-38: same event-scoped field-id check as addRSVP.
-    const validFieldIds = new Set(rsvp.event.rsvpFields.map((f) => f.id));
-    await Promise.all(
-      Object.entries(data.answers)
-        .filter(([k, v]) => validFieldIds.has(k) && typeof v === "string" && v.trim())
-        .map(([rsvpFieldId, value]) =>
-          db.rSVPAnswer.upsert({
-            where: { rsvpId_rsvpFieldId: { rsvpId: rsvp.id, rsvpFieldId } },
-            create: { rsvpId: rsvp.id, rsvpFieldId, value: value as string },
-            update: { value: value as string },
-          })
-        )
-    );
-  }
-
+  // Activity and notifications start only after the save has committed.
   if (data.status === "NO" && rsvp.checkIn) {
-    await db.checkIn.deleteMany({ where: { rsvpId: rsvp.id, eventId: rsvp.eventId } });
     logActivity(
       rsvp.eventId,
       "check_in_undo",
