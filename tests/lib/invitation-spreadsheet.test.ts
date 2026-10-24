@@ -73,6 +73,29 @@ describe("invitation spreadsheet mapping suggestions", () => {
     });
   });
 
+  it("keeps an invalid first row as a recipient instead of guessing it is a header", () => {
+    const { rows } = grid("Alice,not-an-address\nBob,bob@example.com");
+    const mapping = suggestInvitationSpreadsheetMapping(rows);
+    expect(mapping).toEqual({ hasHeader: false, nameColumns: [0], contactColumns: [1] });
+    expect(importInvitationSpreadsheet(rows, mapping).recipients).toEqual([
+      { name: "Alice", contact: "not-an-address" },
+      { name: "Bob", contact: "bob@example.com" },
+    ]);
+    const unlabeled = grid("Who,Where\nJane,jane@example.com").rows;
+    expect(suggestInvitationSpreadsheetMapping(unlabeled).hasHeader).toBe(false);
+  });
+
+  it.each([
+    "Guest,Email",
+    "Name,Contact",
+    "Vorname,Nachname,E-Mail-Adresse",
+    "Nombre,Correo electrónico",
+    "Naam,E-mailadres",
+  ])("recognizes %s as column names", (header) => {
+    const rows = grid(`${header}\nJane,jane@example.com`).rows;
+    expect(suggestInvitationSpreadsheetMapping(rows).hasHeader).toBe(true);
+  });
+
   it("sniffs columns from values when there is no header", () => {
     const rows = grid("jane@example.com,Jane Doe,2026-10-23\nsam@example.com,Sam,2026-10-24").rows;
     expect(suggestInvitationSpreadsheetMapping(rows)).toEqual({

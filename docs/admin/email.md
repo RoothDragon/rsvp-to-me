@@ -71,7 +71,12 @@ second first-response notification. Later edits send nothing.
 Hosts add invitation recipients as editable rows, by typing, pasting lists (`Name <email>`,
 `Name email`, `Name, email`, separated by new lines, commas, or semicolons), or importing CSV/TSV
 files and pasted spreadsheet cells. Imports suggest name and contact columns from headers and
-values; the host confirms the mapping. Paste parsing and imports run in the browser only; the
+values; the host confirms the mapping. The first row is suggested as a header only when one of
+its cells is made of known name or contact label words (English, German, Spanish, or Dutch);
+otherwise it is imported as a recipient, flagged if invalid, rather than silently dropped. A
+pasted list that starts with a contact and ends with a name (`a@x, Alice, b@y, Bob`) pairs each
+name with the contact before it; a name between two contacts that could belong to either becomes
+its own row to fix. Paste parsing and imports run in the browser only; the
 server still validates every reviewed recipient. The composer applies the server's
 200-recipient batch cap to pastes, imports, and typing a new row alike, so it never offers a
 review the server would reject for size.

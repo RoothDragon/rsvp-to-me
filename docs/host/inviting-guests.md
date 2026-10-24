@@ -49,6 +49,10 @@ Jordan Park, jordan@example.com
 Taylor Kim taylor@example.com; Casey Ng <casey@example.com>; +1 555 123 4567
 ```
 
+A list can also put the contact first, as in `alex@example.com, Alex, sam@example.com, Sam`. If a
+name sits between two contacts and could belong to either, it gets a row of its own; add its
+contact there, or remove it.
+
 Each person becomes a row you can edit. Anything that needs attention is flagged on its own row:
 a missing or mistyped contact, a contact already in the list under another name, or a phone
 number when text invitations are turned off on your site. Fix or remove those rows before
@@ -70,7 +74,10 @@ automatically.
 
 RSVP to Me suggests which columns to use — first, middle, and last name columns are combined,
 and if a row's email is empty its mobile number can be used instead — and shows the first people
-it will add. Check the suggestion, change any column, then choose **Add**. Imported rows join your
+it will add. **First row has column names** is ticked only when the first row has recognizable
+labels such as Name, Email, or Phone (or Vorname, Correo, Telefoon); otherwise that row is
+imported as a person, so tick it yourself if it holds your own column names. Check the
+suggestion, change any column, then choose **Add**. Imported rows join your
 list; rows with a missing or invalid contact are added and flagged so you can fix them. Up to 200
 people can be invited at a time, and files must be under 2 MB.
 

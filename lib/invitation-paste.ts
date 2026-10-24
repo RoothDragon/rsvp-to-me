@@ -135,6 +135,64 @@ function separatorAfter(line: string, mask: boolean[], from: number, to: number)
   return -1;
 }
 
+/**
+ * The comma-separated pieces of a line when each is a bare contact or a bare
+ * name; null when any piece mixes the two or holds something else.
+ */
+function barePieces(line: string): PastedRecipient[] | null {
+  const pieces: PastedRecipient[] = [];
+  for (const piece of splitOutside(line, ",")) {
+    const spans = contactSpans(piece, quoteMask(piece));
+    if (spans.length === 1) {
+      const [span] = spans;
+      if (cleanName(piece.slice(0, span.start) + " " + piece.slice(span.end))) return null;
+      pieces.push({ name: "", contact: span.contact });
+    } else if (spans.length === 0 && !looksLikeContact(piece.trim())) {
+      pieces.push({ name: cleanName(piece), contact: "" });
+    } else {
+      return null;
+    }
+  }
+  return pieces;
+}
+
+/**
+ * Bare names and contacts on one line, such as `a@x, Alice, b@y, Bob`. A line
+ * that starts with a contact and ends with a name lists each name after its
+ * contact. Otherwise a name at either end belongs to the contact beside it,
+ * and a name between two contacts, which could belong to either, becomes its
+ * own row for the host to fix. Name-first lines return null for the general rule.
+ */
+function parseBarePieces(line: string): PastedRecipient[] | null {
+  const pieces = barePieces(line);
+  if (!pieces?.some((piece) => !piece.contact)) return null;
+  // Adjacent names are one name, as in `Smith, Alice`.
+  const groups: PastedRecipient[] = [];
+  for (const piece of pieces) {
+    const last = groups.at(-1);
+    if (!piece.contact && last && !last.contact) last.name += `, ${piece.name}`;
+    else groups.push({ ...piece });
+  }
+  const leadsWithName = !groups[0].contact;
+  const endsWithName = !groups.at(-1)!.contact;
+  if (leadsWithName && !endsWithName) return null;
+  const contactFirst = !leadsWithName && endsWithName;
+  const rows: PastedRecipient[] = [];
+  groups.forEach((group, index) => {
+    if (group.contact) {
+      rows.push({
+        name: index === 1 && leadsWithName ? groups[0].name : "",
+        contact: group.contact,
+      });
+    } else if (index > 0 && (contactFirst || index === groups.length - 1)) {
+      rows.at(-1)!.name = group.name;
+    } else if (index > 0) {
+      rows.push(group);
+    }
+  });
+  return rows;
+}
+
 /** One `;`-separated part of a line; commas may separate a name from its contact or recipients. */
 function parseSegment(line: string): PastedRecipient[] {
   const mask = quoteMask(line);
@@ -160,6 +218,8 @@ function parseSegment(line: string): PastedRecipient[] {
       .filter((row) => row.name || row.contact);
   }
   if (spans.length === 1) return [recipient(0, line.length, spans[0])];
+  const bare = parseBarePieces(line);
+  if (bare) return bare;
   // Several contacts: each recipient ends at the first separator after its
   // contact, or right after the contact when none comes before the next one
   // (a name otherwise precedes its contact).
