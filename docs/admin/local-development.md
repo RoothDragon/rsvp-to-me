@@ -133,6 +133,13 @@ runtime matchers and TypeScript declarations attach to Vitest. Keep hoisted
 mock calls at module scope and await asynchronous assertions; Vitest 5 enforces
 both and clears mock call history before each test by default.
 
+CI and both preflight modes also type-check the standalone email worker
+(`worker/worker.ts`) with the same `npx tsc --ignoreConfig …` command, because
+the root `tsconfig.json` excludes `worker/` and the `wrangler deploy --dry-run`
+bundle check does not type-check. Keep the command in `scripts/preflight.sh`
+identical to the **Type-check email worker** step in `.github/workflows/ci.yml`;
+a regression test compares them.
+
 CI and both preflight modes run `npm run test:coverage` for the unit suite,
 enforcing the existing thresholds in `vitest.config.ts`: 70% branches and 80%
 statements, functions, and lines. Coverage reports remain in `coverage/`;

@@ -115,6 +115,11 @@ step "Dry-run email worker bundle"
   npx wrangler deploy --dry-run --outdir /tmp/rsvp-worker-dist
 )
 
+# The root tsconfig excludes worker/, and the bundle dry run does not type-check,
+# so run CI's standalone worker check here too (same command as ci.yml).
+step "Type-check email worker"
+npx tsc --ignoreConfig --noEmit --strict --skipLibCheck --target ES2022 --module ESNext --moduleResolution bundler --lib ES2022,DOM worker/worker.ts
+
 step "Report build-tool dependency advisories (non-blocking)"
 root_audit_status=0
 worker_audit_status=0
