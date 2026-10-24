@@ -9,6 +9,11 @@
 //   as an unexplained disabled checkbox.
 // The rows-first composer keys rows by stable id, HostBar owns the draft, and
 // rows explain disabled channels in place.
+//
+// Follow-up (de78391d, QC of #755): only bulk adds checked the 200-recipient
+// batch cap, so typing into the trailing blank row after a 200-person import
+// offered a 201-person review the server always rejects. Typing a new recipient
+// into a full batch is now refused with the same status-line feedback.
 import "@testing-library/jest-dom/vitest";
 import { describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -69,5 +74,21 @@ describe("invitation composer QA regressions", () => {
     await user.type(contact, "+1 555 000 0099");
     await user.tab();
     expect(contact).toHaveAccessibleDescription("Text invitations are turned off on this site.");
+  });
+
+  it("refuses typing a 201st recipient after a full import", () => {
+    openInvite();
+    const list = Array.from({ length: 200 }, (_, i) => `guest${i}@example.com`).join("\n");
+    fireEvent.paste(screen.getByRole("textbox", { name: "Name for recipient 1" }), {
+      clipboardData: { getData: () => list },
+    });
+    const next = screen.getByRole("textbox", { name: "Name for recipient 201" });
+    fireEvent.change(next, { target: { value: "Late Guest" } });
+
+    expect(next).toHaveValue("");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "This batch already has 200 people. Review and send it, then add more."
+    );
+    expect(screen.getByRole("button", { name: "Review 200 invitations" })).toBeEnabled();
   });
 });

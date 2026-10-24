@@ -93,7 +93,7 @@ to the guests who already received theirs.
 Your list is kept while the event page stays open, so you can close the Invite window and come
 back to it. Reloading the page or leaving the event clears it.
 
-> **Anti-abuse:** You can invite up to **200 recipients per request** (paste more than that and it'll ask you to split into batches), and there's an hourly cap on how many invite batches you can send per event. When your administrator enables bot protection, each host, co-host, or guest invitation submission also receives an interaction-only security check. These controls prevent spam and runaway texting costs if an account is misused.
+> **Anti-abuse:** You can invite up to **200 recipients per request** (paste more than that and it'll ask you to split into batches; once your list has 200 people, typing another is refused until you send or remove some), and there's an hourly cap on how many invite batches you can send per event. When your administrator enables bot protection, each host, co-host, or guest invitation submission also receives an interaction-only security check. These controls prevent spam and runaway texting costs if an account is misused.
 
 ### Invitation History
 

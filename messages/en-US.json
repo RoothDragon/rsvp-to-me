@@ -994,6 +994,7 @@
         "added": "{count, plural, one {Added # recipient.} other {Added # recipients.}}",
         "skipped": "{count, plural, one {Skipped # already in the list.} other {Skipped # already in the list.}}",
         "tooMany": "That's {count} people, but only {room} more fit in this batch of 200. Split the list.",
+        "full": "This batch already has 200 people. Review and send it, then add more.",
         "tooLong": "That's too much text to paste at once. Split the list.",
         "undo": "Undo",
         "clear": "Clear list",

@@ -994,6 +994,7 @@
         "added": "{count, plural, one {Se añadió # destinatario.} other {Se añadieron # destinatarios.}}",
         "skipped": "{count, plural, one {Se omitió # que ya estaba en la lista.} other {Se omitieron # que ya estaban en la lista.}}",
         "tooMany": "Son {count} personas, pero en este lote de 200 solo caben {room} más. Divide la lista.",
+        "full": "Este lote ya tiene 200 personas. Revísalo y envíalo, y luego añade más.",
         "tooLong": "Es demasiado texto para pegarlo de una vez. Divide la lista.",
         "undo": "Deshacer",
         "clear": "Vaciar lista",

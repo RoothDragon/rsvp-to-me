@@ -72,7 +72,9 @@ Hosts add invitation recipients as editable rows, by typing, pasting lists (`Nam
 `Name email`, `Name, email`, separated by new lines, commas, or semicolons), or importing CSV/TSV
 files and pasted spreadsheet cells. Imports suggest name and contact columns from headers and
 values; the host confirms the mapping. Paste parsing and imports run in the browser only; the
-server still validates every reviewed recipient.
+server still validates every reviewed recipient. The composer applies the server's
+200-recipient batch cap to pastes, imports, and typing a new row alike, so it never offers a
+review the server would reject for size.
 
 The invitation composer can preview an individual recipient's email using the same rendering
 path as the event email preview. It uses the current event theme, saved template overrides and
