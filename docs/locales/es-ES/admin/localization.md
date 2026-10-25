@@ -10,7 +10,7 @@ order: 45
 
 ## Elegir tu idioma {#choosing-your-language}
 
-Usa el botón de idioma (un icono 文A con el código del idioma actual, por ejemplo ES) situado en la esquina superior derecha de la cabecera, justo al lado de tu perfil, en cualquier página, incluidas las pantallas de inicio de sesión y de acceso a eventos. También puedes cambiar esta preferencia en tu perfil. Al elegir un idioma se conservan la URL actual y los valores introducidos en los formularios.
+Usa el botón de idioma (un icono 文A con el código del idioma actual, por ejemplo ES) situado en la esquina superior derecha de la cabecera, justo al lado de tu perfil, en cualquier página, incluidas las pantallas de inicio de sesión y de acceso a eventos. Al elegir un idioma se conservan la URL actual y los valores introducidos en los formularios.
 
 Si has iniciado sesión, la preferencia se guarda en tu cuenta y en este navegador. Si no has iniciado sesión, solo se guarda en la cookie de este navegador. La preferencia del navegador dura un año. La preferencia guardada en tu cuenta tiene prioridad sobre la del navegador. Tras iniciar sesión correctamente, una cuenta sin preferencia guardada adopta el idioma elegido explícitamente en el navegador. Solicitar un enlace de inicio de sesión o enviar una respuesta de asistencia como invitado nunca cambia el idioma de otra cuenta.
 

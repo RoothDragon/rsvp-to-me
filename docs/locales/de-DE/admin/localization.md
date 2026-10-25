@@ -10,7 +10,7 @@ order: 45
 
 ## Deine Sprache wählen {#choosing-your-language}
 
-Nutze auf jeder Seite die Sprachschaltfläche (ein 文A-Symbol mit dem aktuellen Sprachkürzel, z. B. DE) oben rechts direkt neben deinem Profil, auch beim Anmelden und auf den Zugangsseiten für Veranstaltungen. Dieselbe Einstellung findest du in deinem Profil. Deine Auswahl erhält die aktuelle URL und bereits ausgefüllte Formularfelder.
+Nutze auf jeder Seite die Sprachschaltfläche (ein 文A-Symbol mit dem aktuellen Sprachkürzel, z. B. DE) oben rechts direkt neben deinem Profil, auch beim Anmelden und auf den Zugangsseiten für Veranstaltungen. Deine Auswahl erhält die aktuelle URL und bereits ausgefüllte Formularfelder.
 
 Wenn du angemeldet bist, wird die Einstellung in deinem Konto und diesem Browser gespeichert. Wenn du abgemeldet bist, wird sie nur im Cookie dieses Browsers gespeichert. Die Browserpräferenz gilt ein Jahr. Eine gespeicherte Kontopräferenz hat Vorrang vor der Browserpräferenz. Nach erfolgreichem Anmelden übernimmt ein Konto ohne gespeicherte Präferenz die ausdrücklich gewählte Browsersprache. Das Anfordern eines Anmeldelinks oder das Absenden einer Gastzusage ändert niemals die Sprache eines anderen Kontos.
 

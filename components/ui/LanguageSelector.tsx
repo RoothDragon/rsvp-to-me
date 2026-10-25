@@ -8,10 +8,8 @@ import { setPreferredLocale } from "@/app/actions/locale";
 import { APP_SHELL } from "@/lib/theme";
 
 export default function LanguageSelector({
-  settings = false,
   onLocaleChange,
 }: {
-  settings?: boolean;
   onLocaleChange?: (locale: Locale) => Promise<void>;
 }) {
   const locale = resolveLocale(useLocale());
@@ -80,7 +78,6 @@ export default function LanguageSelector({
   );
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      {settings && <span>{t("label")}</span>}
       {
         <>
           <button

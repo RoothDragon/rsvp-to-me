@@ -311,7 +311,7 @@ test.describe("Personal language selection", () => {
     });
   }
 
-  test("profile circle saves account and browser preference and survives a new browser context", async ({
+  test("header language button saves account and browser preference and survives a new browser context", async ({
     page,
     browser,
   }) => {
@@ -323,14 +323,10 @@ test.describe("Personal language selection", () => {
       await page.goto(`/auth/verify?token=${fixture.rawToken}`);
       await expect(page).toHaveURL(/\/dashboard(?:[?#]|$)/);
       await page.goto("/profile");
-      const settingsButton = page
-        .getByRole("button", { name: choiceName })
-        .filter({ visible: true })
-        .nth(1);
-      await expect(settingsButton).toBeVisible();
-      await settingsButton.click();
-      await page.getByRole("menuitemradio", { name: "Nederlands" }).click();
-      await expect(page.locator("html")).toHaveAttribute("lang", "nl-NL");
+      await expect(
+        page.getByRole("button", { name: choiceName }).filter({ visible: true })
+      ).toHaveCount(1);
+      await chooseLanguage(page, "nl-NL");
       await expect.poll(() => savedLocale(pool, fixture.userId)).toBe("nl-NL");
       await expect
         .poll(
