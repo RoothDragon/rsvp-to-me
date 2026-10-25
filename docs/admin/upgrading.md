@@ -36,7 +36,7 @@ RSVP to Me is distributed as a pre-built Docker image. When a new version is rel
 
 The production `docker-compose.release.yml` uses `latest` by default. For a
 controlled rollout, pin its app image to a version or digest before pulling.
-Container tags omit the leading `v`: Git release `v1.4.1` publishes image `1.4.1`.
+Container tags omit the leading `v`: Git release `v1.5.0` publishes image `1.5.0`.
 
 Commands below use `-f docker-compose.release.yml` to avoid the repository's
 native-development override. Run them in your existing deployment directory,
@@ -76,6 +76,41 @@ Merging this change does not create or modify that setting. See [GitHub's policy
 guide](https://docs.github.com/en/actions/how-tos/administer/control-workflow-execution).
 
 ---
+
+## v1.5.0 release
+
+This release adds Dutch, German, and Spanish UI and notifications, the reviewed
+"Invite people" flow, guest-facing RSVP display settings, and a nonce-based
+script Content Security Policy. It adds no environment variables, and Node 22
+remains the supported runtime.
+
+- **Migrations:** two migrations run automatically at startup and only add
+  columns. See [Guest RSVP Display Preferences](#guest-rsvp-display-preferences-667)
+  and [User Language Preference](#user-language-preference-732).
+- **Caching:** page HTML and React Server Component responses now carry a
+  per-request script nonce. A reverse proxy or CDN must not cache or replay
+  them, or the cached page blocks its own scripts. Static files under `/_next/`
+  and `public/` may still be cached. Check this before upgrading.
+- **Sessions:** iron-session 9 reads cookies written by version 8, and version
+  8 reads version 9 cookies, so existing sign-ins survive the upgrade and a
+  rollback.
+- **Image contents:** the container image installs production dependencies
+  only. `tsx` is a runtime dependency because startup seeding needs it. Source
+  installations must reinstall with `npm ci` from the lockfile.
+- **Fonts:** the Roboto theme font is bundled locally. Other Google font
+  families still download at build time.
+- **Email worker:** the optional worker's Wrangler toolchain is updated. The
+  worker API and the admin copy-and-paste template are unchanged; this release
+  does not deploy the worker.
+- **Host-visible changes:** a 文A language button replaces the header flag;
+  hosts invite through the review step; events created after the upgrade
+  default to a collapsed "Can't make it" list with no guest-facing count; and an
+  unnamed invitee is greeted as "Guest" in the inviting host's language.
+
+During release QC, also check language switching on signed-out and signed-in
+pages, inviting through the review step with real operator-controlled email
+and SMS destinations, guest list Resend, the display settings on a new event,
+and that the browser console shows no Content Security Policy violations.
 
 ## v1.4.1 maintenance release
 
@@ -140,22 +175,23 @@ prerelease checkbox prevents stable aliases from being written. Automatic
 
 | GitHub release | Prerelease checkbox | Published image tags     |
 | -------------- | ------------------- | ------------------------ |
-| `v1.4.1`       | Off                 | `1.4.1`, `1.4`, `latest` |
-| `v1.4.1-rc.1`  | On or off           | `1.4.1-rc.1`             |
-| `v1.4.1`       | On                  | `1.4.1` only             |
+| `v1.5.0`       | Off                 | `1.5.0`, `1.5`, `latest` |
+| `v1.5.0-rc.1`  | On or off           | `1.5.0-rc.1`             |
+| `v1.5.0`       | On                  | `1.5.0` only             |
 
-Prefer a suffixed candidate tag such as `v1.4.1-rc.1` so its exact image tag is
+Prefer a suffixed candidate tag such as `v1.5.0-rc.1` so its exact image tag is
 also separate from the final release. Stable publication still moves `latest`
 even for an older stable version, so do not publish an old stable tag as a test.
 The guard applies only to releases whose tagged commit includes it; rerunning
 an older release does not adopt new workflow code.
 
-Before the owner publishes `v1.4.1`:
+Before the owner publishes `v1.5.0`:
 
 - [ ] Merge the release-preparation PR and record the resulting `main` SHA.
 - [ ] Require CI, CodeQL, and both native Container QC jobs to pass on that SHA.
-- [ ] Review the prepared notes in `.github/release-notes/v1.4.1.md` and confirm
-      the comparison with `v1.4.0` contains no new migration or required variable.
+- [ ] Review the prepared notes in `.github/release-notes/v1.5.0.md` and confirm
+      the comparison with `v1.4.1` adds only the two migrations listed above and
+      no required variable.
 - [ ] Record the current deployment image digest and back up the database,
       uploads, and `.env`; verify a restore on a disposable database.
 - [ ] Run staging QC on a candidate built from the reviewed SHA: sign-in, event
@@ -280,16 +316,16 @@ Follow [Method 1](#method-1-pg_dump-via-the-postgres-container-recommended) and 
 
 ### Step 3: Pull the New Image
 
-For v1.4.1, edit only the app image in the Compose file used by your deployment:
+For v1.5.0, edit only the app image in the Compose file used by your deployment:
 
 ```yaml
 services:
   app:
-    image: ghcr.io/joe-cole1/rsvp-to-me:1.4.1
+    image: ghcr.io/joe-cole1/rsvp-to-me:1.5.0
 ```
 
 Wait for the published release's image build to succeed, then pull only the app.
-Do not combine this maintenance rollout with PostgreSQL or Redis upgrades:
+Do not combine this rollout with PostgreSQL or Redis upgrades:
 
 ```bash
 docker compose -f docker-compose.release.yml pull app
@@ -307,7 +343,7 @@ docker compose -f docker-compose.release.yml logs --tail=100 app
 ```
 
 The app will briefly be unavailable while startup checks, migrations, and
-seeding finish. v1.4.1 adds no migrations; startup still checks migration state.
+seeding finish. v1.5.0 applies two migrations that only add columns.
 Measure readiness with the health check instead of assuming a fixed downtime.
 
 The image automatically repairs ownership in the mapped `./data/uploads` and
@@ -344,6 +380,14 @@ matching section heading. Hosts and co-hosts always retain complete lists and
 exact counts. RSVP records, capacity, notifications, and exports are unaffected.
 The existing guest-list visibility controls continue to enforce access; the new
 preferences only change presentation. No environment variable is required.
+
+### User Language Preference (#732)
+
+The `20261019000000_user_preferred_locale` migration adds a nullable
+`User.preferredLocale` column with no default or backfill. Existing users keep
+their browser choice, or English, until they pick a language. Default system
+emails and text messages then use each recipient's saved language; unknown
+recipients receive English. No environment variable is required.
 
 ### If a Migration Fails
 
@@ -394,15 +438,19 @@ Go to your event page and test functionality:
 
 If you experience issues, you can roll back your application to the previous working version.
 
-### Routine v1.4.1 rollback: change only the app image
+### Routine v1.5.0 rollback: change only the app image
 
-v1.4.1 adds no schema changes relative to v1.4.0. Restore the previously recorded
-image digest (preferred) in the existing Compose file, or use this version tag:
+v1.5.0's two migrations only add nullable or defaulted columns. v1.4.1 keeps
+working with them, and its startup reports no pending migrations, so a routine
+rollback does not restore the database. While rolled back, saved language
+preferences and guest display settings are ignored and the UI is English; they
+return when you upgrade again. Restore the previously recorded image digest
+(preferred) in the existing Compose file, or use this version tag:
 
 ```yaml
 services:
   app:
-    image: ghcr.io/joe-cole1/rsvp-to-me:1.4.0
+    image: ghcr.io/joe-cole1/rsvp-to-me:1.4.1
 ```
 
 Then recreate only the app and repeat the health and core-flow checks:

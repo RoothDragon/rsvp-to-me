@@ -12,13 +12,23 @@ Quick answers to the things hosts run into most.
 
 ---
 
-## What changes for hosts in v1.4.1?
+## What changes for hosts in v1.5.0?
 
-This maintenance update preserves event links, RSVP edit links, and existing text
-limits. Your administrator may briefly restart the site during the upgrade.
-Afterward, check an existing event and its guest list. If sign-in, an RSVP, an
-upload, or an email/text fails, share the time and affected event with your
-administrator. You do not need to recreate events or resend invitations.
+- **Languages:** use the 文A button beside your profile to switch between
+  English, Deutsch, Español, and Nederlands. Emails and texts follow each
+  person's saved language.
+- **Inviting:** **Invite → Invite people** lets you type, paste a list, or
+  import a spreadsheet, then review everyone before sending. People who
+  already responded are only invited again if you tick them.
+- **Guest-facing RSVP display:** under **Settings → Display Options** you can
+  choose how much of each response list guests see. Existing events look the
+  same; new events start with the "Can't make it" list collapsed and its count
+  hidden.
+
+Event links, RSVP edit links, and sign-ins keep working, and you don't need to
+recreate events or resend invitations. Your administrator may briefly restart
+the site during the upgrade. If sign-in, an RSVP, an upload, or an email/text
+fails afterwards, share the time and affected event with your administrator.
 
 ## A guest lost their RSVP edit link
 
