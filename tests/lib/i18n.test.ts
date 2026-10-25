@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 vi.mock("@/lib/session-user", () => ({ getSessionUser: vi.fn() }));
-import { isLocale, resolveLocale, locales } from "@/i18n/config";
+import { isLocale, resolveLocale, locales, menuLocales } from "@/i18n/config";
 import { loadMessages } from "@/i18n/catalogs";
 import { getTranslator } from "@/i18n/server";
 describe("localization catalog", () => {
@@ -10,6 +10,15 @@ describe("localization catalog", () => {
     expect(isLocale("es-ES")).toBe(true);
     for (const v of ["nl", "toString", "__proto__", null, {}, 1]) expect(isLocale(v)).toBe(false);
     expect(resolveLocale("unknown")).toBe("en-US");
+  });
+  it("orders the language menu with English first, then native names alphabetically", () => {
+    const [first, ...rest] = menuLocales;
+    const names = rest.map((locale) => locales[locale].nativeName);
+    expect(first).toBe("en-US");
+    expect([...menuLocales].sort()).toEqual(Object.keys(locales).sort());
+    expect(names).toEqual(
+      [...names].sort(new Intl.Collator("en", { sensitivity: "base" }).compare)
+    );
   });
   it("loads native language metadata and Dutch messages", async () => {
     expect(locales["nl-NL"].nativeName).toBe("Nederlands");

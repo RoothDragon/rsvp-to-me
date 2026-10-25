@@ -2,7 +2,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { locales, resolveLocale, type Locale } from "@/i18n/config";
+import { locales, menuLocales, resolveLocale, type Locale } from "@/i18n/config";
 import { setPreferredLocale } from "@/app/actions/locale";
 
 export default function LanguageSelector({
@@ -20,6 +20,14 @@ export default function LanguageSelector({
   const [pending, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // A long list scrolls inside the menu; keep the current language in view when it opens.
+    const current = menu.current?.querySelector<HTMLElement>('[aria-checked="true"]');
+    if (open && menu.current && current)
+      menu.current.scrollTop =
+        current.offsetTop - (menu.current.clientHeight - current.offsetHeight) / 2;
+  }, [open]);
   useEffect(() => {
     function outside(e: MouseEvent) {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
@@ -59,13 +67,13 @@ export default function LanguageSelector({
       }
     });
   }
-  const flag = (value: Locale) => (
+  const flag = (value: Locale, size = 36) => (
     <img
       src={locales[value].flag}
       alt=""
-      width={36}
-      height={36}
-      style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }}
+      width={size}
+      height={size}
+      style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover" }}
     />
   );
   return (
@@ -110,6 +118,7 @@ export default function LanguageSelector({
           </button>
           {open && (
             <div
+              ref={menu}
               role="menu"
               aria-label={t("label")}
               onKeyDown={(e) => {
@@ -132,6 +141,7 @@ export default function LanguageSelector({
                 minWidth: 210,
                 maxHeight: "60vh",
                 overflowY: "auto",
+                overscrollBehavior: "contain",
                 padding: 8,
                 borderRadius: 12,
                 background: "#15151f",
@@ -139,29 +149,30 @@ export default function LanguageSelector({
                 border: "1px solid #555",
               }}
             >
-              {Object.entries(locales).map(([value, meta]) => (
+              {menuLocales.map((value) => (
                 <button
                   key={value}
                   type="button"
                   role="menuitemradio"
                   aria-checked={locale === value}
                   lang={value}
-                  dir={meta.dir}
-                  onClick={() => choose(value as Locale)}
+                  dir={locales[value].dir}
+                  onClick={() => choose(value)}
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 10,
+                    gap: 8,
                     width: "100%",
-                    padding: 8,
+                    padding: "6px 8px",
+                    fontSize: 15,
                     background: "transparent",
                     color: "inherit",
                     border: 0,
                     cursor: "pointer",
                   }}
                 >
-                  {flag(value as Locale)}
-                  {meta.nativeName}
+                  {flag(value, 28)}
+                  {locales[value].nativeName}
                   {locale === value && <span aria-hidden="true">✓</span>}
                 </button>
               ))}
