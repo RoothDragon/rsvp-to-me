@@ -206,7 +206,12 @@
         "hostDisplayNameDenied": "Geen toegang: alleen de organisator kan de weergavenaam wijzigen",
         "alreadyDeleted": "Het evenement is al verwijderd",
         "ambiguousContact": "Deze contactgegevens horen bij meerdere aanmeldingen. Zoek in de gastenlijst.",
-        "itemsRemaining": "Nog maar {remaining} beschikbaar"
+        "itemsRemaining": "Nog maar {remaining} beschikbaar",
+        "invalidInvitationRecipients": "Controleer de namen en contactgegevens van de uitnodigingen voordat je ze verstuurt.",
+        "invitationConflict": "Meerdere gasten komen overeen met dit contact. Los de gastgegevens op voordat je verstuurt.",
+        "invitationReviewChanged": "Deze gast is gewijzigd sinds het voorbeeld. Controleer de uitnodiging opnieuw.",
+        "invitationChannelDisabled": "Dit kanaal voor uitnodigingen is uitgeschakeld.",
+        "invitationSendFailed": "De uitnodiging kon niet worden verstuurd. Controleer deze ontvanger en probeer het opnieuw."
       }
     },
     "Event": {
@@ -570,7 +575,8 @@
         "send": "Versturen",
         "invitationSentSuccessfully": "✓ De uitnodiging is succesvol verstuurd!",
         "failedSendInvitation": "Uitnodiging versturen is mislukt",
-        "securityCheckFailed": "Beveiligingscontrole mislukt"
+        "securityCheckFailed": "Beveiligingscontrole mislukt",
+        "nameOptional": "Naam (optioneel)"
       },
       "EventHero": {
         "eventTitle": "Titel van het evenement",
@@ -716,7 +722,8 @@
         "noGuestsPhoneNumbersFound": "Geen gasten met een telefoonnummer gevonden.",
         "inviteSent": "Uitnodiging verstuurd naar {destination}!",
         "emailSent": "E-mail verzonden naar {count, plural, one {# gast} other {# gasten}}.",
-        "smsSent": "Sms verzonden naar {count, plural, one {# gast} other {# gasten}}."
+        "smsSent": "Sms verzonden naar {count, plural, one {# gast} other {# gasten}}.",
+        "close": "Sluiten"
       },
       "GuestListFilter": {
         "all": "Iedereen",
@@ -776,7 +783,7 @@
         "unableResendInvite": "De uitnodiging opnieuw versturen is mislukt.",
         "unableAddWalk": "Deze gast toevoegen is mislukt.",
         "resendReviewChanged": "De gegevens van deze gast zijn gewijzigd sinds de lijst werd geladen. Vernieuw de gastenlijst en controleer die voordat je opnieuw verstuurt.",
-        "resendResponded": "Deze gast heeft al gereageerd. Wil je de uitnodiging toch opnieuw versturen, open dan Uitnodigen → Mensen uitnodigen, voeg dit contact toe en vink het bij het controleren aan onder “Already responded”.",
+        "resendResponded": "Deze gast heeft al gereageerd. Wil je de uitnodiging toch opnieuw versturen, open dan Uitnodigen → Mensen uitnodigen, voeg dit contact toe en vink het bij het controleren aan onder “Al gereageerd”.",
         "resendConflict": "Meerdere gasten komen overeen met dit contact. Los de gastgegevens op voordat je opnieuw verstuurt.",
         "inviteResent": "Uitnodiging opnieuw verstuurd naar {destination}.",
         "attendanceSummary": "{checkedParties} van {parties} gezelschappen · {checkedPeople} van {people} personen aangekomen",
@@ -929,6 +936,99 @@
         "openInvitation": "Open je uitnodiging voor meer informatie",
         "host": "Organisator",
         "hostLine": "Georganiseerd door {name}"
+      },
+      "InvitationComposer": {
+        "composer": "Mensen uitnodigen",
+        "steps": "Uitnodigingsstappen",
+        "stepAdd": "Ontvangers toevoegen",
+        "stepReview": "Controleren en versturen",
+        "help": "Typ een naam en een e-mailadres of mobiel nummer. Druk op Enter om de volgende persoon toe te voegen, of plak een hele lijst.",
+        "nameOptional": "Naam (optioneel)",
+        "contact": "E-mail of telefoon",
+        "nameLabel": "Naam van ontvanger {number}",
+        "contactLabel": "E-mail of telefoon van ontvanger {number}",
+        "remove": "Ontvanger {number} verwijderen",
+        "channelEmail": "E-mail",
+        "channelSms": "Sms",
+        "problems": {
+          "missingContact": "Voeg een e-mailadres of telefoonnummer toe.",
+          "invalidContact": "Controleer dit e-mailadres of telefoonnummer.",
+          "invalidName": "Gebruik een naam van 1–100 tekens zonder regeleinden.",
+          "duplicate": "Zelfde contact als ontvanger {number}. Verwijder een van beide.",
+          "emailDisabled": "Uitnodigingen per e-mail zijn uitgeschakeld op deze website.",
+          "smsDisabled": "Uitnodigingen per sms zijn uitgeschakeld op deze website."
+        },
+        "pasteList": "Lijst plakken",
+        "pasteListLabel": "Ontvangers, één per regel",
+        "pasteListHelp": "Plak uit een e-mail, een document of je contacten, bijv. {example}. Namen zijn optioneel; komma’s en puntkomma’s scheiden ook personen.",
+        "found": "{count, plural, =0 {Nog geen ontvangers gevonden} one {# ontvanger gevonden} other {# ontvangers gevonden}}",
+        "addFound": "{count, plural, one {# ontvanger toevoegen} other {# ontvangers toevoegen}}",
+        "cancel": "Annuleren",
+        "spreadsheet": "Spreadsheet importeren",
+        "spreadsheetHelp": "Kies een CSV-bestand dat je uit je contacten of een spreadsheet hebt geëxporteerd, of plak cellen die je daaruit hebt gekopieerd.",
+        "chooseFile": "CSV-bestand",
+        "removeFile": "Bestand verwijderen",
+        "pasteCells": "Of plak cellen uit een spreadsheet",
+        "fileTooLarge": "Dit bestand is groter dan 2 MB. Exporteer alleen de kolommen die je nodig hebt en probeer het opnieuw.",
+        "fileUnreadable": "Dit bestand kan niet worden gelezen. Sla het op als CSV (UTF-8) en probeer het opnieuw.",
+        "header": "Eerste rij bevat kolomnamen",
+        "nameFrom": "Naam uit",
+        "nameThen": "Aangevuld met",
+        "contactFrom": "E-mail of telefoon uit",
+        "contactFallback": "Indien leeg, gebruik",
+        "noColumn": "Geen",
+        "column": "Kolom {number}",
+        "columnSample": "{column} (bijv. {sample})",
+        "importPreview": "Eerste personen die worden toegevoegd",
+        "spreadsheetIssues": {
+          "textTooLong": "Dat is te veel tekst. Gebruik een bestand kleiner dan 2 MB.",
+          "tooManyRows": "Importeer maximaal 200 personen tegelijk. Splits de lijst en importeer die in delen.",
+          "tooManyColumns": "Gebruik maximaal 256 kolommen.",
+          "invalidQuote": "Een cel bevat een los aanhalingsteken (rij {row}). Corrigeer het en probeer het opnieuw.",
+          "unmatchedQuote": "Een aanhalingsteken wordt nergens gesloten (rij {row}). Corrigeer het en probeer het opnieuw.",
+          "invalidMapping": "Kies een kolom met e-mailadressen of telefoonnummers."
+        },
+        "recipientCount": "{count, plural, one {# ontvanger} other {# ontvangers}}",
+        "withoutNames": "{count, plural, one {# zonder naam} other {# zonder naam}}",
+        "needsAttention": "{count, plural, one {# vraagt aandacht} other {# vragen aandacht}}",
+        "unnamedHelp": "Mensen zonder naam worden begroet als “Gast”.",
+        "added": "{count, plural, one {# ontvanger toegevoegd.} other {# ontvangers toegevoegd.}}",
+        "skipped": "{count, plural, one {# overgeslagen die al in de lijst stond.} other {# overgeslagen die al in de lijst stonden.}}",
+        "tooMany": "Dat zijn {count} personen, maar deze ronde van 200 heeft nog maar plaats voor {room}. Splits de lijst.",
+        "full": "Deze ronde heeft al 200 personen. Controleer en verstuur deze eerst en voeg daarna meer toe.",
+        "tooLong": "Dat is te veel tekst om in één keer te plakken. Splits de lijst.",
+        "undo": "Ongedaan maken",
+        "clear": "Lijst wissen",
+        "review": "{count, plural, =0 {Uitnodigingen controleren} one {# uitnodiging controleren} other {# uitnodigingen controleren}}",
+        "fixFirst": "Corrigeer de gemarkeerde ontvangers om verder te gaan.",
+        "loading": "Laden…",
+        "back": "Ontvangers bewerken",
+        "groups": {
+          "new": "Klaar om uit te nodigen",
+          "invited": "Al uitgenodigd",
+          "responded": "Al gereageerd",
+          "conflict": "Versturen niet mogelijk"
+        },
+        "groupHelp": {
+          "invited": "Vink iedereen aan die je opnieuw wilt uitnodigen.",
+          "responded": "Deze gasten hebben al gereageerd. Vink ze aan om de uitnodiging toch opnieuw te versturen.",
+          "conflict": "Deze contacten botsen met bestaande gastgegevens. Controleer de gastenlijst."
+        },
+        "greeting": "Begroet als {name}",
+        "nameKept": "Behoudt de naam die al bij dit evenement staat.",
+        "preview": "Voorbeeld",
+        "hidePreview": "Voorbeeld verbergen",
+        "previewTitle": "Voorbeeld van de uitnodiging voor {name}",
+        "language": "Taal van het voorbeeld: {locale}",
+        "smsPreview": "Uitnodigingen per sms zijn niet gepersonaliseerd. Deze gast staat vermeld als {name}.",
+        "send": "{count, plural, =0 {Uitnodigingen} one {# uitnodiging} other {# uitnodigingen}} versturen",
+        "sending": "Bezig met verzenden…",
+        "sent": "Verstuurd",
+        "failed": "Mislukt",
+        "resultSent": "{count, plural, one {# uitnodiging verstuurd.} other {# uitnodigingen verstuurd.}}",
+        "resultFailed": "{count, plural, one {# mislukt en blijft in je lijst staan.} other {# mislukt en blijven in je lijst staan.}}",
+        "continue": "Terug naar ontvangers",
+        "unnamedGuest": "Gast"
       }
     },
     "Rsvp": {
