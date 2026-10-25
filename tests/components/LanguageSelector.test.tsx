@@ -8,10 +8,12 @@ import LanguageSelector from "@/components/ui/LanguageSelector";
 import GlobalHeader from "@/components/ui/GlobalHeader";
 describe("language selector", () => {
   beforeEach(() => vi.clearAllMocks());
-  it("renders native names and circular local flags and persists selection", async () => {
+  it("shows a language icon with the current code and persists a menu selection", async () => {
     render(<LanguageSelector />);
     const trigger = screen.getByRole("button", { name: "Choose language" });
-    expect(trigger.querySelector("img")).toHaveAttribute("src", "/flags/us.svg");
+    expect(trigger).toHaveTextContent("EN");
+    expect(trigger.querySelector("svg")).not.toBeNull();
+    expect(trigger.querySelector("img")).toBeNull();
     fireEvent.click(trigger);
     expect(screen.getByRole("menuitemradio", { name: "English (US)" })).toHaveAttribute(
       "aria-checked",
@@ -50,7 +52,7 @@ describe("language selector", () => {
     await waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
-  it("closes on outside pointer and exposes account setting selector", () => {
+  it("closes on outside pointer", () => {
     render(<LanguageSelector />);
     fireEvent.click(screen.getByRole("button", { name: "Choose language" }));
     fireEvent.mouseDown(document.body);
@@ -60,7 +62,7 @@ describe("language selector", () => {
     render(
       <>
         <input aria-label="Draft" defaultValue="" />
-        <LanguageSelector settings />
+        <LanguageSelector />
       </>
     );
     fireEvent.change(screen.getByRole("textbox", { name: "Draft" }), {
@@ -92,12 +94,11 @@ describe("language selector", () => {
       "nl-NL",
     ]);
   });
-  it("uses compact menu rows and keeps the full-size header flag", () => {
+  it("uses compact menu rows with circular local flags", () => {
     render(<LanguageSelector />);
-    const trigger = screen.getByRole("button", { name: "Choose language" });
-    expect(trigger.querySelector("img")).toHaveAttribute("width", "36");
-    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: "Choose language" }));
     const english = screen.getByRole("menuitemradio", { name: "English (US)" });
+    expect(english.querySelector("img")).toHaveAttribute("src", "/flags/us.svg");
     expect(english.querySelector("img")).toHaveAttribute("width", "28");
     expect(english).toHaveStyle({ padding: "6px 8px", fontSize: "15px" });
   });

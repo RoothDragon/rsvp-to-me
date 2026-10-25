@@ -2,6 +2,7 @@
 // Root cause (2026-10-19): every mounted language selector handled document Escape
 // even with its menu closed. Closed controls stole focus from inputs, and the
 // profile's second selector could steal focus from the selector whose menu closed.
+// The profile selector was later removed (459b19e2); two mounted instances stay covered.
 import "@testing-library/jest-dom/vitest";
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@/tests/components/render";
@@ -26,7 +27,7 @@ describe("language selector Escape focus ownership", () => {
     render(
       <>
         <LanguageSelector />
-        <LanguageSelector settings />
+        <LanguageSelector />
       </>
     );
     const triggers = screen.getAllByRole("button", { name: "Choose language" });

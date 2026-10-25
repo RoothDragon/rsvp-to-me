@@ -10,7 +10,7 @@ order: 45
 
 ## Choosing Your Language
 
-Use the circular flag button in the upper-right header, immediately beside your profile, on any page, including sign-in and event access screens. The same setting is available in your profile. A selection keeps the current URL and entered form values.
+Use the language button (a 文A icon with the current language code, such as EN) in the upper-right header, immediately beside your profile, on any page, including sign-in and event access screens. A selection keeps the current URL and entered form values.
 
 When signed in, the setting is saved to your account and this browser. When signed out, it is saved only in this browser's cookie. The browser preference lasts one year. A saved account preference takes priority over the browser preference. After a successful sign-in, an account without a saved preference adopts the browser's explicit choice. Requesting a sign-in link or submitting a guest RSVP never changes another account's language.
 

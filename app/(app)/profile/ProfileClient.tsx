@@ -1,6 +1,5 @@
 "use client";
 
-import LanguageSelector from "@/components/ui/LanguageSelector";
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useTransition, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -242,7 +241,6 @@ export default function ProfileClient({
 
   return (
     <AppShell>
-      <LanguageSelector settings />
       <div
         style={{
           maxWidth: "600px",
