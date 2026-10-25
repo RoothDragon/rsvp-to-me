@@ -10,7 +10,7 @@ order: 45
 
 ## Je taal kiezen {#choosing-your-language}
 
-Gebruik op elke pagina de ronde vlag rechtsboven, direct naast je profiel. De knop staat ook op de inlogpagina en op toegangsschermen voor evenementen. Dezelfde instelling vind je in je profiel. Je keuze behoudt de huidige URL en ingevulde formuliervelden.
+Gebruik op elke pagina de taalknop (een 文A-pictogram met de code van de huidige taal, zoals NL) rechtsboven, direct naast je profiel. De knop staat ook op de inlogpagina en op toegangsschermen voor evenementen. Dezelfde instelling vind je in je profiel. Je keuze behoudt de huidige URL en ingevulde formuliervelden.
 
 Als je bent ingelogd, wordt de keuze in je account en deze browser opgeslagen. Als je bent uitgelogd, wordt de keuze alleen in de cookie van deze browser bewaard. De browservoorkeur blijft een jaar geldig. Een opgeslagen accountvoorkeur heeft voorrang op de browservoorkeur. Na een geslaagde aanmelding neemt een account zonder opgeslagen voorkeur de uitdrukkelijke browserkeuze over. Een inloglink aanvragen of een aanmelding als gast versturen verandert nooit de taal van een ander account.
 

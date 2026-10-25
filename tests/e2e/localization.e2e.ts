@@ -42,20 +42,22 @@ async function chooseLanguage(page: Page, locale: Locale, scope = header(page)) 
 async function expectHeader(page: Page, locale: Locale = "en-US") {
   const nav = header(page);
   await expect(nav).toHaveCount(1);
-  const flag = nav.getByRole("button", { name: choiceName });
+  const language = nav.getByRole("button", { name: choiceName });
   const profile = nav.getByRole("button", { name: profileName });
-  await expect(flag).toBeVisible();
+  await expect(language).toBeVisible();
   await expect(profile).toBeVisible();
-  await expect(flag.locator("img")).toHaveAttribute("src", locales[locale].flag);
-  await expect(flag.locator("img")).toHaveCSS("border-radius", "50%");
-  const flagBounds = (await flag.boundingBox())!;
+  await expect(language).toHaveText(locale.split("-")[0].toUpperCase());
+  await expect(language.locator("svg")).toBeVisible();
+  const languageBounds = (await language.boundingBox())!;
   const profileBounds = (await profile.boundingBox())!;
-  expect(flagBounds.width).toBeGreaterThanOrEqual(44);
-  expect(flagBounds.height).toBeGreaterThanOrEqual(44);
-  expect(flagBounds.x + flagBounds.width).toBeLessThanOrEqual(profileBounds.x + 1);
-  expect(profileBounds.x - flagBounds.x - flagBounds.width).toBeLessThanOrEqual(12);
+  expect(languageBounds.width).toBeGreaterThanOrEqual(44);
+  expect(languageBounds.height).toBeGreaterThanOrEqual(44);
+  expect(languageBounds.x + languageBounds.width).toBeLessThanOrEqual(profileBounds.x + 1);
+  expect(profileBounds.x - languageBounds.x - languageBounds.width).toBeLessThanOrEqual(12);
   expect(
-    Math.abs(flagBounds.y + flagBounds.height / 2 - profileBounds.y - profileBounds.height / 2)
+    Math.abs(
+      languageBounds.y + languageBounds.height / 2 - profileBounds.y - profileBounds.height / 2
+    )
   ).toBeLessThanOrEqual(3);
 }
 
@@ -97,7 +99,7 @@ async function savedLocale(pool: Pool, userId: string) {
 test.describe("Personal language selection", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test("shared circular flag appears beside the profile on public, auth, access and missing pages", async ({
+  test("shared language button appears beside the profile on public, auth, access and missing pages", async ({
     page,
   }) => {
     for (const path of [

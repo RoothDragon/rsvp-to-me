@@ -2,8 +2,10 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { Languages } from "lucide-react";
 import { locales, menuLocales, resolveLocale, type Locale } from "@/i18n/config";
 import { setPreferredLocale } from "@/app/actions/locale";
+import { APP_SHELL } from "@/lib/theme";
 
 export default function LanguageSelector({
   settings = false,
@@ -67,13 +69,13 @@ export default function LanguageSelector({
       }
     });
   }
-  const flag = (value: Locale, size = 36) => (
+  const flag = (value: Locale) => (
     <img
       src={locales[value].flag}
       alt=""
-      width={size}
-      height={size}
-      style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover" }}
+      width={28}
+      height={28}
+      style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }}
     />
   );
   return (
@@ -103,7 +105,7 @@ export default function LanguageSelector({
               }
             }}
             style={{
-              width: 44,
+              minWidth: 44,
               height: 44,
               display: "flex",
               alignItems: "center",
@@ -111,10 +113,28 @@ export default function LanguageSelector({
               border: 0,
               padding: 0,
               background: "transparent",
+              color: "inherit",
+              font: "inherit",
               cursor: "pointer",
             }}
           >
-            {flag(locale)}
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                height: 36,
+                padding: "0 10px",
+                borderRadius: 18,
+                border: `2px solid ${open ? APP_SHELL.accent : APP_SHELL.cardBorder}`,
+                background: "rgba(255,255,255,0.06)",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              <Languages size={18} aria-hidden="true" />
+              {locale.split("-")[0].toUpperCase()}
+            </span>
           </button>
           {open && (
             <div
@@ -171,7 +191,7 @@ export default function LanguageSelector({
                     cursor: "pointer",
                   }}
                 >
-                  {flag(value, 28)}
+                  {flag(value)}
                   {locales[value].nativeName}
                   {locale === value && <span aria-hidden="true">✓</span>}
                 </button>
