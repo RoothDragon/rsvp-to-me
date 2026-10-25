@@ -14,7 +14,7 @@ Use the circular flag button in the upper-right header, immediately beside your 
 
 When signed in, the setting is saved to your account and this browser. When signed out, it is saved only in this browser's cookie. The browser preference lasts one year. A saved account preference takes priority over the browser preference. After a successful sign-in, an account without a saved preference adopts the browser's explicit choice. Requesting a sign-in link or submitting a guest RSVP never changes another account's language.
 
-English is the default. Dutch is available as **Nederlands**, German as **Deutsch**, and Spanish as **Español** in the language menu. Unsupported or removed language selections fall back to English. There is no automatic selection from browser language headers. Event titles, descriptions, questions, guest names, notes, and other user-written content stay exactly as written. Dates use the viewer's language and the event's timezone.
+English is the default. German is available as **Deutsch**, Spanish as **Español**, and Dutch as **Nederlands** in the language menu, which lists English first and the other languages alphabetically by native name. A long menu scrolls and opens at the current language. Unsupported or removed language selections fall back to English. There is no automatic selection from browser language headers. Event titles, descriptions, questions, guest names, notes, and other user-written content stay exactly as written. Dates use the viewer's language and the event's timezone.
 
 ## Email and SMS Languages
 
@@ -30,7 +30,7 @@ Translations are reviewed through normal pull requests. There is no runtime tran
 
 1. Choose a BCP 47 locale ID, such as `fr-FR`.
 2. Add `messages/<locale>.json`. Follow the nested keys in `messages/en-US.json`. Missing keys fall back to English; unknown keys are rejected.
-3. Register the ID in `messages/locales.json` with its `nativeName`, `dir` (`ltr` or `rtl`), and `flag` path. Add the flag SVG under `public/` and use its locally hosted URL. The registry drives the selector and supported-language validation; adding a language needs no component or database schema change.
+3. Register the ID in `messages/locales.json` with its `nativeName`, `dir` (`ltr` or `rtl`), and `flag` path. Add the flag SVG under `public/` and use its locally hosted URL. The registry drives the selector and supported-language validation; adding a language needs no component or database schema change. The order of entries in the file does not matter: the menu always lists English first, then the rest alphabetically by `nativeName`.
 4. Use ICU messages. Preserve parameter and rich-text tag names exactly. Preserve message meaning, use complete sentences and ICU plurals, and include the required `other` branch. Do not translate stable enum values, route paths, environment variables, or commands. In ICU text, escape a literal apostrophe before ICU syntax with another apostrophe.
 5. Optionally add complete help articles as described below.
 6. Run `npm test -- tests/lib/i18n* tests/lib/docs.test.ts tests/lib/docs-localization.test.tsx`, then `npm run test:components -- tests/components/DocsPanel.test.tsx`. The full repository preflight is still required for the integrated change.

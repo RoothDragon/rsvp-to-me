@@ -64,8 +64,9 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
   public access screens. Its language selector shares the profile preference
   action; event settings do not define a UI language.
 - `messages/locales.json` is the supported-language registry (native names,
-  direction, and locally hosted flags); `messages/en-US.json` defines catalog
-  keys. `i18n/` owns safe English fallback, request resolution, and explicit-locale
+  direction, and locally hosted flags); `i18n/config.ts` derives the language
+  menu order from it (English first, then native names alphabetically), so file
+  order is not significant. `messages/en-US.json` defines catalog keys. `i18n/` owns safe English fallback, request resolution, and explicit-locale
   translators for background work. Only UI messages cross the client boundary.
 - `User.preferredLocale` stores an optional account preference. Request resolution
   uses account, then validated browser cookie, then English. Preference writes

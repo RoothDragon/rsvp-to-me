@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "./render";
+import dutch from "@/messages/nl-NL.json";
 const { save, refresh } = vi.hoisted(() => ({ path: "/", save: vi.fn(), refresh: vi.fn() }));
 vi.mock("@/app/actions/locale", () => ({ setPreferredLocale: save }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }), usePathname: () => "/" }));
@@ -79,7 +80,45 @@ describe("language selector", () => {
       expect(screen.getByRole("menuitemradio", { name: "English (US)" })).toHaveFocus()
     );
     fireEvent.keyDown(screen.getByRole("menu"), { key: "ArrowDown" });
-    expect(screen.getByRole("menuitemradio", { name: "Nederlands" })).toHaveFocus();
+    expect(screen.getByRole("menuitemradio", { name: "Deutsch" })).toHaveFocus();
+  });
+  it("lists English first, then the other languages alphabetically by native name", () => {
+    render(<LanguageSelector />);
+    fireEvent.click(screen.getByRole("button", { name: "Choose language" }));
+    expect(screen.getAllByRole("menuitemradio").map((item) => item.getAttribute("lang"))).toEqual([
+      "en-US",
+      "de-DE",
+      "es-ES",
+      "nl-NL",
+    ]);
+  });
+  it("uses compact menu rows and keeps the full-size header flag", () => {
+    render(<LanguageSelector />);
+    const trigger = screen.getByRole("button", { name: "Choose language" });
+    expect(trigger.querySelector("img")).toHaveAttribute("width", "36");
+    fireEvent.click(trigger);
+    const english = screen.getByRole("menuitemradio", { name: "English (US)" });
+    expect(english.querySelector("img")).toHaveAttribute("width", "28");
+    expect(english).toHaveStyle({ padding: "6px 8px", fontSize: "15px" });
+  });
+  it("scrolls a long menu to the current language when it opens", () => {
+    const layout = [
+      vi.spyOn(HTMLElement.prototype, "offsetTop", "get").mockImplementation(function (
+        this: HTMLElement
+      ) {
+        return this.getAttribute("aria-checked") === "true" ? 400 : 0;
+      }),
+      vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(40),
+      vi.spyOn(Element.prototype, "clientHeight", "get").mockReturnValue(200),
+    ];
+    const scrollTop = vi.spyOn(Element.prototype, "scrollTop", "set");
+    try {
+      render(<LanguageSelector />, { locale: "nl-NL", messages: dutch });
+      fireEvent.click(screen.getByRole("button", { name: "Taal kiezen" }));
+      expect(scrollTop).toHaveBeenCalledWith(320);
+    } finally {
+      [...layout, scrollTop].forEach((spy) => spy.mockRestore());
+    }
   });
   it("shows a recoverable error without refreshing on failed save", async () => {
     save.mockRejectedValueOnce(new Error("offline"));
