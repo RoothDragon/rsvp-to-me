@@ -178,6 +178,8 @@ export async function requestVerifiedGuestLinkAction(
       slug: true,
       status: true,
       startAt: true,
+      visibility: true,
+      passwordHash: true,
       requireVerifiedRsvp: true,
     },
   });
@@ -186,6 +188,8 @@ export async function requestVerifiedGuestLinkAction(
     !event ||
     event.status !== "PUBLISHED" ||
     !event.requireVerifiedRsvp ||
+    !["PUBLIC", "UNLISTED"].includes(event.visibility) ||
+    event.passwordHash !== null ||
     event.startAt <= new Date()
   ) {
     return {

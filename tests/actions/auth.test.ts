@@ -300,6 +300,8 @@ describe("requestVerifiedGuestLinkAction", () => {
       slug: "testing-public-event",
       status: "PUBLISHED",
       startAt: new Date("2027-12-19T21:00:00Z"),
+      visibility: "UNLISTED",
+      passwordHash: null,
       requireVerifiedRsvp: true,
     });
 
@@ -326,6 +328,8 @@ describe("requestVerifiedGuestLinkAction", () => {
         slug: true,
         status: true,
         startAt: true,
+        visibility: true,
+        passwordHash: true,
         requireVerifiedRsvp: true,
       },
     });
@@ -358,6 +362,8 @@ describe("requestVerifiedGuestLinkAction", () => {
       slug: "testing-public-event",
       status: "PUBLISHED",
       startAt: new Date("2027-12-19T21:00:00Z"),
+      visibility: "UNLISTED",
+      passwordHash: null,
       requireVerifiedRsvp: false,
     });
 
@@ -376,6 +382,8 @@ describe("requestVerifiedGuestLinkAction", () => {
       slug: "testing-public-event",
       status: "DRAFT",
       startAt: new Date("2027-12-19T21:00:00Z"),
+      visibility: "UNLISTED",
+      passwordHash: null,
       requireVerifiedRsvp: true,
     });
 
@@ -394,6 +402,8 @@ describe("requestVerifiedGuestLinkAction", () => {
       slug: "testing-public-event",
       status: "PUBLISHED",
       startAt: new Date("2020-01-01T00:00:00Z"),
+      visibility: "UNLISTED",
+      passwordHash: null,
       requireVerifiedRsvp: true,
     });
 
@@ -433,5 +443,44 @@ describe("requestVerifiedGuestLinkAction", () => {
     expect(result.success).toBe(false);
     expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledOnce();
   });
+  ////
+  it("rejects self-registration for PRIVATE events", async () => {
+    mocks.mockEventFindUnique.mockResolvedValue({
+      slug: "testing-public-event",
+      status: "PUBLISHED",
+      startAt: new Date("2027-12-19T21:00:00Z"),
+      visibility: "PRIVATE",
+      passwordHash: null,
+      requireVerifiedRsvp: true,
+    });
 
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event"
+    );
+
+    expect(result.success).toBe(false);
+    expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
+    expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects self-registration for password-protected events", async () => {
+    mocks.mockEventFindUnique.mockResolvedValue({
+      slug: "testing-public-event",
+      status: "PUBLISHED",
+      startAt: new Date("2027-12-19T21:00:00Z"),
+      visibility: "UNLISTED",
+      passwordHash: "hashed-event-password",
+      requireVerifiedRsvp: true,
+    });
+
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event"
+    );
+
+    expect(result.success).toBe(false);
+    expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
+    expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
+  });
 });
