@@ -508,6 +508,42 @@ describe("addRSVP", () => {
       })
     );
   });
+  it("rejects verified RSVP creation for a PRIVATE event", async () => {
+    mockGetSession.mockResolvedValue({
+      userId: "alice-id",
+      email: "alice@example.com",
+      role: "GUEST",
+    });
+
+    mockEventFindUnique.mockResolvedValue({
+      ...BASE_EVENT,
+      requireVerifiedRsvp: true,
+      visibility: "PRIVATE",
+      passwordHash: null,
+    });
+
+    mockUserFindUnique.mockResolvedValue({
+      id: "alice-id",
+      email: "alice@example.com",
+      preferredLocale: null,
+    });
+
+    mockUserUpsert.mockResolvedValue({
+      id: "alice-id",
+      preferredLocale: null,
+    });
+
+    const result = await addRSVP({
+      eventId: EVENT_ID,
+      guestName: "Alice",
+      guestEmail: "alice@example.com",
+      status: "GOING",
+      plusOneCount: 0,
+    });
+
+    expect(result.success).toBe(false);
+    expect(mockRsvpCreate).not.toHaveBeenCalled();
+  });
   /////
 
   it("creates an RSVP and returns success with the editToken", async () => {
