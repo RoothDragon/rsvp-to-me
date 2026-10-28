@@ -349,4 +349,87 @@ describe("requestVerifiedGuestLinkAction", () => {
       "en-US"
     );
   });
+  ///
+
+  it("rejects registration when verification is disabled", async () => {
+    mocks.mockEventFindUnique.mockResolvedValue({
+      slug: "testing-public-event",
+      status: "PUBLISHED",
+      startAt: new Date("2027-12-19T21:00:00Z"),
+      requireVerifiedRsvp: false,
+    });
+
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event"
+    );
+
+    expect(result.success).toBe(false);
+    expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
+    expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects registration for an unpublished event", async () => {
+    mocks.mockEventFindUnique.mockResolvedValue({
+      slug: "testing-public-event",
+      status: "DRAFT",
+      startAt: new Date("2027-12-19T21:00:00Z"),
+      requireVerifiedRsvp: true,
+    });
+
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event"
+    );
+
+    expect(result.success).toBe(false);
+    expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
+    expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects registration after the event has started", async () => {
+    mocks.mockEventFindUnique.mockResolvedValue({
+      slug: "testing-public-event",
+      status: "PUBLISHED",
+      startAt: new Date("2020-01-01T00:00:00Z"),
+      requireVerifiedRsvp: true,
+    });
+
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event"
+    );
+
+    expect(result.success).toBe(false);
+    expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
+    expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
+  });
+
+  it("blocks registration when the IP rate limit is exceeded", async () => {
+    mocks.mockRateLimit.mockResolvedValueOnce({ success: false });
+
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event"
+    );
+
+    expect(result.success).toBe(false);
+    expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
+    expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when verification email delivery fails", async () => {
+    mocks.mockSendMagicLinkEmail.mockRejectedValueOnce(
+      new Error("Simulated SMTP failure")
+    );
+
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event"
+    );
+
+    expect(result.success).toBe(false);
+    expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledOnce();
+  });
+
 });
