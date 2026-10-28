@@ -254,6 +254,7 @@ const BASE_EVENT = {
   slug: EVENT_SLUG,
   title: "Test Party",
   approvalRequired: false,
+  requireVerifiedRsvp: false,
   rsvpDeadline: null,
   capacity: null,
   startAt: new Date("2026-12-01T20:00:00Z"),
@@ -374,6 +375,25 @@ describe("addRSVP", () => {
   beforeEach(() => {
     mockEventFindUnique.mockResolvedValue(BASE_EVENT);
     mockRsvpCreate.mockResolvedValue({ id: "rsvp-1", editToken: "tok-abc" });
+  });
+
+  it("rejects anonymous submissions when verification is required", async () => {
+    mockGetSession.mockResolvedValue(null);
+    mockEventFindUnique.mockResolvedValue({
+      ...BASE_EVENT,
+      requireVerifiedRsvp: true,
+    });
+
+    const result = await addRSVP({
+      eventId: EVENT_ID,
+      guestName: "Alice",
+      guestEmail: "alice@example.com",
+      status: "GOING",
+      plusOneCount: 0,
+    });
+
+    expect(result.success).toBe(false);
+    expect(mockRsvpCreate).not.toHaveBeenCalled();
   });
 
   it("creates an RSVP and returns success with the editToken", async () => {
