@@ -217,6 +217,8 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
       title: true,
       approvalRequired: true,
       requireVerifiedRsvp: true,
+      visibility: true,
+      passwordHash: true,      
       rsvpDeadline: true,
       capacity: true,
       startAt: true,

@@ -256,6 +256,8 @@ const BASE_EVENT = {
   id: EVENT_ID,
   slug: EVENT_SLUG,
   title: "Test Party",
+  visibility: "UNLISTED",
+  passwordHash: null,
   approvalRequired: false,
   requireVerifiedRsvp: false,
   rsvpDeadline: null,
