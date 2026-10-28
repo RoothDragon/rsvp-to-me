@@ -156,6 +156,7 @@ vi.mock("@/lib/db", () => ({
       createMany: mockInvitationCreateMany,
       create: mockInvitationCreate,
       findFirst: mockInvitationFindFirst,
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     activityEvent: { create: vi.fn().mockResolvedValue({}) },
     rSVPAnswer: { createMany: mockRsvpAnswerCreateMany, upsert: mockRsvpAnswerUpsert },
@@ -414,6 +415,10 @@ describe("addRSVP", () => {
       id: "alice-id",
       email: "alice@example.com",
       phone: null,
+      preferredLocale: null,
+    });
+    mockUserUpsert.mockResolvedValue({
+      id: "bob-id",
       preferredLocale: null,
     });
 
