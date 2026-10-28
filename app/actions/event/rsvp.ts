@@ -216,6 +216,7 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
       slug: true,
       title: true,
       approvalRequired: true,
+      requireVerifiedRsvp: true,
       rsvpDeadline: true,
       capacity: true,
       startAt: true,
@@ -236,6 +237,19 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
     },
   });
   if (!event) return { success: false, error: await eventActionMessage("eventNotFound") };
+  // Verified RSVP events require an authenticated guest session.
+  // Further checks will bind the RSVP contact to the session owner.
+  if (event.requireVerifiedRsvp) {
+    const session = await getSession();
+
+    if (!session) {
+      return {
+        success: false,
+        error: "Please verify your email or phone before RSVPing.",
+      };
+    }
+  }
+  //  end of change
   if (event.startAt <= new Date()) {
     return { success: false, error: await eventActionMessage("eventStarted") };
   }
