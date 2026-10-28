@@ -1,0 +1,2 @@
+ALTER TABLE "Event"
+ADD COLUMN "requireVerifiedRsvp" BOOLEAN NOT NULL DEFAULT false;

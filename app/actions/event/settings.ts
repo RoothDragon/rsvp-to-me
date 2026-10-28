@@ -179,6 +179,7 @@ export async function saveEventSettings(
     plusOneMax?: number;
     plusOneNamesRequired?: boolean;
     approvalRequired?: boolean;
+    requireVerifiedRsvp?: boolean;
     rsvpDeadline?: string | null;
     allowEditAfterDeadline?: boolean;
     capacity?: number | null;
