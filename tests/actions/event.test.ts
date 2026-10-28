@@ -17,6 +17,7 @@ const {
   mockCommentCreate,
   mockCommentFindFirst,
   mockUserFindUnique,
+  mockUserUpsert,
   mockInfoSectionCreate,
   mockInfoSectionFindUnique,
   mockInfoSectionDelete,
@@ -64,6 +65,7 @@ const {
   mockCommentCreate: vi.fn(),
   mockCommentFindFirst: vi.fn(),
   mockUserFindUnique: vi.fn(),
+  mockUserUpsert: vi.fn(),
   mockInfoSectionCreate: vi.fn(),
   mockInfoSectionFindUnique: vi.fn(),
   mockInfoSectionDelete: vi.fn(),
@@ -108,7 +110,7 @@ vi.mock("@/lib/db", () => ({
     },
     $executeRaw: vi.fn().mockResolvedValue(1),
     event: { findUnique: mockEventFindUnique, update: mockEventUpdate },
-    user: { findFirst: mockUserFindFirst, create: mockUserCreate, findUnique: mockUserFindUnique },
+    user: { findFirst: mockUserFindFirst, create: mockUserCreate, findUnique: mockUserFindUnique, upsert: mockUserUpsert, },
     rSVP: {
       create: mockRsvpCreate,
       count: mockRsvpCount,
@@ -394,6 +396,83 @@ describe("addRSVP", () => {
     expect(result.success).toBe(false);
     expect(mockRsvpCreate).not.toHaveBeenCalled();
   });
+
+  /////
+  it("rejects an authenticated guest using another person's email", async () => {
+    mockEventFindUnique.mockResolvedValue({
+      ...BASE_EVENT,
+      requireVerifiedRsvp: true,
+    });
+
+    mockGetSession.mockResolvedValue({
+      userId: "alice-id",
+      email: "alice@example.com",
+      role: "GUEST",
+    });
+
+    mockUserFindUnique.mockResolvedValue({
+      id: "alice-id",
+      email: "alice@example.com",
+      phone: null,
+      preferredLocale: null,
+    });
+
+    const result = await addRSVP({
+      eventId: EVENT_ID,
+      guestName: "Alice",
+      guestEmail: "bob@example.com",
+      status: "GOING",
+      plusOneCount: 0,
+    });
+
+    expect(result.success).toBe(false);
+    expect(mockRsvpCreate).not.toHaveBeenCalled();
+  });
+
+  it("accepts an authenticated guest using their own email", async () => {
+    mockEventFindUnique.mockResolvedValue({
+      ...BASE_EVENT,
+      requireVerifiedRsvp: true,
+    });
+
+    mockGetSession.mockResolvedValue({
+      userId: "alice-id",
+      email: "alice@example.com",
+      role: "GUEST",
+    });
+
+    mockUserFindUnique.mockResolvedValue({
+      id: "alice-id",
+      email: "alice@example.com",
+      phone: null,
+      preferredLocale: null,
+    });
+
+    mockUserUpsert.mockResolvedValue({
+      id: "alice-id",
+      preferredLocale: null,
+    });
+
+    const result = await addRSVP({
+      eventId: EVENT_ID,
+      guestName: "Alice",
+      guestEmail: "alice@example.com",
+      status: "GOING",
+      plusOneCount: 0,
+    });
+
+    expect(result.success).toBe(true);
+
+    expect(mockRsvpCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: "alice-id",
+          guestEmail: "alice@example.com",
+        }),
+      })
+    );
+  });
+  /////
 
   it("creates an RSVP and returns success with the editToken", async () => {
     const result = await addRSVP({
