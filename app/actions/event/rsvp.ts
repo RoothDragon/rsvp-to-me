@@ -245,7 +245,34 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
     if (!session) {
       return {
         success: false,
-        error: "Please verify your email or phone before RSVPing.",
+        error: "Please sign in and verify your email before RSVPing.",
+      };
+    }
+
+    const user = await db.user.findUnique({
+      where: { id: session.userId },
+      select: {
+        id: true,
+        email: true,
+        preferredLocale: true,
+      },
+    });
+
+    // Initial implementation supports email-only verified RSVPs.
+    // Do not accept a second, potentially unverified phone contact.
+    const submittedEmail = data.guestEmail?.trim().toLowerCase();
+    const accountEmail = user?.email?.trim().toLowerCase();
+
+    if (
+      !user ||
+      !accountEmail ||
+      !submittedEmail ||
+      submittedEmail !== accountEmail ||
+      data.guestPhone
+    ) {
+      return {
+        success: false,
+        error: "RSVP email must match your signed-in account.",
       };
     }
   }
