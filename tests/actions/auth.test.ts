@@ -7,6 +7,8 @@ vi.mock("@/i18n/server", async (importOriginal) => {
 });
 
 const mocks = vi.hoisted(() => ({
+  mockEventFindUnique: vi.fn(),
+  mockUserUpsert: vi.fn(),
   mockCreateMagicLink: vi.fn(),
   mockRegisterHost: vi.fn(),
   mockIsOpenRegistrationActive: vi.fn().mockResolvedValue(false),
@@ -18,7 +20,17 @@ const mocks = vi.hoisted(() => ({
   mockHeadersGet: vi.fn().mockReturnValue("127.0.0.1"),
 }));
 
-vi.mock("@/lib/db", () => ({ db: { user: { findUnique: mocks.mockRecipient } } }));
+vi.mock("@/lib/db", () => ({
+  db: {
+    user: {
+      findUnique: mocks.mockRecipient,
+      upsert: mocks.mockUserUpsert,
+    },
+    event: {
+      findUnique: mocks.mockEventFindUnique,
+    },
+  },
+}));
 vi.mock("@/lib/auth", () => ({
   createMagicLink: mocks.mockCreateMagicLink,
   registerHost: mocks.mockRegisterHost,
@@ -44,7 +56,11 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-import { sendMagicLinkAction, registerHostAction } from "@/app/actions/auth";
+import {
+  sendMagicLinkAction,
+  registerHostAction,
+  requestVerifiedGuestLinkAction,
+} from "@/app/actions/auth";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -271,6 +287,65 @@ describe("magic-link recipient language", () => {
     expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledWith(
       "known@example.com",
       expect.any(String),
+      "en-US"
+    );
+  });
+});
+
+describe("requestVerifiedGuestLinkAction", () => {
+  beforeEach(() => {
+    mocks.mockEventFindUnique.mockResolvedValue({
+      slug: "testing-public-event",
+      status: "PUBLISHED",
+      startAt: new Date("2027-12-19T21:00:00Z"),
+      requireVerifiedRsvp: true,
+    });
+
+    mocks.mockUserUpsert.mockResolvedValue({
+      preferredLocale: null,
+    });
+
+    mocks.mockCreateMagicLink.mockResolvedValue(
+      "http://localhost:3000/auth/verify?token=test-token&redirect=%2Fe%2Ftesting-public-event"
+    );
+  });
+
+  it("creates a GUEST account and emails a magic link for an eligible event", async () => {
+    const result = await requestVerifiedGuestLinkAction(
+      " NewGuest@Example.com ",
+      "testing-public-event"
+    );
+
+    expect(result.success).toBe(true);
+
+    expect(mocks.mockEventFindUnique).toHaveBeenCalledWith({
+      where: { slug: "testing-public-event" },
+      select: {
+        slug: true,
+        status: true,
+        startAt: true,
+        requireVerifiedRsvp: true,
+      },
+    });
+
+    expect(mocks.mockUserUpsert).toHaveBeenCalledWith({
+      where: { email: "newguest@example.com" },
+      create: {
+        email: "newguest@example.com",
+        role: "GUEST",
+      },
+      update: {},
+      select: { preferredLocale: true },
+    });
+
+    expect(mocks.mockCreateMagicLink).toHaveBeenCalledWith(
+      "newguest@example.com",
+      "/e/testing-public-event"
+    );
+
+    expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledWith(
+      "newguest@example.com",
+      expect.stringContaining("/auth/verify?token="),
       "en-US"
     );
   });
