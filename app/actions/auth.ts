@@ -11,6 +11,7 @@ import { SendMagicLinkSchema, RegisterHostSchema } from "@/lib/schemas";
 import { rateLimit } from "@/lib/rateLimit";
 import { getClientIp, isTrustedIpConfigured } from "@/lib/clientIp";
 import { assertCaptcha } from "@/lib/captcha";
+import { z } from "zod";
 
 function looksLikePhone(s: string): boolean {
   return /^\+?[\d\s\-().]{7,}$/.test(s.trim()) && s.replace(/\D/g, "").length >= 7;
@@ -147,4 +148,94 @@ export async function registerHostAction(
   }
 
   return result;
+}
+
+/**
+ * Request a magic link for a guest joining a verification-required event.
+ *
+ * Unlike HOST registration, this endpoint allows self-registration
+ * without an invitation code, but never grants elevated privileges.
+ */
+export async function requestVerifiedGuestLinkAction(
+  rawEmail: string,
+  eventSlug: string,
+  captchaToken?: string | null
+): Promise<{ success: boolean; error?: string }> {
+  const parsed = z.string().trim().toLowerCase().email().max(100).safeParse(rawEmail);
+
+  if (!parsed.success) {
+    return { success: false, error: "Enter a valid email address." };
+  }
+
+  const email = parsed.data;
+
+  await assertCaptcha("signin", captchaToken);
+
+  // Allow this workflow only for eligible published events.
+  const event = await db.event.findUnique({
+    where: { slug: eventSlug },
+    select: {
+      slug: true,
+      status: true,
+      startAt: true,
+      requireVerifiedRsvp: true,
+    },
+  });
+
+  if (
+    !event ||
+    event.status !== "PUBLISHED" ||
+    !event.requireVerifiedRsvp ||
+    event.startAt <= new Date()
+  ) {
+    return {
+      success: false,
+      error: "This event is not accepting verified guest registration.",
+    };
+  }
+
+  // Preserve the same rate-limiting approach as normal sign-in.
+  if (isTrustedIpConfigured()) {
+    const ip = await getClientIp();
+    const ipLimit = await rateLimit(`ip:${ip}:magic-link`, 20, 600);
+
+    if (!ipLimit.success) {
+      return { success: false, error: "Too many requests. Please try later." };
+    }
+  }
+
+  const idLimit = await rateLimit(`id:${email}:magic-link`, 5, 600);
+
+  if (!idLimit.success) {
+    return { success: false, error: "Too many requests. Please try later." };
+  }
+
+  // Existing accounts retain their current roles.
+  // New accounts always start as GUEST.
+  const user = await db.user.upsert({
+    where: { email },
+    create: { email, role: "GUEST" },
+    update: {},
+    select: { preferredLocale: true },
+  });
+
+  const redirect = `/e/${encodeURIComponent(event.slug)}`;
+  const link = await createMagicLink(email, redirect);
+
+  if (!link) {
+    return { success: false, error: "Unable to create verification link." };
+  }
+
+  const locale = resolveLocale(
+    user.preferredLocale ?? (await cookies()).get(LOCALE_COOKIE)?.value
+  );
+
+  try {
+    await sendMagicLinkEmail(email, link, locale);
+  } catch (err) {
+    console.error("[verified-guest] Magic link delivery failed:", err);
+    return { success: false, error: "Unable to send verification email." };
+  }
+
+  return { success: true };
 }
