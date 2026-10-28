@@ -294,6 +294,8 @@ describe("magic-link recipient language", () => {
 
 describe("requestVerifiedGuestLinkAction", () => {
   beforeEach(() => {
+    // Don't inherit a mocked locale cookie from earlier tests.
+    mocks.mockCookieGet.mockReturnValue(undefined);
     mocks.mockEventFindUnique.mockResolvedValue({
       slug: "testing-public-event",
       status: "PUBLISHED",
