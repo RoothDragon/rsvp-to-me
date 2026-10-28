@@ -242,6 +242,18 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
   // Verified RSVP events require an authenticated guest session.
   // Further checks will bind the RSVP contact to the session owner.
   if (event.requireVerifiedRsvp) {
+    // Initial verified-guest flow supports PUBLIC and UNLISTED
+    // events without passwords. Private and password-protected
+    // events require a separate authorized invitation flow.
+    if (
+      !["PUBLIC", "UNLISTED"].includes(event.visibility) ||
+      event.passwordHash !== null
+    ) {
+      return {
+        success: false,
+        error: "Verified RSVP registration is not available for this event.",
+      };
+    }
     const session = await getSession();
 
     if (!session) {
