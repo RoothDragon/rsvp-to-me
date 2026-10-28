@@ -456,6 +456,7 @@ export async function updateRSVP(
           id: true,
           slug: true,
           title: true,
+          requireVerifiedRsvp: true,
           capacity: true,
           rsvpDeadline: true,
           startAt: true,
@@ -478,6 +479,18 @@ export async function updateRSVP(
     },
   });
   if (!rsvp) return { success: false, error: await eventActionMessage("rsvpNotFound") };
+  // An edit token identifies the RSVP, but does not authorize
+  // changes to a verification-protected RSVP by itself.
+  if (rsvp.event.requireVerifiedRsvp) {
+    const session = await getSession();
+
+    if (!session || !rsvp.userId || session.userId !== rsvp.userId) {
+      return {
+        success: false,
+        error: "You must sign in as the RSVP owner to edit this response.",
+      };
+    }
+  }  
 
   if (rsvp.event.startAt <= new Date()) {
     return { success: false, error: await eventActionMessage("eventStarted") };
