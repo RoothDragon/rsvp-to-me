@@ -380,6 +380,37 @@ describe("addRSVP", () => {
     mockRsvpCreate.mockResolvedValue({ id: "rsvp-1", editToken: "tok-abc" });
   });
 
+  it("rejects editing another guest's verified RSVP", async () => {
+    mockGetSession.mockResolvedValue({
+      userId: "bob-id",
+      email: "bob@example.com",
+      role: "GUEST",
+    });
+
+    mockRsvpFindUnique.mockResolvedValue({
+      id: "rsvp-alice",
+      eventId: EVENT_ID,
+      userId: "alice-id",
+      editToken: "alice-secret-token",
+      guestName: "Alice",
+      status: "GOING",
+      responded: true,
+      checkIn: null,
+      event: {
+        ...BASE_EVENT,
+        requireVerifiedRsvp: true,
+      },
+    });
+
+    const result = await updateRSVP("alice-secret-token", {
+      status: "NO",
+      plusOneCount: 0,
+    });
+
+    expect(result.success).toBe(false);
+    expect(mockRsvpUpdate).not.toHaveBeenCalled();
+  });
+
   it("rejects anonymous submissions when verification is required", async () => {
     mockGetSession.mockResolvedValue(null);
     mockEventFindUnique.mockResolvedValue({
