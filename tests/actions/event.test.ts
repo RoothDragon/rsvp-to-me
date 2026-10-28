@@ -384,13 +384,12 @@ describe("addRSVP", () => {
       requireVerifiedRsvp: true,
     });
 
-    const result = await addRSVP({
-      eventId: EVENT_ID,
-      guestName: "Alice",
-      guestEmail: "alice@example.com",
-      status: "GOING",
-      plusOneCount: 0,
-    });
+  const result = await addRSVP({
+    eventId: EVENT_ID,
+    guestName: "Alice",
+    status: "GOING",
+    plusOneCount: 0,
+  });
 
     expect(result.success).toBe(false);
     expect(mockRsvpCreate).not.toHaveBeenCalled();
