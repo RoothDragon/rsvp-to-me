@@ -10,6 +10,10 @@ export interface SessionData {
   email: string;
   role: "HOST" | "ADMIN" | "GUEST";
   sessionId?: string;
+
+  // Populated only when a login magic link proves contact ownership.
+  verifiedMethod?: "EMAIL" | "SMS";
+  verifiedIdentifier?: string;
 }
 
 export const COOKIE_NAME = "rsvp-session";

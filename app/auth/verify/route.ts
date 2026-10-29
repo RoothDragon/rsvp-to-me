@@ -47,6 +47,47 @@ export async function GET(request: NextRequest) {
   if (!user) {
     return redirectWithNoReferrer(`${origin}/auth/sign-in?error=invalid-token`);
   }
+  // The token records the contact to which the magic link was sent.
+  // Legacy tokens without metadata still permit ordinary sign-in,
+  // but cannot establish verified contact ownership.
+  let verifiedContact:
+    | { verifiedMethod: "EMAIL" | "SMS"; verifiedIdentifier: string }
+    | undefined;
+
+  if (record.metadata) {
+    try {
+      const metadata: unknown = JSON.parse(record.metadata);
+
+      if (metadata && typeof metadata === "object") {
+        const value = metadata as Record<string, unknown>;
+
+        if (
+          (value.verifiedMethod === "EMAIL" ||
+            value.verifiedMethod === "SMS") &&
+          typeof value.verifiedIdentifier === "string"
+        ) {
+          const identifier = value.verifiedIdentifier;
+
+          // Confirm the recorded delivery contact still belongs
+          // to the authenticated user.
+          const currentContact =
+            value.verifiedMethod === "EMAIL" ? user.email : user.phone;
+
+          if (
+            currentContact &&
+            identifier.toLowerCase() === currentContact.trim().toLowerCase()
+          ) {
+            verifiedContact = {
+              verifiedMethod: value.verifiedMethod,
+              verifiedIdentifier: identifier,
+            };
+          }
+        }
+      }
+    } catch {
+      // Invalid legacy metadata must never establish verification.
+    }
+  }
 
   let role = user.role;
   if (role !== "ADMIN" && (await promoteInitialAdmin(user.id, user.email))) {
@@ -86,7 +127,8 @@ export async function GET(request: NextRequest) {
     userId: user.id,
     email: user.email ?? user.phone ?? "",
     role: role as "HOST" | "ADMIN" | "GUEST",
-    sessionId, // Crucial: Include sessionId so getSession() validates it successfully
+    sessionId,
+    ...verifiedContact,
   });
 
   // Validate redirect at the point of use — defence in depth against encoded payloads
