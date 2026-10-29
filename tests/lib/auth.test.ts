@@ -198,6 +198,14 @@ describe("createMagicLink", () => {
         expiresAt: expect.any(Date),
       }),
     });
+    expect(mockMagicTokenCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        metadata: JSON.stringify({
+          verifiedMethod: "EMAIL",
+          verifiedIdentifier: "user@example.com",
+        }),
+      }),
+    });
     expect(result).toMatch(new RegExp(`^http://localhost:3000/auth/verify\\?token=[a-f0-9]{64}$`));
   });
 
