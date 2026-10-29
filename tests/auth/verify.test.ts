@@ -157,38 +157,6 @@ describe("GET /auth/verify", () => {
     });
   });
 
-  // Another request consumed the token after our initial lookup.
-  mockUpdateManyMagicToken.mockResolvedValue({ count: 0 });
-  mockUpdateMagicToken.mockResolvedValue({});
-
-  mockFindUniqueUser.mockResolvedValue({
-    id: "user1",
-    email: "host@example.com",
-    role: "HOST",
-  });
-
-  const res = await GET(makeRequest("valid-token"));
-
-  expect(res.headers.get("location")).toContain(
-    "error=invalid-token"
-  );
-
-  expect(mockUpdateManyMagicToken).toHaveBeenCalledWith({
-    where: {
-      id: "tok-id",
-      used: false,
-      type: "LOGIN",
-      expiresAt: { gt: expect.any(Date) },
-    },
-    data: { used: true },
-  });
-
-  expect(mockCreateSession).not.toHaveBeenCalled();
-  expect(res.headers.get("set-cookie") ?? "").not.toContain(
-    "rsvp-session="
-  );
-});
-
   it("rejects a token consumed by a concurrent request", async () => {
     mockFindUniqueMagicToken.mockResolvedValue({
       id: "tok-id",
