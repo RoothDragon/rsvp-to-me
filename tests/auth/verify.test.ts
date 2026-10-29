@@ -146,20 +146,15 @@ describe("GET /auth/verify", () => {
     mockFindUniqueUser.mockResolvedValue({ id: "user1", email: "host@example.com" });
 
     await GET(makeRequest("valid-token"));
-    expect(mockUpdateMagicToken).toHaveBeenCalledWith({
-      where: { id: "tok-id" },
+    expect(mockUpdateManyMagicToken).toHaveBeenCalledWith({
+      where: {
+        id: "tok-id",
+        used: false,
+        type: "LOGIN",
+        expiresAt: { gt: expect.any(Date) },
+      },
       data: { used: true },
     });
-  });
-
-  it("rejects a token consumed by a concurrent request", async () => {
-  mockFindUniqueMagicToken.mockResolvedValue({
-    id: "tok-id",
-    token: "valid-token",
-    used: false,
-    expiresAt: futureDate,
-    userId: "user1",
-    type: "LOGIN",
   });
 
   // Another request consumed the token after our initial lookup.

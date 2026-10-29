@@ -41,7 +41,22 @@ export async function GET(request: NextRequest) {
     return redirectWithNoReferrer(`${origin}/auth/sign-in?error=invalid-token`);
   }
 
-  await db.magicToken.update({ where: { id: record.id }, data: { used: true } });
+  // Atomically consume the token. Only one concurrent request may succeed.
+  const consumed = await db.magicToken.updateMany({
+    where: {
+      id: record.id,
+      used: false,
+      type: "LOGIN",
+      expiresAt: { gt: new Date() },
+    },
+    data: { used: true },
+  });
+
+  if (consumed.count !== 1) {
+    return redirectWithNoReferrer(
+      `${origin}/auth/sign-in?error=invalid-token`
+    );
+  }
 
   const user = await db.user.findUnique({ where: { id: record.userId } });
   if (!user) {
