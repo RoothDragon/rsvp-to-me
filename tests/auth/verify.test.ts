@@ -43,6 +43,7 @@ vi.mock("@/lib/redis", () => ({
 }));
 
 import { GET } from "@/app/auth/verify/route";
+import { sealSession } from "@/lib/session";
 
 function makeRequest(token?: string, redirect?: string): NextRequest {
   let url = token
@@ -62,6 +63,7 @@ describe("GET /auth/verify", () => {
     mockUpdateManyMagicToken.mockResolvedValue({ count: 1 });
     mockFindUniqueUser.mockReset();
     mockCreateSession.mockReset();
+    vi.mocked(sealSession).mockClear();
 
     process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
   });
@@ -198,7 +200,70 @@ describe("GET /auth/verify", () => {
       "rsvp-session="
     );
   });
+  ///////////////////////////////////////////////
+  it("seals verified email provenance from a redeemed login token", async () => {
+    mockFindUniqueMagicToken.mockResolvedValue({
+      id: "email-token",
+      userId: "user1",
+      used: false,
+      expiresAt: futureDate,
+      type: "LOGIN",
+      metadata: JSON.stringify({
+        verifiedMethod: "EMAIL",
+        verifiedIdentifier: "host@example.com",
+      }),
+    });
 
+    mockFindUniqueUser.mockResolvedValue({
+      id: "user1",
+      email: "host@example.com",
+      role: "HOST",
+    });
+
+    const res = await GET(makeRequest("valid-token"));
+
+    expect(res.headers.get("location")).toBe(
+      "http://localhost:3000/dashboard"
+    );
+
+    expect(sealSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user1",
+        verifiedMethod: "EMAIL",
+        verifiedIdentifier: "host@example.com",
+      })
+    );
+  });
+  
+  it("does not trust a token claiming a different email address", async () => {
+    mockFindUniqueMagicToken.mockResolvedValue({
+      id: "email-token",
+      userId: "user1",
+      used: false,
+      expiresAt: futureDate,
+      type: "LOGIN",
+      metadata: JSON.stringify({
+        verifiedMethod: "EMAIL",
+        verifiedIdentifier: "attacker@example.com",
+      }),
+    });
+
+    mockFindUniqueUser.mockResolvedValue({
+      id: "user1",
+      email: "host@example.com",
+      role: "HOST",
+    });
+
+    await GET(makeRequest("valid-token"));
+
+    expect(sealSession).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        verifiedMethod: "EMAIL",
+        verifiedIdentifier: "attacker@example.com",
+      })
+    );
+  });  
+  ///////////////////////////////////////////////
   // SEC-41: the configured canonical origin wins over the request Host header;
   // the header is only a fallback for installs without NEXT_PUBLIC_APP_URL.
   it("uses NEXT_PUBLIC_APP_URL for redirect destination, ignoring the Host header", async () => {
