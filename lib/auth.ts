@@ -107,13 +107,11 @@ export async function linkRsvpsToUser(userId: string) {
     where: {
       AND: [
         { OR: conditions },
-        {
-          OR: [{ userId: { not: userId } }, { userId: null }],
-        },
+        { userId: null },
       ],
     },
     data: {
-      userId: userId,
+      userId,
     },
   });
 }
