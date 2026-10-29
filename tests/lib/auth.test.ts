@@ -272,7 +272,7 @@ describe("linkRsvpsToUser", () => {
       where: {
         AND: [
           { OR: [{ guestEmail: "user@example.com" }] },
-          { OR: [{ userId: { not: "user-1" } }, { userId: null }] },
+          { userId: null },
         ],
       },
       data: { userId: "user-1" },
@@ -288,7 +288,7 @@ describe("linkRsvpsToUser", () => {
       where: {
         AND: [
           { OR: [{ guestPhone: "5551234567" }] },
-          { OR: [{ userId: { not: "user-1" } }, { userId: null }] },
+          { userId: null },
         ],
       },
       data: { userId: "user-1" },
@@ -308,7 +308,7 @@ describe("linkRsvpsToUser", () => {
       where: {
         AND: [
           { OR: [{ guestEmail: "user@example.com" }, { guestPhone: "+15551234567" }] },
-          { OR: [{ userId: { not: "user-1" } }, { userId: null }] },
+          { userId: null },
         ],
       },
       data: { userId: "user-1" },
