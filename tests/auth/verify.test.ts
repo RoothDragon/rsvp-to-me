@@ -1,19 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-const { mockFindUniqueMagicToken, mockUpdateMagicToken, mockFindUniqueUser, mockCreateSession } =
-  vi.hoisted(() => ({
-    mockFindUniqueMagicToken: vi.fn(),
-    mockUpdateMagicToken: vi.fn(),
-    mockFindUniqueUser: vi.fn(),
-    mockCreateSession: vi.fn(),
-  }));
+const {
+  mockFindUniqueMagicToken,
+  mockUpdateMagicToken,
+  mockUpdateManyMagicToken,
+  mockFindUniqueUser,
+  mockCreateSession,
+  } = vi.hoisted(() => ({
+  mockFindUniqueMagicToken: vi.fn(),
+  mockUpdateMagicToken: vi.fn(),
+  mockUpdateManyMagicToken: vi.fn(),
+  mockFindUniqueUser: vi.fn(),
+  mockCreateSession: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {
     magicToken: {
       findUnique: mockFindUniqueMagicToken,
       update: mockUpdateMagicToken,
+      updateMany: mockUpdateManyMagicToken,
     },
     user: {
       findUnique: mockFindUniqueUser,
@@ -51,7 +58,11 @@ describe("GET /auth/verify", () => {
   beforeEach(() => {
     mockFindUniqueMagicToken.mockReset();
     mockUpdateMagicToken.mockReset();
+    mockUpdateManyMagicToken.mockReset();
+    mockUpdateManyMagicToken.mockResolvedValue({ count: 1 });
     mockFindUniqueUser.mockReset();
+    mockCreateSession.mockReset();
+
     process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
   });
 
@@ -139,6 +150,90 @@ describe("GET /auth/verify", () => {
       where: { id: "tok-id" },
       data: { used: true },
     });
+  });
+
+  it("rejects a token consumed by a concurrent request", async () => {
+  mockFindUniqueMagicToken.mockResolvedValue({
+    id: "tok-id",
+    token: "valid-token",
+    used: false,
+    expiresAt: futureDate,
+    userId: "user1",
+    type: "LOGIN",
+  });
+
+  // Another request consumed the token after our initial lookup.
+  mockUpdateManyMagicToken.mockResolvedValue({ count: 0 });
+  mockUpdateMagicToken.mockResolvedValue({});
+
+  mockFindUniqueUser.mockResolvedValue({
+    id: "user1",
+    email: "host@example.com",
+    role: "HOST",
+  });
+
+  const res = await GET(makeRequest("valid-token"));
+
+  expect(res.headers.get("location")).toContain(
+    "error=invalid-token"
+  );
+
+  expect(mockUpdateManyMagicToken).toHaveBeenCalledWith({
+    where: {
+      id: "tok-id",
+      used: false,
+      type: "LOGIN",
+      expiresAt: { gt: expect.any(Date) },
+    },
+    data: { used: true },
+  });
+
+  expect(mockCreateSession).not.toHaveBeenCalled();
+  expect(res.headers.get("set-cookie") ?? "").not.toContain(
+    "rsvp-session="
+  );
+});
+
+  it("rejects a token consumed by a concurrent request", async () => {
+    mockFindUniqueMagicToken.mockResolvedValue({
+      id: "tok-id",
+      token: "valid-token",
+      used: false,
+      expiresAt: futureDate,
+      userId: "user1",
+      type: "LOGIN",
+    });
+
+    // Another request consumed the token after our initial lookup.
+    mockUpdateManyMagicToken.mockResolvedValue({ count: 0 });
+    mockUpdateMagicToken.mockResolvedValue({});
+
+    mockFindUniqueUser.mockResolvedValue({
+      id: "user1",
+      email: "host@example.com",
+      role: "HOST",
+    });
+
+    const res = await GET(makeRequest("valid-token"));
+
+    expect(res.headers.get("location")).toContain(
+      "error=invalid-token"
+    );
+
+    expect(mockUpdateManyMagicToken).toHaveBeenCalledWith({
+      where: {
+        id: "tok-id",
+        used: false,
+        type: "LOGIN",
+        expiresAt: { gt: expect.any(Date) },
+      },
+      data: { used: true },
+    });
+
+    expect(mockCreateSession).not.toHaveBeenCalled();
+    expect(res.headers.get("set-cookie") ?? "").not.toContain(
+      "rsvp-session="
+    );
   });
 
   // SEC-41: the configured canonical origin wins over the request Host header;
