@@ -477,6 +477,8 @@ describe("addRSVP", () => {
       userId: "alice-id",
       email: "alice@example.com",
       role: "GUEST",
+      verifiedMethod: "EMAIL",
+      verifiedIdentifier: "alice@example.com",
     });
 
     mockUserFindUnique.mockResolvedValue({
@@ -532,6 +534,39 @@ describe("addRSVP", () => {
 
     mockUserUpsert.mockResolvedValue({
       id: "alice-id",
+      preferredLocale: null,
+    });
+
+    const result = await addRSVP({
+      eventId: EVENT_ID,
+      guestName: "Alice",
+      guestEmail: "alice@example.com",
+      status: "GOING",
+      plusOneCount: 0,
+    });
+
+    expect(result.success).toBe(false);
+    expect(mockRsvpCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects an SMS-authenticated session for email verification", async () => {
+    mockEventFindUnique.mockResolvedValue({
+      ...BASE_EVENT,
+      requireVerifiedRsvp: true,
+    });
+
+    mockGetSession.mockResolvedValue({
+      userId: "alice-id",
+      email: "alice@example.com",
+      role: "GUEST",
+      verifiedMethod: "SMS",
+      verifiedIdentifier: "+15551234567",
+    });
+
+    mockUserFindUnique.mockResolvedValue({
+      id: "alice-id",
+      email: "alice@example.com",
+      phone: "+15551234567",
       preferredLocale: null,
     });
 

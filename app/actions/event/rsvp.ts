@@ -276,12 +276,18 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
     // Do not accept a second, potentially unverified phone contact.
     const submittedEmail = data.guestEmail?.trim().toLowerCase();
     const accountEmail = user?.email?.trim().toLowerCase();
+    const verifiedEmail =
+      session.verifiedMethod === "EMAIL"
+        ? session.verifiedIdentifier?.trim().toLowerCase()
+        : undefined;
 
     if (
       !user ||
       !accountEmail ||
       !submittedEmail ||
+      !verifiedEmail ||
       submittedEmail !== accountEmail ||
+      submittedEmail !== verifiedEmail ||
       data.guestPhone
     ) {
       return {
