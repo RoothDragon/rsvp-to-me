@@ -42,6 +42,7 @@ vi.mock("@/lib/db", () => ({
     magicToken: {
       findUnique: mockMagicTokenFindUnique,
       update: mockMagicTokenUpdate,
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     user: {
       findUnique: mockUserFindUnique,
