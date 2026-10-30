@@ -7,6 +7,8 @@ import { resolveTheme } from "@/lib/theme";
 import { RsvpFlow } from "@/components/rsvp/RsvpFlow";
 import { getChannelConfig } from "@/lib/config";
 import { resolveEffectConfig } from "@/lib/effects";
+import { getSession } from "@/lib/session";
+import { VerifiedRsvpGate } from "@/components/rsvp/VerifiedRsvpGate";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -19,6 +21,7 @@ export default async function RsvpPage({ params, searchParams }: Props) {
   const { token, status, return: returnTo } = await searchParams;
 
   const [sessionUser, channelConfig] = await Promise.all([getSessionUser(), getChannelConfig()]);
+  const session = await getSession();
 
   const validStatuses = ["GOING", "MAYBE", "NO"] as const;
   const initialStatus = validStatuses.find((s) => s === status?.toUpperCase());
@@ -139,6 +142,29 @@ export default async function RsvpPage({ params, searchParams }: Props) {
 
   // New RSVP flow — status from URL
   if (!initialStatus) redirect(`/e/${slug}`);
+  if (event.requireVerifiedRsvp) {
+    const accountEmail = sessionUser?.email?.trim().toLowerCase();
+    const verifiedEmail =
+      session?.verifiedMethod === "EMAIL"
+        ? session.verifiedIdentifier?.trim().toLowerCase()
+        : undefined;
+
+    const hasVerifiedEmail =
+      !!sessionUser &&
+      !!session &&
+      !!accountEmail &&
+      !!verifiedEmail &&
+      accountEmail === verifiedEmail;
+
+    if (!hasVerifiedEmail) {
+      return (
+        <VerifiedRsvpGate
+          eventSlug={event.slug}
+          status={initialStatus}
+        />
+      );
+    }
+  }
 
   return (
     <RsvpFlow
