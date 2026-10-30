@@ -144,6 +144,44 @@ describe("RsvpFlow — new RSVP", () => {
     expect(screen.getByPlaceholderText("Phone (optional — for SMS updates)"))
       .toBeInTheDocument();
   });
+  ///--////
+  it("submits the verified email without an unverified phone", async () => {
+    mockAddRSVP.mockResolvedValue({
+      success: true,
+      id: "rsvp-verified",
+      editToken: "verified-edit-token",
+    });
+
+    render(
+      <RsvpFlow
+        event={baseEvent}
+        theme={testTheme}
+        initialStatus="GOING"
+        verifiedEmail="alice@example.com"
+        channelConfig={{ email: true, sms: true }}
+      />
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Your name (required)"), {
+      target: { value: "Alice" },
+    });
+
+    fireEvent.click(screen.getByText("Confirm RSVP"));
+
+    await waitFor(() => {
+      expect(mockAddRSVP).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventId: "event-1",
+          guestName: "Alice",
+          guestEmail: "alice@example.com",
+          guestPhone: undefined,
+          status: "GOING",
+        }),
+        expect.anything()
+      );
+    });
+  });
+
   it("submit button is disabled when name is empty", () => {
     render(
       <RsvpFlow event={baseEvent} theme={testTheme} initialStatus="GOING" sessionUser={null} />
