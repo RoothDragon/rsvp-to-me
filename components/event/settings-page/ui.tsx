@@ -47,6 +47,7 @@ export function Toggle({
       <span style={{ fontSize: "14px", color: t.textSecondary }}>{label}</span>
       <button
         type="button"
+        aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!value)}
         style={{
