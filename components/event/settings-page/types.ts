@@ -77,6 +77,7 @@ export type EventInput = Partial<GuestRsvpDisplayFields> & {
   guestSharingEnabled: boolean;
   guestsCanInvite: boolean;
   approvalRequired: boolean;
+  requireVerifiedRsvp: boolean;
   rsvpDeadline: Date | null;
   allowEditAfterDeadline: boolean;
   capacity: number | null;
@@ -125,6 +126,7 @@ export interface SettingsOverrides extends Partial<GuestRsvpDisplayFields> {
   plusOneMax?: number;
   plusOneNamesRequired?: boolean;
   approvalRequired?: boolean;
+  requireVerifiedRsvp?: boolean;
   rsvpDeadline?: string | null;
   allowEditAfterDeadline?: boolean;
   capacity?: number | null;

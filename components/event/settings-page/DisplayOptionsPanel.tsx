@@ -21,6 +21,8 @@ export function DisplayOptionsPanel({
   onGuestRsvpDisplayChange,
   visibility,
   setVisibility,
+  requireVerifiedRsvp,
+  setRequireVerifiedRsvp,
   guestsCanInvite,
   setGuestsCanInvite,
   password,
@@ -45,6 +47,8 @@ export function DisplayOptionsPanel({
   onGuestRsvpDisplayChange: (update: Partial<GuestRsvpDisplayFields>) => void;
   visibility: EventInput["visibility"];
   setVisibility: React.Dispatch<React.SetStateAction<EventInput["visibility"]>>;
+  requireVerifiedRsvp: boolean;
+  setRequireVerifiedRsvp: React.Dispatch<React.SetStateAction<boolean>>;
   guestsCanInvite: boolean;
   setGuestsCanInvite: React.Dispatch<React.SetStateAction<boolean>>;
   password: string;
@@ -96,6 +100,15 @@ export function DisplayOptionsPanel({
           ))}
         </div>
       </div>
+      <Toggle
+        label="Require verified RSVP contact"
+        value={requireVerifiedRsvp}
+        onChange={(val) => {
+          setRequireVerifiedRsvp(val);
+          triggerSaveSettings({ requireVerifiedRsvp: val });
+        }}
+        t={t}
+      />
       {visibility === "PRIVATE" && (
         <Toggle
           label={translate("allowGuestsInviteFriends")}
