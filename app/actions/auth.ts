@@ -159,6 +159,7 @@ export async function registerHostAction(
 export async function requestVerifiedGuestLinkAction(
   rawEmail: string,
   eventSlug: string,
+  status: string,
   captchaToken?: string | null
 ): Promise<{ success: boolean; error?: string }> {
   const parsed = z.string().trim().toLowerCase().email().max(100).safeParse(rawEmail);
@@ -168,6 +169,14 @@ export async function requestVerifiedGuestLinkAction(
   }
 
   const email = parsed.data;
+  const validStatuses = ["GOING", "MAYBE", "NO"] as const;
+
+  if (!validStatuses.some((value) => value === status)) {
+    return {
+      success: false,
+      error: "Invalid RSVP status.",
+    };
+  }
 
   await assertCaptcha("signin", captchaToken);
 
@@ -223,7 +232,8 @@ export async function requestVerifiedGuestLinkAction(
     select: { preferredLocale: true },
   });
 
-  const redirect = `/e/${encodeURIComponent(event.slug)}`;
+  const redirect =
+    `/e/${encodeURIComponent(event.slug)}/rsvp?status=${status}`;
   const link = await createMagicLink(email, redirect);
 
   if (!link) {

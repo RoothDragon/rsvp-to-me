@@ -316,9 +316,10 @@ describe("requestVerifiedGuestLinkAction", () => {
 
   it("creates a GUEST account and emails a magic link for an eligible event", async () => {
     const result = await requestVerifiedGuestLinkAction(
-      " NewGuest@Example.com ",
-      "testing-public-event"
-    );
+        "guest@example.com",
+        "testing-public-event",
+        "GOING"
+      );
 
     expect(result.success).toBe(true);
 
@@ -346,7 +347,7 @@ describe("requestVerifiedGuestLinkAction", () => {
 
     expect(mocks.mockCreateMagicLink).toHaveBeenCalledWith(
       "newguest@example.com",
-      "/e/testing-public-event"
+      "/e/testing-public-event/rsvp?status=GOING"
     );
 
     expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledWith(
@@ -355,7 +356,20 @@ describe("requestVerifiedGuestLinkAction", () => {
       "en-US"
     );
   });
-  ///
+  it("rejects an invalid RSVP status before creating a guest", async () => {
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event",
+      "ADMIN"
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Invalid RSVP status.");
+    expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
+    expect(mocks.mockCreateMagicLink).not.toHaveBeenCalled();
+    expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
+  });
+  ///----------------
 
   it("rejects registration when verification is disabled", async () => {
     mocks.mockEventFindUnique.mockResolvedValue({
@@ -368,9 +382,10 @@ describe("requestVerifiedGuestLinkAction", () => {
     });
 
     const result = await requestVerifiedGuestLinkAction(
-      "guest@example.com",
-      "testing-public-event"
-    );
+        "guest@example.com",
+        "testing-public-event",
+        "GOING"
+      );
 
     expect(result.success).toBe(false);
     expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
@@ -388,9 +403,10 @@ describe("requestVerifiedGuestLinkAction", () => {
     });
 
     const result = await requestVerifiedGuestLinkAction(
-      "guest@example.com",
-      "testing-public-event"
-    );
+        "guest@example.com",
+        "testing-public-event",
+        "GOING"
+      );
 
     expect(result.success).toBe(false);
     expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
@@ -408,9 +424,10 @@ describe("requestVerifiedGuestLinkAction", () => {
     });
 
     const result = await requestVerifiedGuestLinkAction(
-      "guest@example.com",
-      "testing-public-event"
-    );
+        "guest@example.com",
+        "testing-public-event",
+        "GOING"
+      );
 
     expect(result.success).toBe(false);
     expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
@@ -421,9 +438,10 @@ describe("requestVerifiedGuestLinkAction", () => {
     mocks.mockRateLimit.mockResolvedValueOnce({ success: false });
 
     const result = await requestVerifiedGuestLinkAction(
-      "guest@example.com",
-      "testing-public-event"
-    );
+        "guest@example.com",
+        "testing-public-event",
+        "GOING"
+      );
 
     expect(result.success).toBe(false);
     expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
@@ -436,9 +454,10 @@ describe("requestVerifiedGuestLinkAction", () => {
     );
 
     const result = await requestVerifiedGuestLinkAction(
-      "guest@example.com",
-      "testing-public-event"
-    );
+        "guest@example.com",
+        "testing-public-event",
+        "GOING"
+      );
 
     expect(result.success).toBe(false);
     expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledOnce();
@@ -455,9 +474,10 @@ describe("requestVerifiedGuestLinkAction", () => {
     });
 
     const result = await requestVerifiedGuestLinkAction(
-      "guest@example.com",
-      "testing-public-event"
-    );
+        "guest@example.com",
+        "testing-public-event",
+        "GOING"
+      );
 
     expect(result.success).toBe(false);
     expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
@@ -475,9 +495,10 @@ describe("requestVerifiedGuestLinkAction", () => {
     });
 
     const result = await requestVerifiedGuestLinkAction(
-      "guest@example.com",
-      "testing-public-event"
-    );
+        "guest@example.com",
+        "testing-public-event",
+        "GOING"
+      );
 
     expect(result.success).toBe(false);
     expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
