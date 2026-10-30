@@ -215,6 +215,31 @@ export async function saveEventSettings(
   // SEC-20: validate against an explicit allow-list before spreading into the
   // update, so unknown keys (status, slug, hostId, …) can't be mass-assigned.
   const { password, rsvpDeadline, ...rest } = SaveEventSettingsSchema.parse(settings);
+  // Verified guest RSVP currently supports only PUBLIC and UNLISTED
+  // events without a password. Evaluate the resulting configuration,
+  // including existing values when a field was omitted.
+  const currentVerificationSettings = event;
+
+  const effectiveVisibility =
+    rest.visibility ?? currentVerificationSettings.visibility;
+
+  const effectiveVerifiedRsvp =
+    rest.requireVerifiedRsvp ??
+    currentVerificationSettings.requireVerifiedRsvp;
+
+  const effectivePasswordProtected =
+    password === undefined
+      ? !!currentVerificationSettings.passwordHash
+      : password !== null && password !== "";
+
+  if (
+    effectiveVerifiedRsvp &&
+    (effectiveVisibility === "PRIVATE" || effectivePasswordProtected)
+  ) {
+    throw new Error(
+      "Verified RSVP requires a public or unlisted event without a password."
+    );
+  }
   const passwordHash =
     password === undefined
       ? undefined
