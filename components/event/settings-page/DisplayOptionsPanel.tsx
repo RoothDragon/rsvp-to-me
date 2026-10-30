@@ -142,6 +142,18 @@ export function DisplayOptionsPanel({
         }}
         t={t}
       />
+      {verifiedRsvpExplanation && (
+        <p
+          style={{
+            fontSize: "12px",
+            color: t.textMuted,
+            marginTop: "-4px",
+            marginBottom: "16px",
+          }}
+        >
+          {verifiedRsvpExplanation}
+        </p>
+      )}
       {visibility === "PRIVATE" && (
         <Toggle
           label={translate("allowGuestsInviteFriends")}
