@@ -278,10 +278,7 @@ describe("linkRsvpsToUser", () => {
     await linkRsvpsToUser("user-1");
     expect(mockRsvpUpdateMany).toHaveBeenCalledWith({
       where: {
-        AND: [
-          { OR: [{ guestEmail: "user@example.com" }] },
-          { userId: null },
-        ],
+        AND: [{ OR: [{ guestEmail: "user@example.com" }] }, { userId: null }],
       },
       data: { userId: "user-1" },
     });
@@ -294,10 +291,7 @@ describe("linkRsvpsToUser", () => {
     await linkRsvpsToUser("user-1");
     expect(mockRsvpUpdateMany).toHaveBeenCalledWith({
       where: {
-        AND: [
-          { OR: [{ guestPhone: "5551234567" }] },
-          { userId: null },
-        ],
+        AND: [{ OR: [{ guestPhone: "5551234567" }] }, { userId: null }],
       },
       data: { userId: "user-1" },
     });
@@ -365,7 +359,7 @@ describe("verifyMagicToken", () => {
       userId: "user-1",
       type: "LOGIN",
     });
-    mockMagicTokenUpdate.mockResolvedValue({});
+    mockMagicTokenUpdateMany.mockResolvedValue({ count: 1 });
     mockUserFindUnique.mockResolvedValue(null);
 
     const result = await verifyMagicToken(token);
@@ -380,14 +374,19 @@ describe("verifyMagicToken", () => {
       userId: "user-1",
       type: "LOGIN",
     });
-    mockMagicTokenUpdate.mockResolvedValue({});
+    mockMagicTokenUpdateMany.mockResolvedValue({ count: 1 });
     mockUserFindUnique.mockResolvedValue({ id: "user-1", email: "user@example.com", role: "HOST" });
     mockUserCount.mockResolvedValue(1);
 
     const result = await verifyMagicToken(token);
     expect(result).toBe(true);
-    expect(mockMagicTokenUpdate).toHaveBeenCalledWith({
-      where: { id: "tok-id" },
+    expect(mockMagicTokenUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: "tok-id",
+        used: false,
+        type: "LOGIN",
+        expiresAt: { gt: expect.any(Date) },
+      },
       data: { used: true },
     });
     expect(mockCreateSession).toHaveBeenCalledWith({
@@ -405,7 +404,7 @@ describe("verifyMagicToken", () => {
       userId: "user-1",
       type: "LOGIN",
     });
-    mockMagicTokenUpdate.mockResolvedValue({});
+    mockMagicTokenUpdateMany.mockResolvedValue({ count: 1 });
     mockUserFindUnique.mockResolvedValue({
       id: "user-1",
       email: "admin@example.com",
@@ -435,7 +434,7 @@ describe("verifyMagicToken", () => {
       userId: "user-1",
       type: "LOGIN",
     });
-    mockMagicTokenUpdate.mockResolvedValue({});
+    mockMagicTokenUpdateMany.mockResolvedValue({ count: 1 });
     mockUserFindUnique.mockResolvedValue({
       id: "user-1",
       email: "admin@example.com",
@@ -452,6 +451,26 @@ describe("verifyMagicToken", () => {
       role: "HOST",
     });
   });
+  /////
+  it("rejects a token consumed by another request", async () => {
+    mockMagicTokenFindUnique.mockResolvedValue({
+      id: "tok-id",
+      used: false,
+      expiresAt: future,
+      userId: "user-1",
+      type: "LOGIN",
+    });
+
+    // Another request consumed the token before our update.
+    mockMagicTokenUpdateMany.mockResolvedValue({ count: 0 });
+
+    const result = await verifyMagicToken(token);
+
+    expect(result).toBe(false);
+    expect(mockMagicTokenUpdateMany).toHaveBeenCalledOnce();
+    expect(mockUserFindUnique).not.toHaveBeenCalled();
+    expect(mockCreateSession).not.toHaveBeenCalled();
+  });
 
   it("returns false when token type is not LOGIN", async () => {
     mockMagicTokenFindUnique.mockResolvedValue({
@@ -464,7 +483,7 @@ describe("verifyMagicToken", () => {
 
     const result = await verifyMagicToken(token);
     expect(result).toBe(false);
-    expect(mockMagicTokenUpdate).not.toHaveBeenCalled();
+    expect(mockMagicTokenUpdateMany).not.toHaveBeenCalled();
   });
 });
 
