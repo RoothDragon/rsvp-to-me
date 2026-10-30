@@ -36,7 +36,14 @@ function TestPanel({
       setGuestSharingEnabled={setGuestSharingEnabled}
       guestListVis={guestListVis}
       setGuestListVis={setGuestListVis}
-      guestRsvpDisplay={{}}
+      guestRsvpDisplay={{
+        guestGoingList: "EXPANDED",
+        guestGoingCount: "EXACT",
+        guestMaybeList: "COLLAPSED",
+        guestMaybeCount: "HIDDEN",
+        guestDeclinedList: "COLLAPSED",
+        guestDeclinedCount: "CAPPED",
+        }}
       onGuestRsvpDisplayChange={vi.fn()}
       visibility={visibility}
       setVisibility={setVisibility}
