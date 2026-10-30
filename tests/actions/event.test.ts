@@ -1007,6 +1007,106 @@ describe("saveEventSettings", () => {
     expect(revalidatePath).toHaveBeenCalledWith(`/e/${EVENT_SLUG}`);
     expect(revalidatePath).toHaveBeenCalledWith(`/e/${EVENT_SLUG}/settings`);
   });
+  /------/
+  it("allows verified RSVP on an unlisted event without a password", async () => {
+    mockEventFindUnique.mockResolvedValue({
+      ...hostEventRow(),
+      visibility: "UNLISTED",
+      passwordHash: null,
+      requireVerifiedRsvp: false,
+    });
+
+    await saveEventSettings(EVENT_ID, { requireVerifiedRsvp: true });
+
+    expect(mockEventUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ requireVerifiedRsvp: true }),
+      })
+    );
+  });
+
+  it("rejects verified RSVP on a private event", async () => {
+    mockEventFindUnique.mockResolvedValue({
+      ...hostEventRow(),
+      visibility: "PRIVATE",
+      passwordHash: null,
+      requireVerifiedRsvp: false,
+    });
+
+    await expect(
+      saveEventSettings(EVENT_ID, { requireVerifiedRsvp: true })
+    ).rejects.toThrow("Verified RSVP requires");
+
+    expect(mockEventUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects verified RSVP when the event has a password", async () => {
+    mockEventFindUnique.mockResolvedValue({
+      ...hostEventRow(),
+      visibility: "PUBLIC",
+      passwordHash: "existing-hash",
+      requireVerifiedRsvp: false,
+    });
+
+    await expect(
+      saveEventSettings(EVENT_ID, { requireVerifiedRsvp: true })
+    ).rejects.toThrow("Verified RSVP requires");
+
+    expect(mockEventUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects making a verified event private", async () => {
+    mockEventFindUnique.mockResolvedValue({
+      ...hostEventRow(),
+      visibility: "UNLISTED",
+      passwordHash: null,
+      requireVerifiedRsvp: true,
+    });
+
+    await expect(
+      saveEventSettings(EVENT_ID, { visibility: "PRIVATE" })
+    ).rejects.toThrow("Verified RSVP requires");
+
+    expect(mockEventUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects adding a password to a verified event", async () => {
+    mockEventFindUnique.mockResolvedValue({
+      ...hostEventRow(),
+      visibility: "PUBLIC",
+      passwordHash: null,
+      requireVerifiedRsvp: true,
+    });
+
+    await expect(
+      saveEventSettings(EVENT_ID, { password: "new-password" })
+    ).rejects.toThrow("Verified RSVP requires");
+
+    expect(mockEventUpdate).not.toHaveBeenCalled();
+  });
+
+  it("allows disabling verification while making the event private", async () => {
+    mockEventFindUnique.mockResolvedValue({
+      ...hostEventRow(),
+      visibility: "UNLISTED",
+      passwordHash: null,
+      requireVerifiedRsvp: true,
+    });
+
+    await saveEventSettings(EVENT_ID, {
+      requireVerifiedRsvp: false,
+      visibility: "PRIVATE",
+    });
+
+    expect(mockEventUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          requireVerifiedRsvp: false,
+          visibility: "PRIVATE",
+        }),
+      })
+    );
+  });
 });
 
 // ── sendBlast ─────────────────────────────────────────────────────────────────
