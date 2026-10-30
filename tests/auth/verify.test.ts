@@ -234,7 +234,7 @@ describe("GET /auth/verify", () => {
       })
     );
   });
-  
+
   it("does not trust a token claiming a different email address", async () => {
     mockFindUniqueMagicToken.mockResolvedValue({
       id: "email-token",
@@ -263,6 +263,66 @@ describe("GET /auth/verify", () => {
       })
     );
   });  
+
+  ///////////////////////////////////////////////
+  it("allows legacy login tokens without granting verified contact", async () => {
+    mockFindUniqueMagicToken.mockResolvedValue({
+      id: "legacy-token",
+      userId: "user1",
+      used: false,
+      expiresAt: futureDate,
+      type: "LOGIN",
+      metadata: null,
+    });
+
+    mockFindUniqueUser.mockResolvedValue({
+      id: "user1",
+      email: "host@example.com",
+      role: "HOST",
+    });
+
+    const res = await GET(makeRequest("valid-token"));
+
+    expect(res.headers.get("location")).toBe(
+      "http://localhost:3000/dashboard"
+    );
+
+    expect(sealSession).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        verifiedMethod: expect.anything(),
+      })
+    );
+  });
+
+  it("allows login with malformed metadata without granting verified contact", async () => {
+    mockFindUniqueMagicToken.mockResolvedValue({
+      id: "malformed-token",
+      userId: "user1",
+      used: false,
+      expiresAt: futureDate,
+      type: "LOGIN",
+      metadata: "{invalid-json",
+    });
+
+    mockFindUniqueUser.mockResolvedValue({
+      id: "user1",
+      email: "host@example.com",
+      role: "HOST",
+    });
+
+    const res = await GET(makeRequest("valid-token"));
+
+    expect(res.headers.get("location")).toBe(
+      "http://localhost:3000/dashboard"
+    );
+
+    expect(sealSession).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        verifiedMethod: expect.anything(),
+      })
+    );
+  });  
+
   ///////////////////////////////////////////////
   // SEC-41: the configured canonical origin wins over the request Host header;
   // the header is only a fallback for installs without NEXT_PUBLIC_APP_URL.
