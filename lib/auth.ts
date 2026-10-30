@@ -141,7 +141,17 @@ export async function verifyMagicToken(token: string): Promise<boolean> {
     return false;
   }
 
-  await db.magicToken.update({ where: { id: record.id }, data: { used: true } });
+  const consumed = await db.magicToken.updateMany({
+  where: {
+    id: record.id,
+    used: false,
+    type: "LOGIN",
+    expiresAt: { gt: new Date() },
+  },
+  data: { used: true },
+});
+
+if (consumed.count !== 1) return false;
 
   const user = await db.user.findUnique({ where: { id: record.userId } });
   if (!user) return false;
