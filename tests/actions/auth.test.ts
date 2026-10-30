@@ -316,10 +316,10 @@ describe("requestVerifiedGuestLinkAction", () => {
 
   it("creates a GUEST account and emails a magic link for an eligible event", async () => {
     const result = await requestVerifiedGuestLinkAction(
-        "guest@example.com",
-        "testing-public-event",
-        "GOING"
-      );
+      " NewGuest@Example.com ",
+      "testing-public-event",
+      "GOING"
+    );
 
     expect(result.success).toBe(true);
 
