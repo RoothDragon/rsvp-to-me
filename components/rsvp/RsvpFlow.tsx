@@ -83,6 +83,7 @@ export function RsvpFlow({
   event,
   theme,
   effect = null,
+  verifiedEmail,
   initialStatus,
   existingRsvp,
   returnPath,
@@ -93,6 +94,7 @@ export function RsvpFlow({
   event: EventData;
   theme: ResolvedTheme;
   effect?: EffectConfig | null;
+  verifiedEmail?: string;
   initialStatus?: "GOING" | "MAYBE" | "NO";
   existingRsvp?: ExistingRsvp;
   returnPath?: string;
@@ -118,7 +120,7 @@ export function RsvpFlow({
     initialStatus ?? existingRsvp?.status ?? "GOING"
   );
   const [name, setName] = useState(existingRsvp?.guestName ?? "");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(verifiedEmail ?? "");
   const [phone, setPhone] = useState("");
   const [note, setNote] = useState(existingRsvp?.note ?? "");
   const [plusOneNames, setPlusOneNames] = useState<string[]>(
@@ -214,8 +216,8 @@ export function RsvpFlow({
               {
                 eventId: event.id,
                 guestName: name.trim(),
-                guestEmail: email.trim() || undefined,
-                guestPhone: phone.trim() || undefined,
+                guestEmail: verifiedEmail ?? (email.trim() || undefined),
+                guestPhone: verifiedEmail ? undefined : (phone.trim() || undefined),
                 status,
                 plusOneCount,
                 plusOneGuestNames,
@@ -723,16 +725,24 @@ export function RsvpFlow({
               />
               {!isEdit && (
                 <>
-                  {channelConfig.email && (
+                  {(channelConfig.email || verifiedEmail) && (
                     <input
                       style={S.inp}
                       type="email"
-                      placeholder={translate("emailOptionalUpdates")}
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder={
+                        verifiedEmail
+                          ? "Verified email address"
+                          : translate("emailOptionalUpdates")
+                      }
+                      value={verifiedEmail ?? email}
+                      onChange={(e) => {
+                        if (!verifiedEmail) setEmail(e.target.value);
+                      }}
+                      readOnly={!!verifiedEmail}
+                      required={!!verifiedEmail}
                     />
                   )}
-                  {channelConfig.sms && (
+                  {channelConfig.sms && !verifiedEmail && (
                     <input
                       style={S.inp}
                       type="tel"

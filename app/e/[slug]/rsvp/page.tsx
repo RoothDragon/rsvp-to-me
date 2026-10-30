@@ -142,6 +142,7 @@ export default async function RsvpPage({ params, searchParams }: Props) {
 
   // New RSVP flow — status from URL
   if (!initialStatus) redirect(`/e/${slug}`);
+  let verifiedRsvpEmail: string | undefined;
   if (event.requireVerifiedRsvp) {
     const accountEmail = sessionUser?.email?.trim().toLowerCase();
     const verifiedEmail =
@@ -164,6 +165,7 @@ export default async function RsvpPage({ params, searchParams }: Props) {
         />
       );
     }
+    verifiedRsvpEmail = verifiedEmail;
   }
 
   return (
@@ -174,6 +176,7 @@ export default async function RsvpPage({ params, searchParams }: Props) {
       initialStatus={initialStatus}
       sessionUser={sessionUser}
       channelConfig={channelConfig}
+      verifiedEmail={verifiedRsvpEmail}
     />
   );
 }
