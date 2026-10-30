@@ -27,11 +27,13 @@ export function Toggle({
   value,
   onChange,
   t,
+  disabled = false,
 }: {
   label: string;
   value: boolean;
   onChange: (v: boolean) => void;
   t: ResolvedTheme;
+  disabled?: boolean;
 }) {
   return (
     <div
@@ -44,12 +46,15 @@ export function Toggle({
     >
       <span style={{ fontSize: "14px", color: t.textSecondary }}>{label}</span>
       <button
+        type="button"
+        disabled={disabled}
         onClick={() => onChange(!value)}
         style={{
           width: "44px",
           height: "24px",
           borderRadius: "100px",
-          cursor: "pointer",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.5 : 1,
           background: value ? t.accent : t.inputBg,
           border: `1px solid ${t.inputBorder}`,
           position: "relative",

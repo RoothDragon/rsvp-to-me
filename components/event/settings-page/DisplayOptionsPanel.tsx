@@ -64,6 +64,15 @@ export function DisplayOptionsPanel({
   S: SettingsPageStyles;
 }) {
   const translate = useTranslations("Ui.Event.DisplayOptionsPanel");
+  const verifiedRsvpUnavailable =
+    visibility === "PRIVATE" || !!effectivePasswordHash;
+
+  const verifiedRsvpExplanation =
+    visibility === "PRIVATE"
+      ? "Verified RSVP is currently available only for public and unlisted events."
+      : effectivePasswordHash
+        ? "Remove the event password before enabling verified RSVP."
+        : null;
 
   return (
     <Section title={translate("displayOptions")} t={t}>
@@ -83,26 +92,50 @@ export function DisplayOptionsPanel({
                 display: "flex",
                 alignItems: "center",
                 gap: "10px",
-                cursor: "pointer",
+                cursor:
+                  val === "PRIVATE" && requireVerifiedRsvp
+                    ? "not-allowed"
+                    : "pointer",
               }}
             >
               <input
                 type="radio"
                 checked={visibility === val}
+                disabled={val === "PRIVATE" && requireVerifiedRsvp}
                 onChange={() => {
+                  if (val === "PRIVATE" && requireVerifiedRsvp) return;
+
                   setVisibility(val);
                   triggerSaveSettings({ visibility: val });
                 }}
                 style={{ accentColor: t.accent }}
               />
-              <span style={{ fontSize: "14px", color: t.textSecondary }}>{label}</span>
+              <span style={{ fontSize: "14px", color: t.textSecondary }}>
+                {label}
+              </span>
             </label>
           ))}
         </div>
+
+        {/* Explain why PRIVATE is disabled */}
+        {requireVerifiedRsvp && (
+          <p
+            style={{
+              fontSize: "12px",
+              color: t.textMuted,
+              marginTop: "8px",
+            }}
+          >
+            Disable verified RSVP before switching to a private event.
+          </p>
+        )}
       </div>
+
+      {/* Verified RSVP toggle goes here */}
       <Toggle
         label="Require verified RSVP contact"
         value={requireVerifiedRsvp}
+        disabled={verifiedRsvpUnavailable && !requireVerifiedRsvp}
         onChange={(val) => {
           setRequireVerifiedRsvp(val);
           triggerSaveSettings({ requireVerifiedRsvp: val });
