@@ -177,7 +177,7 @@ describe("RsvpFlow — new RSVP", () => {
           guestPhone: undefined,
           status: "GOING",
         }),
-        expect.anything()
+        null
       );
     });
   });
