@@ -98,7 +98,52 @@ describe("RsvpFlow — new RSVP", () => {
     );
     expect(screen.getByPlaceholderText("Your name (required)")).toBeInTheDocument();
   });
+  //////------------
+  it("shows a verified email as read-only and hides phone entry", () => {
+    render(
+      <RsvpFlow
+        event={baseEvent}
+        theme={testTheme}
+        initialStatus="GOING"
+        verifiedEmail="alice@example.com"
+        channelConfig={{ email: true, sms: true }}
+      />
+    );
 
+    const email = screen.getByDisplayValue("alice@example.com");
+
+    expect(email).toHaveAttribute("type", "email");
+    expect(email).toHaveAttribute("readonly");
+    expect(email).toBeRequired();
+
+    expect(
+      screen.queryByPlaceholderText("Phone (optional — for SMS updates)")
+    ).not.toBeInTheDocument();
+  });
+
+  it("preserves editable contact fields for ordinary RSVPs", () => {
+    render(
+      <RsvpFlow
+        event={baseEvent}
+        theme={testTheme}
+        initialStatus="GOING"
+        channelConfig={{ email: true, sms: true }}
+      />
+    );
+
+    const email = screen.getByPlaceholderText("Email (optional — for updates)")
+
+    expect(email).not.toHaveAttribute("readonly");
+
+    fireEvent.change(email, {
+      target: { value: "bob@example.com" },
+    });
+
+    expect(email).toHaveValue("bob@example.com");
+
+    expect(screen.getByPlaceholderText("Phone (optional — for SMS updates)"))
+      .toBeInTheDocument();
+  });
   it("submit button is disabled when name is empty", () => {
     render(
       <RsvpFlow event={baseEvent} theme={testTheme} initialStatus="GOING" sessionUser={null} />
