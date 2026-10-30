@@ -153,6 +153,7 @@ export default async function RsvpPage({ params, searchParams }: Props) {
     const hasVerifiedEmail =
       !!sessionUser &&
       !!session &&
+      session.userId === sessionUser.id &&
       !!accountEmail &&
       !!verifiedEmail &&
       accountEmail === verifiedEmail;
