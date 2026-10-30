@@ -40,6 +40,7 @@ const mockEvent: EventInput = {
   guestSharingEnabled: true,
   guestsCanInvite: true,
   approvalRequired: false,
+  requireVerifiedRsvp: false,
   rsvpDeadline: null,
   allowEditAfterDeadline: true,
   capacity: null,
