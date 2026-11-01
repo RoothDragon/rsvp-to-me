@@ -117,8 +117,7 @@ export function SettingsPage({
   const [plusOneMax, setPlusOneMax] = useState(event.plusOneMax);
   const [plusOneNamesRequired, setPlusOneNamesRequired] = useState(event.plusOneNamesRequired);
   const [approvalRequired, setApprovalRequired] = useState(event.approvalRequired);
-  const [requireVerifiedRsvp, setRequireVerifiedRsvp] =
-    useState(event.requireVerifiedRsvp);
+  const [requireVerifiedRsvp, setRequireVerifiedRsvp] = useState(event.requireVerifiedRsvp);
   const [guestsCanInvite, setGuestsCanInvite] = useState(event.guestsCanInvite);
   const [maybeEnabled, setMaybeEnabled] = useState(event.maybeEnabled);
   const [capacity, setCapacity] = useState(event.capacity?.toString() ?? "");
@@ -341,7 +340,7 @@ export function SettingsPage({
       requireVerifiedRsvp:
         overrides.requireVerifiedRsvp !== undefined
           ? overrides.requireVerifiedRsvp
-          : requireVerifiedRsvp,  
+          : requireVerifiedRsvp,
       maybeEnabled: overrides.maybeEnabled !== undefined ? overrides.maybeEnabled : maybeEnabled,
       capacity:
         overrides.capacity !== undefined

@@ -94,3 +94,11 @@ October 2026 (`8a8fb7bf`) extends `dependency-security-baseline.test.ts` with up
 | `invitation-composer-qa.test.tsx`                    | Invite composer dropped focus on Tab after a name edit, discarded the draft on close, and hid why disabled-channel rows failed; typing bypassed the 200-recipient cap; imports dropped an invalid first guest or moved names onto the wrong contact | cb58e723 / de78391d            |
 | `guest-list-stale-resend.test.tsx`                   | Guest-list Resend used unreviewed `inviteGuest`, so a stale card resent silently after a reply, rename, or conflict; then a "responded" refusal advised a refresh that could not clear it                                                           | 8be23944 / de78391d            |
 | `preflight-worker-typecheck.test.ts`                 | Local preflight skipped CI's standalone email-worker type-check, so worker type errors passed the local CI-parity gate                                                                                                                              | de78391d                       |
+
+`contact-change-atomicity.test.ts` (`01a18e04`): single-use contact-change claims, transactional failure/retry, token-type validation, and phone-change session email.
+
+`session-identity-binding.test.ts` (`01a18e04`): reject backing database/cache sessions with a different user or session id from the sealed cookie.
+
+`preflight-loopback-services.test.ts` (`01a18e04`): capture service startup arguments and require loopback-only PostgreSQL/Redis exposure on shared validation hosts.
+
+`contact-change-db-target.test.ts` (`01a18e04`): reject remote, default-development, wrong-database, and unmarked targets before integration schema setup.

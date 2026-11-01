@@ -382,10 +382,10 @@ describe("requestVerifiedGuestLinkAction", () => {
     });
 
     const result = await requestVerifiedGuestLinkAction(
-        "guest@example.com",
-        "testing-public-event",
-        "GOING"
-      );
+      "guest@example.com",
+      "testing-public-event",
+      "GOING"
+    );
 
     expect(result.success).toBe(false);
     expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
@@ -403,10 +403,10 @@ describe("requestVerifiedGuestLinkAction", () => {
     });
 
     const result = await requestVerifiedGuestLinkAction(
-        "guest@example.com",
-        "testing-public-event",
-        "GOING"
-      );
+      "guest@example.com",
+      "testing-public-event",
+      "GOING"
+    );
 
     expect(result.success).toBe(false);
     expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
@@ -424,10 +424,10 @@ describe("requestVerifiedGuestLinkAction", () => {
     });
 
     const result = await requestVerifiedGuestLinkAction(
-        "guest@example.com",
-        "testing-public-event",
-        "GOING"
-      );
+      "guest@example.com",
+      "testing-public-event",
+      "GOING"
+    );
 
     expect(result.success).toBe(false);
     expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
@@ -438,10 +438,10 @@ describe("requestVerifiedGuestLinkAction", () => {
     mocks.mockRateLimit.mockResolvedValueOnce({ success: false });
 
     const result = await requestVerifiedGuestLinkAction(
-        "guest@example.com",
-        "testing-public-event",
-        "GOING"
-      );
+      "guest@example.com",
+      "testing-public-event",
+      "GOING"
+    );
 
     expect(result.success).toBe(false);
     expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
@@ -449,15 +449,13 @@ describe("requestVerifiedGuestLinkAction", () => {
   });
 
   it("returns an error when verification email delivery fails", async () => {
-    mocks.mockSendMagicLinkEmail.mockRejectedValueOnce(
-      new Error("Simulated SMTP failure")
-    );
+    mocks.mockSendMagicLinkEmail.mockRejectedValueOnce(new Error("Simulated SMTP failure"));
 
     const result = await requestVerifiedGuestLinkAction(
-        "guest@example.com",
-        "testing-public-event",
-        "GOING"
-      );
+      "guest@example.com",
+      "testing-public-event",
+      "GOING"
+    );
 
     expect(result.success).toBe(false);
     expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledOnce();
@@ -474,10 +472,10 @@ describe("requestVerifiedGuestLinkAction", () => {
     });
 
     const result = await requestVerifiedGuestLinkAction(
-        "guest@example.com",
-        "testing-public-event",
-        "GOING"
-      );
+      "guest@example.com",
+      "testing-public-event",
+      "GOING"
+    );
 
     expect(result.success).toBe(false);
     expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
@@ -495,10 +493,10 @@ describe("requestVerifiedGuestLinkAction", () => {
     });
 
     const result = await requestVerifiedGuestLinkAction(
-        "guest@example.com",
-        "testing-public-event",
-        "GOING"
-      );
+      "guest@example.com",
+      "testing-public-event",
+      "GOING"
+    );
 
     expect(result.success).toBe(false);
     expect(mocks.mockUserUpsert).not.toHaveBeenCalled();

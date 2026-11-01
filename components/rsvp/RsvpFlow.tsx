@@ -217,7 +217,7 @@ export function RsvpFlow({
                 eventId: event.id,
                 guestName: name.trim(),
                 guestEmail: verifiedEmail ?? (email.trim() || undefined),
-                guestPhone: verifiedEmail ? undefined : (phone.trim() || undefined),
+                guestPhone: verifiedEmail ? undefined : phone.trim() || undefined,
                 status,
                 plusOneCount,
                 plusOneGuestNames,
@@ -730,9 +730,7 @@ export function RsvpFlow({
                       style={S.inp}
                       type="email"
                       placeholder={
-                        verifiedEmail
-                          ? "Verified email address"
-                          : translate("emailOptionalUpdates")
+                        verifiedEmail ? "Verified email address" : translate("emailOptionalUpdates")
                       }
                       value={verifiedEmail ?? email}
                       onChange={(e) => {

@@ -119,10 +119,7 @@ export async function linkRsvpsToUser(userId: string) {
 
   await db.rSVP.updateMany({
     where: {
-      AND: [
-        { OR: conditions },
-        { userId: null },
-      ],
+      AND: [{ OR: conditions }, { userId: null }],
     },
     data: {
       userId,
@@ -142,16 +139,16 @@ export async function verifyMagicToken(token: string): Promise<boolean> {
   }
 
   const consumed = await db.magicToken.updateMany({
-  where: {
-    id: record.id,
-    used: false,
-    type: "LOGIN",
-    expiresAt: { gt: new Date() },
-  },
-  data: { used: true },
-});
+    where: {
+      id: record.id,
+      used: false,
+      type: "LOGIN",
+      expiresAt: { gt: new Date() },
+    },
+    data: { used: true },
+  });
 
-if (consumed.count !== 1) return false;
+  if (consumed.count !== 1) return false;
 
   const user = await db.user.findUnique({ where: { id: record.userId } });
   if (!user) return false;

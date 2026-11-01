@@ -53,9 +53,7 @@ export async function GET(request: NextRequest) {
   });
 
   if (consumed.count !== 1) {
-    return redirectWithNoReferrer(
-      `${origin}/auth/sign-in?error=invalid-token`
-    );
+    return redirectWithNoReferrer(`${origin}/auth/sign-in?error=invalid-token`);
   }
 
   const user = await db.user.findUnique({ where: { id: record.userId } });
@@ -65,9 +63,7 @@ export async function GET(request: NextRequest) {
   // The token records the contact to which the magic link was sent.
   // Legacy tokens without metadata still permit ordinary sign-in,
   // but cannot establish verified contact ownership.
-  let verifiedContact:
-    | { verifiedMethod: "EMAIL" | "SMS"; verifiedIdentifier: string }
-    | undefined;
+  let verifiedContact: { verifiedMethod: "EMAIL" | "SMS"; verifiedIdentifier: string } | undefined;
 
   if (record.metadata) {
     try {
@@ -77,21 +73,16 @@ export async function GET(request: NextRequest) {
         const value = metadata as Record<string, unknown>;
 
         if (
-          (value.verifiedMethod === "EMAIL" ||
-            value.verifiedMethod === "SMS") &&
+          (value.verifiedMethod === "EMAIL" || value.verifiedMethod === "SMS") &&
           typeof value.verifiedIdentifier === "string"
         ) {
           const identifier = value.verifiedIdentifier;
 
           // Confirm the recorded delivery contact still belongs
           // to the authenticated user.
-          const currentContact =
-            value.verifiedMethod === "EMAIL" ? user.email : user.phone;
+          const currentContact = value.verifiedMethod === "EMAIL" ? user.email : user.phone;
 
-          if (
-            currentContact &&
-            identifier.toLowerCase() === currentContact.trim().toLowerCase()
-          ) {
+          if (currentContact && identifier.toLowerCase() === currentContact.trim().toLowerCase()) {
             verifiedContact = {
               verifiedMethod: value.verifiedMethod,
               verifiedIdentifier: identifier,

@@ -232,17 +232,14 @@ export async function requestVerifiedGuestLinkAction(
     select: { preferredLocale: true },
   });
 
-  const redirect =
-    `/e/${encodeURIComponent(event.slug)}/rsvp?status=${status}`;
+  const redirect = `/e/${encodeURIComponent(event.slug)}/rsvp?status=${status}`;
   const link = await createMagicLink(email, redirect);
 
   if (!link) {
     return { success: false, error: "Unable to create verification link." };
   }
 
-  const locale = resolveLocale(
-    user.preferredLocale ?? (await cookies()).get(LOCALE_COOKIE)?.value
-  );
+  const locale = resolveLocale(user.preferredLocale ?? (await cookies()).get(LOCALE_COOKIE)?.value);
 
   try {
     await sendMagicLinkEmail(email, link, locale);

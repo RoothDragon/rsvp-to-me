@@ -218,7 +218,7 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
       approvalRequired: true,
       requireVerifiedRsvp: true,
       visibility: true,
-      passwordHash: true,      
+      passwordHash: true,
       rsvpDeadline: true,
       capacity: true,
       startAt: true,
@@ -245,10 +245,7 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
     // Initial verified-guest flow supports PUBLIC and UNLISTED
     // events without passwords. Private and password-protected
     // events require a separate authorized invitation flow.
-    if (
-      !["PUBLIC", "UNLISTED"].includes(event.visibility) ||
-      event.passwordHash !== null
-    ) {
+    if (!["PUBLIC", "UNLISTED"].includes(event.visibility) || event.passwordHash !== null) {
       return {
         success: false,
         error: "Verified RSVP registration is not available for this event.",
@@ -510,7 +507,7 @@ export async function updateRSVP(
         error: "You must sign in as the RSVP owner to edit this response.",
       };
     }
-  }  
+  }
 
   if (rsvp.event.startAt <= new Date()) {
     return { success: false, error: await eventActionMessage("eventStarted") };

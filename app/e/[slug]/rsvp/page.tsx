@@ -159,12 +159,7 @@ export default async function RsvpPage({ params, searchParams }: Props) {
       accountEmail === verifiedEmail;
 
     if (!hasVerifiedEmail) {
-      return (
-        <VerifiedRsvpGate
-          eventSlug={event.slug}
-          status={initialStatus}
-        />
-      );
+      return <VerifiedRsvpGate eventSlug={event.slug} status={initialStatus} />;
     }
     verifiedRsvpEmail = verifiedEmail;
   }

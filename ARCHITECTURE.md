@@ -134,9 +134,17 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
 4. Host and administrator mutations must use guards from `lib/auth-guards.ts`.
 5. Public event visibility/password/token decisions belong in
    `lib/eventAccess.ts`.
-6. Guests edit an RSVP through its edit token; do not substitute host sessions
-   or publicly visible RSVP fields for that authority.
-7. User-content create/edit mutations call `assertCaptcha()` from `lib/captcha.ts`.
+6. Guests edit an RSVP through its edit token. With `Event.requireVerifiedRsvp`,
+   the token also requires a live session for the linked RSVP owner. New responses
+   require email-login provenance matching the submitted and current account email.
+   `lib/session.ts` binds the backing session id/user to the encrypted cookie.
+   Host/co-host/admin settings changes can disable this event-wide requirement.
+   Do not substitute publicly visible RSVP fields for edit authority.
+7. `app/auth/verify-change/route.ts` conditionally consumes only unexpired
+   EMAIL_CHANGE/PHONE_CHANGE tokens in the same Prisma transaction as account
+   and linked-RSVP contact updates; session creation and unclaimed-RSVP linking
+   follow the commit.
+8. User-content create/edit mutations call `assertCaptcha()` from `lib/captcha.ts`.
    Turnstile tokens are action-bound, passed directly with the protected mutation,
    and verified server-side. Never route them through shared browser state such as
    a cookie. Only administrators bypass this boundary; authenticated hosts and
@@ -324,3 +332,8 @@ load nvm, and select `.nvmrc` so they work from noninteractive Codex shells.
 - Treat unreferenced files as review candidates, not automatically safe
   deletions; direct public URLs, deployment downloads, and external automation
   may not appear in static imports.
+
+The contact-change PostgreSQL suite also has `vitest.contact-change.config.ts`,
+whose global setup requires an explicitly marked disposable loopback database on
+port 55432 before running schema setup. It exercises real transaction rollback
+and simultaneous token redemption. See `docs/admin/verified-rsvp-validation.md`.

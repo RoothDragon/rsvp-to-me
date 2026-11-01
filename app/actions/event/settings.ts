@@ -220,25 +220,18 @@ export async function saveEventSettings(
   // including existing values when a field was omitted.
   const currentVerificationSettings = event;
 
-  const effectiveVisibility =
-    rest.visibility ?? currentVerificationSettings.visibility;
+  const effectiveVisibility = rest.visibility ?? currentVerificationSettings.visibility;
 
   const effectiveVerifiedRsvp =
-    rest.requireVerifiedRsvp ??
-    currentVerificationSettings.requireVerifiedRsvp;
+    rest.requireVerifiedRsvp ?? currentVerificationSettings.requireVerifiedRsvp;
 
   const effectivePasswordProtected =
     password === undefined
       ? !!currentVerificationSettings.passwordHash
       : password !== null && password !== "";
 
-  if (
-    effectiveVerifiedRsvp &&
-    (effectiveVisibility === "PRIVATE" || effectivePasswordProtected)
-  ) {
-    throw new Error(
-      "Verified RSVP requires a public or unlisted event without a password."
-    );
+  if (effectiveVerifiedRsvp && (effectiveVisibility === "PRIVATE" || effectivePasswordProtected)) {
+    throw new Error("Verified RSVP requires a public or unlisted event without a password.");
   }
   const passwordHash =
     password === undefined

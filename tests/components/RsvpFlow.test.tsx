@@ -131,7 +131,7 @@ describe("RsvpFlow — new RSVP", () => {
       />
     );
 
-    const email = screen.getByPlaceholderText("Email (optional — for updates)")
+    const email = screen.getByPlaceholderText("Email (optional — for updates)");
 
     expect(email).not.toHaveAttribute("readonly");
 
@@ -141,8 +141,7 @@ describe("RsvpFlow — new RSVP", () => {
 
     expect(email).toHaveValue("bob@example.com");
 
-    expect(screen.getByPlaceholderText("Phone (optional — for SMS updates)"))
-      .toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Phone (optional — for SMS updates)")).toBeInTheDocument();
   });
   ///--////
   it("submits the verified email without an unverified phone", async () => {

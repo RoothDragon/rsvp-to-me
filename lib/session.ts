@@ -133,7 +133,7 @@ export async function getSession(): Promise<SessionData | null> {
       }
     }
 
-    if (!dbSession) {
+    if (!dbSession || dbSession.id !== session.sessionId || dbSession.userId !== session.userId) {
       return null;
     }
 

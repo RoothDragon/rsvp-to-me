@@ -28,7 +28,12 @@ export async function GET(request: NextRequest) {
 
   const hashedToken = hashToken(token);
   const record = await db.magicToken.findUnique({ where: { token: hashedToken } });
-  if (!record || record.used || record.expiresAt < new Date() || record.type === "LOGIN") {
+  if (
+    !record ||
+    record.used ||
+    record.expiresAt <= new Date() ||
+    (record.type !== "EMAIL_CHANGE" && record.type !== "PHONE_CHANGE")
+  ) {
     return redirectWithNoReferrer(`${origin}/profile?error=invalid-token`);
   }
 
@@ -56,26 +61,44 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  await db.magicToken.update({ where: { id: record.id }, data: { used: true } });
+  const changed = await db.$transaction(async (tx) => {
+    const consumed = await tx.magicToken.updateMany({
+      where: {
+        id: record.id,
+        used: false,
+        type: record.type,
+        expiresAt: { gt: new Date() },
+      },
+      data: { used: true },
+    });
 
-  if (isEmail) {
-    await db.user.update({
-      where: { id: user.id },
-      data: { email: newValue },
-    });
-    await db.rSVP.updateMany({
-      where: { userId: user.id },
-      data: { guestEmail: newValue },
-    });
-  } else {
-    await db.user.update({
-      where: { id: user.id },
-      data: { phone: newValue },
-    });
-    await db.rSVP.updateMany({
-      where: { userId: user.id },
-      data: { guestPhone: newValue },
-    });
+    if (consumed.count !== 1) return false;
+
+    if (isEmail) {
+      await tx.user.update({
+        where: { id: user.id },
+        data: { email: newValue },
+      });
+      await tx.rSVP.updateMany({
+        where: { userId: user.id },
+        data: { guestEmail: newValue },
+      });
+    } else {
+      await tx.user.update({
+        where: { id: user.id },
+        data: { phone: newValue },
+      });
+      await tx.rSVP.updateMany({
+        where: { userId: user.id },
+        data: { guestPhone: newValue },
+      });
+    }
+
+    return true;
+  });
+
+  if (!changed) {
+    return redirectWithNoReferrer(`${origin}/profile?error=invalid-token`);
   }
 
   // Link any matching RSVPs dynamically on profile change verification
@@ -106,7 +129,7 @@ export async function GET(request: NextRequest) {
 
   const sealed = await sealSession({
     userId: user.id,
-    email: newValue,
+    email: isEmail ? newValue : (user.email ?? ""),
     role: user.role as "HOST" | "ADMIN" | "GUEST",
     sessionId,
   });

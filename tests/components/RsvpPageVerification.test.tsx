@@ -1,4 +1,3 @@
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@/tests/components/render";
 
@@ -233,9 +232,7 @@ describe("RSVP page verification gate", () => {
       decision: "private-blocked",
     });
 
-    await expect(renderPage()).rejects.toThrow(
-      "REDIRECT:/e/test-party"
-    );
+    await expect(renderPage()).rejects.toThrow("REDIRECT:/e/test-party");
 
     expect(mocks.gate).not.toHaveBeenCalled();
     expect(mocks.flow).not.toHaveBeenCalled();

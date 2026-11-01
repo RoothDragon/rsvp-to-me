@@ -1,4 +1,3 @@
-
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@/tests/components/render";
@@ -43,7 +42,7 @@ function TestPanel({
         guestMaybeCount: "HIDDEN",
         guestDeclinedList: "COLLAPSED",
         guestDeclinedCount: "CAPPED",
-        }}
+      }}
       onGuestRsvpDisplayChange={vi.fn()}
       visibility={visibility}
       setVisibility={setVisibility}
@@ -80,9 +79,7 @@ describe("DisplayOptionsPanel verified RSVP compatibility", () => {
 
     expect(toggle).toBeDisabled();
     expect(
-      screen.getByText(
-        "Verified RSVP is currently available only for public and unlisted events."
-      )
+      screen.getByText("Verified RSVP is currently available only for public and unlisted events.")
     ).toBeInTheDocument();
 
     expect(saveSettings).not.toHaveBeenCalled();

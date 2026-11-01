@@ -64,8 +64,7 @@ export function DisplayOptionsPanel({
   S: SettingsPageStyles;
 }) {
   const translate = useTranslations("Ui.Event.DisplayOptionsPanel");
-  const verifiedRsvpUnavailable =
-    visibility === "PRIVATE" || !!effectivePasswordHash;
+  const verifiedRsvpUnavailable = visibility === "PRIVATE" || !!effectivePasswordHash;
 
   const verifiedRsvpExplanation =
     visibility === "PRIVATE"
@@ -92,10 +91,7 @@ export function DisplayOptionsPanel({
                 display: "flex",
                 alignItems: "center",
                 gap: "10px",
-                cursor:
-                  val === "PRIVATE" && requireVerifiedRsvp
-                    ? "not-allowed"
-                    : "pointer",
+                cursor: val === "PRIVATE" && requireVerifiedRsvp ? "not-allowed" : "pointer",
               }}
             >
               <input
@@ -110,9 +106,7 @@ export function DisplayOptionsPanel({
                 }}
                 style={{ accentColor: t.accent }}
               />
-              <span style={{ fontSize: "14px", color: t.textSecondary }}>
-                {label}
-              </span>
+              <span style={{ fontSize: "14px", color: t.textSecondary }}>{label}</span>
             </label>
           ))}
         </div>

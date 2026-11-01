@@ -110,7 +110,12 @@ vi.mock("@/lib/db", () => ({
     },
     $executeRaw: vi.fn().mockResolvedValue(1),
     event: { findUnique: mockEventFindUnique, update: mockEventUpdate },
-    user: { findFirst: mockUserFindFirst, create: mockUserCreate, findUnique: mockUserFindUnique, upsert: mockUserUpsert, },
+    user: {
+      findFirst: mockUserFindFirst,
+      create: mockUserCreate,
+      findUnique: mockUserFindUnique,
+      upsert: mockUserUpsert,
+    },
     rSVP: {
       create: mockRsvpCreate,
       count: mockRsvpCount,
@@ -382,6 +387,56 @@ describe("addRSVP", () => {
     mockRsvpCreate.mockResolvedValue({ id: "rsvp-1", editToken: "tok-abc" });
   });
 
+  it.each([
+    { label: "legacy session", method: undefined, identifier: undefined, phone: undefined },
+    {
+      label: "stale verified email",
+      method: "EMAIL",
+      identifier: "old@example.com",
+      phone: undefined,
+    },
+    { label: "SMS provenance", method: "SMS", identifier: "alice@example.com", phone: undefined },
+    {
+      label: "unverified secondary phone",
+      method: "EMAIL",
+      identifier: "alice@example.com",
+      phone: "+15555550123",
+    },
+  ])("rejects protected RSVP creation with $label", async ({ method, identifier, phone }) => {
+    mockEventFindUnique.mockResolvedValue({ ...BASE_EVENT, requireVerifiedRsvp: true });
+    mockGetSession.mockResolvedValue({
+      userId: "alice-id",
+      email: "alice@example.com",
+      role: "GUEST",
+      verifiedMethod: method,
+      verifiedIdentifier: identifier,
+    });
+    mockUserFindUnique.mockResolvedValue({ id: "alice-id", email: "alice@example.com" });
+    const result = await addRSVP({
+      eventId: EVENT_ID,
+      guestName: "Alice",
+      guestEmail: "alice@example.com",
+      guestPhone: phone,
+      status: "GOING",
+      plusOneCount: 0,
+    });
+    expect(result.success).toBe(false);
+    expect(mockUserUpsert).not.toHaveBeenCalled();
+    expect(mockRsvpCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects a protected edit token without a session", async () => {
+    mockGetSession.mockResolvedValue(null);
+    mockRsvpFindUnique.mockResolvedValue({
+      id: "rsvp-alice",
+      userId: "alice-id",
+      event: { ...BASE_EVENT, requireVerifiedRsvp: true },
+    });
+    const result = await updateRSVP("secret-token", { status: "NO", plusOneCount: 0 });
+    expect(result.success).toBe(false);
+    expect(mockRsvpUpdate).not.toHaveBeenCalled();
+  });
+
   it("rejects editing another guest's verified RSVP", async () => {
     mockGetSession.mockResolvedValue({
       userId: "bob-id",
@@ -420,12 +475,12 @@ describe("addRSVP", () => {
       requireVerifiedRsvp: true,
     });
 
-  const result = await addRSVP({
-    eventId: EVENT_ID,
-    guestName: "Alice",
-    status: "GOING",
-    plusOneCount: 0,
-  });
+    const result = await addRSVP({
+      eventId: EVENT_ID,
+      guestName: "Alice",
+      status: "GOING",
+      plusOneCount: 0,
+    });
 
     expect(result.success).toBe(false);
     expect(mockRsvpCreate).not.toHaveBeenCalled();
@@ -1007,7 +1062,6 @@ describe("saveEventSettings", () => {
     expect(revalidatePath).toHaveBeenCalledWith(`/e/${EVENT_SLUG}`);
     expect(revalidatePath).toHaveBeenCalledWith(`/e/${EVENT_SLUG}/settings`);
   });
-  /------/
   it("allows verified RSVP on an unlisted event without a password", async () => {
     mockEventFindUnique.mockResolvedValue({
       ...hostEventRow(),
@@ -1033,9 +1087,9 @@ describe("saveEventSettings", () => {
       requireVerifiedRsvp: false,
     });
 
-    await expect(
-      saveEventSettings(EVENT_ID, { requireVerifiedRsvp: true })
-    ).rejects.toThrow("Verified RSVP requires");
+    await expect(saveEventSettings(EVENT_ID, { requireVerifiedRsvp: true })).rejects.toThrow(
+      "Verified RSVP requires"
+    );
 
     expect(mockEventUpdate).not.toHaveBeenCalled();
   });
@@ -1048,9 +1102,9 @@ describe("saveEventSettings", () => {
       requireVerifiedRsvp: false,
     });
 
-    await expect(
-      saveEventSettings(EVENT_ID, { requireVerifiedRsvp: true })
-    ).rejects.toThrow("Verified RSVP requires");
+    await expect(saveEventSettings(EVENT_ID, { requireVerifiedRsvp: true })).rejects.toThrow(
+      "Verified RSVP requires"
+    );
 
     expect(mockEventUpdate).not.toHaveBeenCalled();
   });
@@ -1063,9 +1117,9 @@ describe("saveEventSettings", () => {
       requireVerifiedRsvp: true,
     });
 
-    await expect(
-      saveEventSettings(EVENT_ID, { visibility: "PRIVATE" })
-    ).rejects.toThrow("Verified RSVP requires");
+    await expect(saveEventSettings(EVENT_ID, { visibility: "PRIVATE" })).rejects.toThrow(
+      "Verified RSVP requires"
+    );
 
     expect(mockEventUpdate).not.toHaveBeenCalled();
   });
@@ -1078,9 +1132,9 @@ describe("saveEventSettings", () => {
       requireVerifiedRsvp: true,
     });
 
-    await expect(
-      saveEventSettings(EVENT_ID, { password: "new-password" })
-    ).rejects.toThrow("Verified RSVP requires");
+    await expect(saveEventSettings(EVENT_ID, { password: "new-password" })).rejects.toThrow(
+      "Verified RSVP requires"
+    );
 
     expect(mockEventUpdate).not.toHaveBeenCalled();
   });

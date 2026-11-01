@@ -25,6 +25,7 @@ describe("lib/docs.ts", () => {
       "sample-data",
       "sms",
       "upgrading",
+      "verified-rsvp-validation",
     ]);
     for (const doc of docs) {
       expect(doc.audience).toBe("admin");

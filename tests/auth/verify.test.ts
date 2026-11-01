@@ -7,7 +7,7 @@ const {
   mockUpdateManyMagicToken,
   mockFindUniqueUser,
   mockCreateSession,
-  } = vi.hoisted(() => ({
+} = vi.hoisted(() => ({
   mockFindUniqueMagicToken: vi.fn(),
   mockUpdateMagicToken: vi.fn(),
   mockUpdateManyMagicToken: vi.fn(),
@@ -181,9 +181,7 @@ describe("GET /auth/verify", () => {
 
     const res = await GET(makeRequest("valid-token"));
 
-    expect(res.headers.get("location")).toContain(
-      "error=invalid-token"
-    );
+    expect(res.headers.get("location")).toContain("error=invalid-token");
 
     expect(mockUpdateManyMagicToken).toHaveBeenCalledWith({
       where: {
@@ -196,9 +194,7 @@ describe("GET /auth/verify", () => {
     });
 
     expect(mockCreateSession).not.toHaveBeenCalled();
-    expect(res.headers.get("set-cookie") ?? "").not.toContain(
-      "rsvp-session="
-    );
+    expect(res.headers.get("set-cookie") ?? "").not.toContain("rsvp-session=");
   });
   ///////////////////////////////////////////////
   it("seals verified email provenance from a redeemed login token", async () => {
@@ -222,9 +218,7 @@ describe("GET /auth/verify", () => {
 
     const res = await GET(makeRequest("valid-token"));
 
-    expect(res.headers.get("location")).toBe(
-      "http://localhost:3000/dashboard"
-    );
+    expect(res.headers.get("location")).toBe("http://localhost:3000/dashboard");
 
     expect(sealSession).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -262,7 +256,7 @@ describe("GET /auth/verify", () => {
         verifiedIdentifier: "attacker@example.com",
       })
     );
-  });  
+  });
 
   ///////////////////////////////////////////////
   it("allows legacy login tokens without granting verified contact", async () => {
@@ -283,9 +277,7 @@ describe("GET /auth/verify", () => {
 
     const res = await GET(makeRequest("valid-token"));
 
-    expect(res.headers.get("location")).toBe(
-      "http://localhost:3000/dashboard"
-    );
+    expect(res.headers.get("location")).toBe("http://localhost:3000/dashboard");
 
     expect(sealSession).toHaveBeenCalledWith(
       expect.not.objectContaining({
@@ -312,16 +304,14 @@ describe("GET /auth/verify", () => {
 
     const res = await GET(makeRequest("valid-token"));
 
-    expect(res.headers.get("location")).toBe(
-      "http://localhost:3000/dashboard"
-    );
+    expect(res.headers.get("location")).toBe("http://localhost:3000/dashboard");
 
     expect(sealSession).toHaveBeenCalledWith(
       expect.not.objectContaining({
         verifiedMethod: expect.anything(),
       })
     );
-  });  
+  });
 
   ///////////////////////////////////////////////
   // SEC-41: the configured canonical origin wins over the request Host header;

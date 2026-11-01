@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, type FormEvent } from "react";
@@ -15,13 +14,7 @@ import { APP_SHELL } from "@/lib/theme";
 
 type RsvpStatus = "GOING" | "MAYBE" | "NO";
 
-export function VerifiedRsvpGate({
-  eventSlug,
-  status,
-}: {
-  eventSlug: string;
-  status: RsvpStatus;
-}) {
+export function VerifiedRsvpGate({ eventSlug, status }: { eventSlug: string; status: RsvpStatus }) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -37,12 +30,7 @@ export function VerifiedRsvpGate({
 
     try {
       const result = await runWithCaptcha("signin", (token) =>
-        requestVerifiedGuestLinkAction(
-          email,
-          eventSlug,
-          status,
-          token
-        )
+        requestVerifiedGuestLinkAction(email, eventSlug, status, token)
       );
 
       if (result.success) {
@@ -68,9 +56,7 @@ export function VerifiedRsvpGate({
       <AppCard style={{ padding: "32px" }}>
         {submitted ? (
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "40px", marginBottom: "16px" }}>
-              📬
-            </div>
+            <div style={{ fontSize: "40px", marginBottom: "16px" }}>📬</div>
             <h2
               style={{
                 color: APP_SHELL.textPrimary,
@@ -86,8 +72,8 @@ export function VerifiedRsvpGate({
                 lineHeight: 1.6,
               }}
             >
-              We sent a verification link to <strong>{email}</strong>.
-              Open it to continue your RSVP.
+              We sent a verification link to <strong>{email}</strong>. Open it to continue your
+              RSVP.
             </p>
             <p
               style={{
@@ -116,16 +102,12 @@ export function VerifiedRsvpGate({
                 marginBottom: "24px",
               }}
             >
-              This event requires verified contact information.
-              Enter your email address and we&apos;ll send you a
-              secure link to continue.
+              This event requires verified contact information. Enter your email address and
+              we&apos;ll send you a secure link to continue.
             </p>
 
             <form onSubmit={handleSubmit}>
-              <FormField
-                label="Email address"
-                style={{ marginBottom: "20px" }}
-              >
+              <FormField label="Email address" style={{ marginBottom: "20px" }}>
                 <AppInput
                   type="email"
                   required

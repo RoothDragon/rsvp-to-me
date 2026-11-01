@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@/tests/components/render";
 
@@ -20,9 +19,7 @@ describe("VerifiedRsvpGate", () => {
   it("requests a link for the selected RSVP status", async () => {
     mockRequestVerifiedGuestLink.mockResolvedValue({ success: true });
 
-    render(
-      <VerifiedRsvpGate eventSlug="test-party" status="MAYBE" />
-    );
+    render(<VerifiedRsvpGate eventSlug="test-party" status="MAYBE" />);
 
     fireEvent.change(screen.getByPlaceholderText("you@example.com"), {
       target: { value: "alice@example.com" },
@@ -48,9 +45,7 @@ describe("VerifiedRsvpGate", () => {
       error: "Too many requests. Please try later.",
     });
 
-    render(
-      <VerifiedRsvpGate eventSlug="test-party" status="GOING" />
-    );
+    render(<VerifiedRsvpGate eventSlug="test-party" status="GOING" />);
 
     fireEvent.change(screen.getByPlaceholderText("you@example.com"), {
       target: { value: "alice@example.com" },
@@ -59,9 +54,7 @@ describe("VerifiedRsvpGate", () => {
     fireEvent.click(screen.getByText("Send verification link"));
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Too many requests. Please try later.")
-      ).toBeInTheDocument();
+      expect(screen.getByText("Too many requests. Please try later.")).toBeInTheDocument();
     });
 
     expect(screen.queryByText("Check your email")).not.toBeInTheDocument();
