@@ -57,7 +57,7 @@ A color picker sets the accent color used for buttons, links, and highlights.
 
 On the **Font** tab under **Settings → Theme** you can pick a font for your event's main title. Section headings and body text stay in the standard font for readability. Twelve fonts are available across four moods — elegant serifs (Playfair Display, DM Serif Display, Lora), poster styles (Bebas Neue, Righteous, Fredoka), scripts (Pacifico, Dancing Script, Caveat), and modern sans-serifs (Roboto, Space Grotesk, Outfit) — plus **Theme default**, which keeps each base look's built-in title typography. Some presets apply a matching font automatically; you can always override it.
 
-Fonts are bundled with the app — nothing is loaded from external services, and guests only download a font if your event actually uses it.
+All twelve event-title fonts are bundled with RSVP to Me and served by the site. Guests only download an event-title font when the event uses it; they do not need to install fonts or connect to a separate font service.
 
 ### Effects (Animated Backgrounds)
 

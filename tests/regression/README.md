@@ -102,3 +102,5 @@ October 2026 (`8a8fb7bf`) extends `dependency-security-baseline.test.ts` with up
 `preflight-loopback-services.test.ts` (`01a18e04`): capture service startup arguments and require loopback-only PostgreSQL/Redis exposure on shared validation hosts.
 
 `contact-change-db-target.test.ts` (`01a18e04`): reject remote, default-development, wrong-database, and unmarked targets before integration schema setup.
+
+`offline-font-assets.test.ts` and the expanded `roboto-font-build.test.ts` (`01a18e04`): isolated production builds previously failed on thirteen Google Fonts downloads. Verify all licensed local assets and build every theme/UI font with no Google responses, preserving CSS variables and preload behavior.

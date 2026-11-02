@@ -1,9 +1,9 @@
 // Curated heading-font registry for event themes.
 //
 // This module is PURE DATA — no next/font imports — so it is safe to import
-// from client components, server code, and vitest alike. The actual Google
-// Font loaders live in `app/fonts.ts` (build-time self-hosted via
-// next/font/google, preload disabled) and expose the CSS variables declared
+// from client components, server code, and vitest alike. The actual local
+// font loaders live in `app/fonts.ts` (build-time self-hosted via
+// next/font/local, theme preload disabled) and expose the CSS variables declared
 // here. The `cssVar` strings are the contract between the two files.
 //
 // Email safety: web fonts do not render reliably in email clients, so every

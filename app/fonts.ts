@@ -1,84 +1,116 @@
-// Build-time self-hosted fonts for event heading typography.
-//
-// Each loader defines the CSS variable declared in lib/fonts.ts (the pure-data
-// registry — keep the two files in sync). `preload: false` means no <link
-// rel=preload> is emitted; a font's .woff2 only downloads on pages whose CSS
-// actually uses its variable, so guests never pay for fonts their event
-// doesn't use. No runtime requests ever go to Google (self-hosted at build).
-// Roboto is bundled locally because Google's extensionless /l/font URLs break
-// the Next.js 16.3 Google font parser. See font-files/README.md for provenance.
-
+// Repository-owned web fonts: builds and visitors never fetch fonts from Google.
+// Keep CSS variables aligned with the pure-data registry in lib/fonts.ts.
+// Theme faces are not preloaded; the two base UI faces retain preloading.
+// Pinned provenance, licenses, glyph coverage and checksums: font-files/manifest.json.
 import localFont from "next/font/local";
 
-import {
-  Playfair_Display,
-  DM_Serif_Display,
-  Lora,
-  Bebas_Neue,
-  Righteous,
-  Fredoka,
-  Pacifico,
-  Dancing_Script,
-  Caveat,
-  Space_Grotesk,
-  Outfit,
-} from "next/font/google";
+export const geistSans = localFont({
+  src: "./font-files/geist-sans-normal.woff2",
+  variable: "--font-geist-sans",
+  weight: "100 900",
+  style: "normal",
+  display: "swap",
+  adjustFontFallback: "Arial",
+  preload: true,
+});
 
-const playfair = Playfair_Display({
+export const geistMono = localFont({
+  src: "./font-files/geist-mono-normal.woff2",
+  variable: "--font-geist-mono",
+  weight: "100 900",
+  style: "normal",
+  display: "swap",
+  adjustFontFallback: "Arial",
+  preload: true,
+});
+
+const playfair = localFont({
+  src: "./font-files/playfair-normal.woff2",
   variable: "--font-playfair",
-  subsets: ["latin"],
+  weight: "400 900",
+  style: "normal",
+  display: "swap",
+  adjustFontFallback: "Times New Roman",
   preload: false,
 });
 
-const dmSerif = DM_Serif_Display({
+const dmSerif = localFont({
+  src: "./font-files/dm-serif-normal.woff2",
   variable: "--font-dm-serif",
-  subsets: ["latin"],
   weight: "400",
+  style: "normal",
+  display: "swap",
+  adjustFontFallback: "Times New Roman",
   preload: false,
 });
 
-const lora = Lora({
+const lora = localFont({
+  src: "./font-files/lora-normal.woff2",
   variable: "--font-lora",
-  subsets: ["latin"],
+  weight: "400 700",
+  style: "normal",
+  display: "swap",
+  adjustFontFallback: "Times New Roman",
   preload: false,
 });
 
-const bebas = Bebas_Neue({
+const bebas = localFont({
+  src: "./font-files/bebas-normal.woff2",
   variable: "--font-bebas",
-  subsets: ["latin"],
   weight: "400",
+  style: "normal",
+  display: "swap",
+  adjustFontFallback: "Arial",
   preload: false,
 });
 
-const righteous = Righteous({
+const righteous = localFont({
+  src: "./font-files/righteous-normal.woff2",
   variable: "--font-righteous",
-  subsets: ["latin"],
   weight: "400",
+  style: "normal",
+  display: "swap",
+  adjustFontFallback: "Arial",
   preload: false,
 });
 
-const fredoka = Fredoka({
+const fredoka = localFont({
+  src: "./font-files/fredoka-normal.woff2",
   variable: "--font-fredoka",
-  subsets: ["latin"],
+  weight: "300 700",
+  style: "normal",
+  display: "swap",
+  adjustFontFallback: "Arial",
   preload: false,
 });
 
-const pacifico = Pacifico({
+const pacifico = localFont({
+  src: "./font-files/pacifico-normal.woff2",
   variable: "--font-pacifico",
-  subsets: ["latin"],
   weight: "400",
+  style: "normal",
+  display: "swap",
+  adjustFontFallback: "Arial",
   preload: false,
 });
 
-const dancingScript = Dancing_Script({
+const dancingScript = localFont({
+  src: "./font-files/dancing-script-normal.woff2",
   variable: "--font-dancing-script",
-  subsets: ["latin"],
+  weight: "400 700",
+  style: "normal",
+  display: "swap",
+  adjustFontFallback: "Arial",
   preload: false,
 });
 
-const caveat = Caveat({
+const caveat = localFont({
+  src: "./font-files/caveat-normal.woff2",
   variable: "--font-caveat",
-  subsets: ["latin"],
+  weight: "400 700",
+  style: "normal",
+  display: "swap",
+  adjustFontFallback: "Arial",
   preload: false,
 });
 
@@ -92,19 +124,27 @@ const roboto = localFont({
   preload: false,
 });
 
-const spaceGrotesk = Space_Grotesk({
+const spaceGrotesk = localFont({
+  src: "./font-files/space-grotesk-normal.woff2",
   variable: "--font-space-grotesk",
-  subsets: ["latin"],
+  weight: "300 700",
+  style: "normal",
+  display: "swap",
+  adjustFontFallback: "Arial",
   preload: false,
 });
 
-const outfit = Outfit({
+const outfit = localFont({
+  src: "./font-files/outfit-normal.woff2",
   variable: "--font-outfit",
-  subsets: ["latin"],
+  weight: "100 900",
+  style: "normal",
+  display: "swap",
+  adjustFontFallback: "Arial",
   preload: false,
 });
 
-/** Class string exposing every theme font's CSS variable — applied on <html>. */
+/** Class string exposing every event-theme font variable, applied on <html>. */
 export const themeFontVariables = [
   playfair,
   dmSerif,
@@ -119,5 +159,5 @@ export const themeFontVariables = [
   spaceGrotesk,
   outfit,
 ]
-  .map((f) => f.variable)
+  .map((font) => font.variable)
   .join(" ");

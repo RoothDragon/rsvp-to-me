@@ -211,8 +211,11 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
 ### Themes, effects, and email
 
 - `lib/theme.ts`, `lib/fonts.ts`, and `lib/effects.ts` define web theme options.
-- `app/fonts.ts` builds the theme fonts. Roboto uses the licensed local asset in
-  `app/font-files/`; the other families use `next/font/google` at build time.
+- `app/fonts.ts` defines all theme and Geist UI fonts with `next/font/local`.
+  `app/font-files/manifest.json` owns pinned source provenance, licenses, asset
+  checksums, glyph coverage, and axes for the repository-owned WOFF2 files.
+  `lib/fonts.ts` owns picker IDs and email-safe fallbacks; only the UI faces
+  preload. Font loading requires no build-time or visitor Google requests.
 - `lib/email-theme.ts` is the only web-theme-to-email degradation boundary.
 - `emails/registry.tsx` defines template metadata/defaults and assembles sample
   previews; `emails/templates/` contains the renderable templates.
