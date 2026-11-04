@@ -2,10 +2,10 @@
 # Standalone host orchestrator. Does not modify reviewed repository sources.
 set -Eeuo pipefail
 umask 077
-RUN=$(realpath -- "${1:?Usage: bash docker-validation.sh /tmp/rsvp-01a18e04-validation.XXXXXXXX}")
-case "$RUN" in /tmp/rsvp-01a18e04-validation.*) ;; *) echo 'Refusing a non-temporary source directory' >&2; exit 1;; esac
+RUN=$(realpath -- "${1:?Usage: bash docker-validation.sh /apps/validation/rsvp-01a18e04/snapshot.34e5d36.XXXXXXXX}")
+case "$RUN" in /apps/validation/rsvp-01a18e04/snapshot.34e5d36.*) ;; *) echo 'Refusing a non-temporary source directory' >&2; exit 1;; esac
 test -f "$RUN/SOURCE-FILES.sha256"
-test -f "$RUN/REVIEWED-FILES.sha256"
+test -f "$RUN/COMMITTED-FILES.sha256"
 # Clean host environment: force local daemon, no context, Docker config, or shell injection.
 # Invoke this script with env -i as documented, not from an inherited application env.
 test "${DOCKER_HOST:-}" = unix:///var/run/docker.sock
@@ -13,9 +13,11 @@ unset DOCKER_CONTEXT DOCKER_TLS_VERIFY DOCKER_CERT_PATH
 export DOCKER_CONFIG="$HOME/.docker"
 cd "$RUN"
 sha256sum -c SOURCE-FILES.sha256
-sha256sum -c REVIEWED-FILES.sha256
-grep -Fx 'base=9a3ffb735f2311a1b897fc8ed40d4bda76016245' VALIDATION-SNAPSHOT.txt
-grep -Fx 'branch=feature/verified-guest-rsvp' VALIDATION-SNAPSHOT.txt
+sha256sum -c COMMITTED-FILES.sha256
+grep -Fx 'format=rsvp-committed-source-v2' VALIDATION-SNAPSHOT.txt
+grep -Fx 'commit=34e5d3690d804a345c0c8fddff6125ec3393c1d9' VALIDATION-SNAPSHOT.txt
+grep -Fx 'tree=5ea69d09961a709f15b1181e007116e3345c16d3' VALIDATION-SNAPSHOT.txt
+grep -Fx 'branch=wip/verified-guest-rsvp-validation' VALIDATION-SNAPSHOT.txt
 test -z "$(find . -path ./.git -prune -o -name '.env*' ! -name '.env.example' -print)"
 # Only source links are checked before dependencies introduce normal executable symlinks.
 test -z "$(find . -path ./.git -prune -o -type l -print)"
@@ -33,7 +35,7 @@ DOCKER_ROOT=$(docker info --format '{{.DockerRootDir}}')
 # /apps is the dedicated XFS data filesystem; inspect no application directories.
 test "$(findmnt -n -o TARGET -T /apps)" = /apps
 test "$(findmnt -n -o FSTYPE -T /apps)" = xfs
-check_disk "$DOCKER_ROOT" 8388608 # 8 GiB image/layer headroom on / (17 GiB currently available)
+check_disk "$DOCKER_ROOT" 8388608 # 8 GiB image/layer headroom on / (11 GiB reported available)
 check_disk /apps 12582912 # 12 GiB bulk-work headroom (19 GiB currently available)
 # Refuse symlink redirection before creating the approved validation-only hierarchy.
 for path in /apps/validation /apps/validation/rsvp-01a18e04; do
@@ -72,7 +74,7 @@ docker pull postgres:18-alpine
 docker pull redis:7-alpine
 PG_IMAGE=$(docker image inspect postgres:18-alpine --format '{{.Id}}')
 REDIS_IMAGE=$(docker image inspect redis:7-alpine --format '{{.Id}}')
-NET_ID=$(docker network create --driver bridge --label rsvp.validation=01a18e04 "rsvp-01a18e04-${OUTPUT##*.}")
+NET_ID=$(docker network create --driver bridge --label rsvp.validation=01a18e04 "rsvp-01a18e04-${SCRATCH##*.}")
 TOOL_ID=$(docker create --init --label rsvp.validation=01a18e04 \
   --network "$NET_ID" --shm-size=256m --log-driver json-file --log-opt max-size=10m --log-opt max-file=3 --log-opt compress=true \
   --mount "type=bind,src=$RUN,dst=/source,readonly" \
@@ -169,6 +171,9 @@ export default {
   test: {
     include: ["captcha-siteverify.test.ts"],
     environment: "node",
+    // Vitest 5 has a separate filesystem module cache, independent of Vite cacheDir.
+    fsModuleCache: true,
+    fsModuleCachePath: "/external-runtime/vitest-module-cache",
     setupFiles: ["./siteverify-guard.mjs"],
     globalSetup: [],
     fileParallelism: false,
@@ -219,15 +224,23 @@ SITEVERIFY_ID=$(docker create --init --label rsvp.validation=01a18e04 \
   -e TMPDIR=/external-runtime/tmp -e TMP=/external-runtime/tmp -e TEMP=/external-runtime/tmp \
   -e NODE_ENV=test -e AWS_EC2_METADATA_DISABLED=true \
   "$NODE_IMAGE" bash -euo pipefail -c '
-    mkdir -p "$HOME" "$TMPDIR" /external-runtime/vite-cache
+    mkdir -p "$HOME" "$TMPDIR" /external-runtime/vite-cache /external-runtime/vitest-module-cache
     # These checks run as node, before Vite loads anything.
     test -w /external-runtime/vite-cache
+    test -w /external-runtime/vitest-module-cache
     test ! -w /external
     test ! -w /external/node_modules
-    node node_modules/vitest/vitest.mjs run --config vitest.config.mjs --configLoader native --reporter=json --outputFile=/external-runtime/siteverify.json
-    node -e '\''
+    vitest_status=0
+    node node_modules/vitest/vitest.mjs run --config vitest.config.mjs --configLoader native --reporter=json --outputFile=/external-runtime/siteverify.json || vitest_status=$?
+    SITEVERIFY_VITEST_EXIT="$vitest_status" node -e '\''
       const r=require("/external-runtime/siteverify.json");
-      if(r.numTotalTests!==3 || r.numPassedTests!==3 || r.numFailedTests!==0 || !r.success) {
+      for (const suite of r.testResults ?? []) {
+        if (suite.message) console.error(suite.name + "\n" + suite.message);
+        for (const test of suite.assertionResults ?? []) {
+          for (const message of test.failureMessages ?? []) console.error(message);
+        }
+      }
+      if(process.env.SITEVERIFY_VITEST_EXIT!=="0" || r.numTotalTests!==3 || r.numPassedTests!==3 || r.numFailedTests!==0 || !r.success) {
         throw Error("External Siteverify gate requires exactly three passing tests");
       }
       console.log("EXTERNAL SITEVERIFY: PASSED 3/3 (documented dummy credentials)");
