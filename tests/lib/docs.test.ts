@@ -19,6 +19,7 @@ describe("lib/docs.ts", () => {
       "admin",
       "configuration",
       "email",
+      "event-description-formatting",
       "installation",
       "local-development",
       "localization",

@@ -153,6 +153,13 @@ describe("EventHero", () => {
       "(max-width: 600px) calc(100vw - 32px), 568px"
     );
 
+    const coverLink = screen.getByRole("link", {
+      name: "Open full cover image for Test Party (opens in a new tab)",
+    });
+    expect(coverLink).toHaveAttribute("href", "/api/uploads/cover.jpg");
+    expect(coverLink).toHaveAttribute("target", "_blank");
+    expect(coverLink.contains(coverButton)).toBe(false);
+    expect(coverLink.contains(screen.getByRole("button", { name: /Remove/ }))).toBe(false);
     // Initially height should be 260px
     expect(coverContainer?.style.height).toBe("260px");
     expect(coverContainer?.style.minHeight).toBe("200px");

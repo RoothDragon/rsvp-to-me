@@ -1,0 +1,107 @@
+.content {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+.content :where(p, ul, ol, blockquote, h1, h2, h3, h4, h5, h6) {
+  margin: 0.7em 0;
+  white-space: normal;
+}
+.content > :first-child {
+  margin-top: 0;
+}
+.content > :last-child {
+  margin-bottom: 0;
+}
+.content ul {
+  list-style: disc;
+  padding-inline-start: 1.5em;
+}
+.content ol {
+  list-style: decimal;
+  padding-inline-start: 1.5em;
+}
+.content h1,
+.content h2 {
+  font-size: 1.4em;
+  font-weight: 700;
+}
+.content h3,
+.content h4 {
+  font-size: 1.15em;
+  font-weight: 700;
+}
+.content h5,
+.content h6 {
+  font-size: 1em;
+  font-weight: 700;
+}
+.content a {
+  color: inherit;
+  text-decoration: underline;
+}
+.content hr {
+  border: 0;
+  border-top: 1px solid currentColor;
+  opacity: 0.35;
+  margin: 1em 0;
+}
+.content blockquote {
+  border-inline-start: 3px solid currentColor;
+  padding-inline-start: 1em;
+}
+.editor {
+  display: block;
+  width: 100%;
+  min-width: min(100%, 12rem);
+  max-width: 100%;
+  min-height: 6rem;
+  height: 10rem;
+  max-height: 80dvh;
+  overflow: auto;
+  box-sizing: border-box;
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 8px;
+  background: rgba(127, 127, 127, 0.08);
+  color: inherit;
+  font: inherit;
+  padding: 8px 10px;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.button {
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 6px;
+  padding: 5px 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.button:focus-visible,
+.editor:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+.hint {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin: 8px 0;
+}
+
+.coverLink {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: inherit;
+  cursor: zoom-in;
+}
+.coverLink:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: -5px;
+}

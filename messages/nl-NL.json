@@ -1,5 +1,15 @@
 {
   "Ui": {
+    "EventDescription": {
+      "label": "Beschrijving",
+      "help": "Eenvoudige HTML wordt ondersteund: alinea’s, lijsten, vet, cursief, koppen, horizontale lijnen en links. Afbeeldingen worden niet ondersteund.",
+      "preview": "Voorbeeld",
+      "editText": "Tekst bewerken",
+      "expand": "Meer tonen",
+      "collapse": "Minder tonen",
+      "edit": "Beschrijving bewerken",
+      "empty": "Een beschrijving toevoegen"
+    },
     "Common": {
       "save": "Opslaan",
       "cancel": "Annuleren",
@@ -591,6 +601,7 @@
         "description": "Beschrijving",
         "addDescription": "Voeg een beschrijving toe…",
         "coverAlt": "Omslag van {title}",
+        "openCover": "Volledige omslagafbeelding van {title} openen (in een nieuw tabblad)",
         "organizer": "Georganiseerd door {name}"
       },
       "DateEdit": {

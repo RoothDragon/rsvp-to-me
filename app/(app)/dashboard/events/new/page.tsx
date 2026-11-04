@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createEvent } from "@/app/actions/createEvent";
 import LocationSelector from "@/components/event/LocationSelector";
+import { DescriptionEditor } from "@/components/event/DescriptionEditor";
 import { APP_SHELL } from "@/lib/theme";
 import { getSessionUser } from "@/lib/session-user";
 import {
@@ -58,11 +59,9 @@ export default async function NewEventPage() {
             <AppInput name="title" required placeholder={tr("Ui.Dashboard.wineNightAtJaneS")} />
           </FormField>
           <FormField label={tr("Ui.Dashboard.description")} style={{ marginBottom: "14px" }}>
-            <textarea
+            <DescriptionEditor
               name="description"
               placeholder={tr("Ui.Dashboard.comeHangOutBringABottleToShare")}
-              rows={3}
-              style={{ ...appInputStyle, resize: "vertical" }}
             />
           </FormField>
         </Card>

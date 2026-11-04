@@ -15,11 +15,12 @@ import {
 import { logActivity } from "@/lib/activity";
 import { logSafe } from "@/lib/logger";
 import { tzLocalToUtc } from "@/lib/utils";
-import { SaveEventSettingsSchema, HttpUrlSchema } from "@/lib/schemas";
+import { SaveEventSettingsSchema, HttpUrlSchema, CreateEventSchema } from "@/lib/schemas";
 import bcrypt from "bcryptjs";
 import { getSession } from "@/lib/session";
 import { assertHost, assertHostOrCohost } from "./shared";
 import { assertCaptcha } from "@/lib/captcha";
+import { sanitizeEventDescription } from "@/lib/event-description";
 import type { GuestRsvpDisplayFields } from "@/lib/guestRsvpDisplay";
 
 // ── Inline field edits ─────────────────────────────────────────────────────────
@@ -44,6 +45,8 @@ export async function saveEventField(
   if (field === "virtualUrl" && value) value = HttpUrlSchema.parse(value);
   const event = await assertHostOrCohost(eventId);
   await assertCaptcha("event_edit", captchaToken);
+  if (field === "description")
+    value = sanitizeEventDescription(CreateEventSchema.shape.description.parse(value));
   await db.event.update({ where: { id: eventId }, data: { [field]: value || null } });
   const fieldTypes: Record<string, string> = {
     title: "event_title",

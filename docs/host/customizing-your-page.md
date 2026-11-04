@@ -19,13 +19,13 @@ Event pages use a responsive, single-column layout that grows to 600px on larger
 When you view your own event, you can click directly on certain details to edit them in place — changes save automatically. You can edit these inline:
 
 - **Title**
-- **Description**
+- **Description** — choose **Edit description**, then **Save** or **Cancel**.
 - **Location name** and **address**
 - **Virtual event link**
 
 Everything else — date and time, theme, RSVP rules, visibility, polls, and potluck — is changed from the event's **Settings** page.
 
-The description editor expands with your text while you type. It starts at a comfortable multi-line height and grows until it reaches a mobile-friendly portion of the viewport, then scrolls internally so a long description never takes over the whole screen.
+Drag the description editor’s corner to resize its width and height within the page. Use **Preview** to check basic HTML formatting. Long descriptions retain formatting in the collapsed preview; choose **Show more** to read the rest.
 
 > **Tip:** Add `?preview=1` to the end of your event's web address to see the page exactly as a guest sees it, without losing your host controls.
 
@@ -77,6 +77,9 @@ Your theme isn't just for the event page — the **emails** your guests receive 
 ---
 
 ## Cover Image
+
+Click the cover image on an event page to open the full uploaded image in a new
+tab. Hosts can still use the separate cover upload and remove controls.
 
 Upload a cover photo to set the mood:
 

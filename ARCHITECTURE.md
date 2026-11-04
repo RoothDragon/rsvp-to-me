@@ -56,6 +56,17 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
 
 ## Entry points and shared boundaries
 
+### Event descriptions
+
+`lib/event-description.ts` owns the shared, strict HTML allowlist and plain-text
+conversion for event descriptions. Creation and inline edits sanitize on the
+server; `components/event/DescriptionEditor.tsx` also sanitizes previews and
+rendering, including legacy values. `event-page/EventDescription.tsx` owns
+collapse/expand and explicit save/cancel behavior. The shared description helper
+provides a balanced HTML preview; `event-page/EventCoverImage.tsx` links the cover
+to its original upload with a safe HTTP/HTTPS navigation boundary. Calendar exports and social
+metadata use the plain-text conversion. Images and embedded content are excluded.
+
 ### Application shell and pages
 
 - `app/layout.tsx` is the root HTML/layout boundary. It resolves the request's UI

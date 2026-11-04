@@ -1,3 +1,4 @@
+import { eventDescriptionText } from "@/lib/event-description";
 import type { Metadata } from "next";
 import { createTranslator } from "next-intl";
 import english from "@/messages/en-US.json";
@@ -92,7 +93,7 @@ export function buildEventSocialMetadata(
   const title = shareable ? event.title : translate("genericTitle");
   const description = shareable
     ? compactDescription(
-        event.description?.trim() ||
+        eventDescriptionText(event.description) ||
           translate("invitation", {
             title: event.title,
             date: formatSocialEventDate(event, locale),
