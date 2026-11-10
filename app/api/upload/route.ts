@@ -63,7 +63,8 @@ function detectImageBuffer(buffer: Buffer): { ext: string; mime: string } | null
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
-  if (!session || (session.role !== "HOST" && session.role !== "ADMIN")) {
+  const isAvatarUpload = request.nextUrl.searchParams.get("purpose") === "avatar";
+  if (!session || (!isAvatarUpload && session.role !== "HOST" && session.role !== "ADMIN")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const formData = await request.formData();

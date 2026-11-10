@@ -140,7 +140,7 @@ export default function ProfileClient({
 
       const res = await runWithCaptcha("image_upload", (token) => {
         if (token) form.set(CAPTCHA_RESPONSE_FIELD, token);
-        return fetch("/api/upload", { method: "POST", body: form });
+        return fetch("/api/upload?purpose=avatar", { method: "POST", body: form });
       });
       if (!res.ok) throw new Error(await res.text());
 

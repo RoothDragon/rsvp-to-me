@@ -223,7 +223,9 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
 ### Files and background work
 
 - Uploads enter through `app/api/upload/route.ts` and are served only through
-  `app/api/uploads/[filename]/route.ts`.
+  `app/api/uploads/[filename]/route.ts`. The upload route permits any authenticated
+  account for `?purpose=avatar`; default event-image uploads require HOST or ADMIN.
+  Both paths share CAPTCHA, size limits, and image-signature validation.
 - `lib/backup.ts` and `app/api/admin/backups/[filename]/route.ts` own database
   backup creation/listing/download behavior.
 - `instrumentation.ts` starts the in-process scheduler only in the Node runtime.
