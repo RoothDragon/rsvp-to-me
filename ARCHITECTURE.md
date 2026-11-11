@@ -142,6 +142,11 @@ metadata use the plain-text conversion. Images and embedded content are excluded
 
 1. `app/actions/auth.ts` validates sign-in/registration input and calls
    `lib/auth.ts` to create or verify magic-link tokens.
+   Ordinary email sign-in upserts only GUEST accounts with an empty update for
+   existing users. It never creates sessions or assigns RSVP ownership before
+   verification. Existing-account SMS sign-in and host registration retain their
+   separate rules. Verified guests default to the public home/event list;
+   organizers default to the dashboard, and safe event return paths are preserved.
 2. Verification route handlers under `app/auth/` create encrypted session
    cookies through `lib/session.ts`. `INITIAL_ADMIN_EMAIL` bootstrap promotion
    belongs exclusively to successful `LOGIN` magic-token verification in
@@ -163,6 +168,9 @@ metadata use the plain-text conversion. Images and embedded content are excluded
    and linked-RSVP contact updates; session creation and unclaimed-RSVP linking
    follow the commit.
 8. User-content create/edit mutations call `assertCaptcha()` from `lib/captcha.ts`.
+   This is optional protection: both Turnstile keys must be configured to enable
+   it. With neither key present no challenge is executed; partial configuration
+   fails closed. Per-identifier sign-in limiting remains active independently.
    Turnstile tokens are action-bound, passed directly with the protected mutation,
    and verified server-side. Never route them through shared browser state such as
    a cookie. Only administrators bypass this boundary; authenticated hosts and

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useTranslations } from "next-intl";
 import { requestVerifiedGuestLinkAction } from "@/app/actions/auth";
 import {
   AppButton,
@@ -15,6 +16,7 @@ import { APP_SHELL } from "@/lib/theme";
 type RsvpStatus = "GOING" | "MAYBE" | "NO";
 
 export function VerifiedRsvpGate({ eventSlug, status }: { eventSlug: string; status: RsvpStatus }) {
+  const tr = useTranslations("Ui.Auth");
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -64,7 +66,7 @@ export function VerifiedRsvpGate({ eventSlug, status }: { eventSlug: string; sta
                 marginBottom: "12px",
               }}
             >
-              Check your email
+              {tr("checkYourEmail")}
             </h2>
             <p
               style={{
@@ -72,8 +74,7 @@ export function VerifiedRsvpGate({ eventSlug, status }: { eventSlug: string; sta
                 lineHeight: 1.6,
               }}
             >
-              We sent a verification link to <strong>{email}</strong>. Open it to continue your
-              RSVP.
+              {tr("secureEmailLinkSent")}
             </p>
             <p
               style={{
@@ -93,7 +94,7 @@ export function VerifiedRsvpGate({ eventSlug, status }: { eventSlug: string; sta
                 marginBottom: "12px",
               }}
             >
-              Verify your email to RSVP
+              {tr("continueWithEmail")}
             </h2>
             <p
               style={{
@@ -126,7 +127,7 @@ export function VerifiedRsvpGate({ eventSlug, status }: { eventSlug: string; sta
                 disabled={loading}
                 style={{ width: "100%", padding: "13px" }}
               >
-                {loading ? "Sending..." : "Send verification link"}
+                {loading ? tr("sending") : tr("sendSignInLink")}
               </AppButton>
             </form>
           </>

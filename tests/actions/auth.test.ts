@@ -111,10 +111,10 @@ describe("sendMagicLinkAction", () => {
     expect(mocks.mockRateLimit).toHaveBeenCalledWith("id:user@example.com:magic-link", 5, 600);
   });
 
-  it("returns success and sends nothing when user is not found (no enumeration, SEC-40)", async () => {
+  it("preserves non-enumerating existing-account phone sign-in (SEC-40)", async () => {
     mocks.mockCreateMagicLink.mockResolvedValue(null);
 
-    const result = await sendMagicLinkAction("notfound@example.com");
+    const result = await sendMagicLinkAction("+15559876543");
     // Same response as a real send — must NOT reveal the account is absent.
     expect(result.success).toBe(true);
     expect(result.error).toBeUndefined();

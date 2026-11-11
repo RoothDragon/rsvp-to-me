@@ -25,7 +25,7 @@ describe("VerifiedRsvpGate", () => {
       target: { value: "alice@example.com" },
     });
 
-    fireEvent.click(screen.getByText("Send verification link"));
+    fireEvent.click(screen.getByText("Send sign-in link"));
 
     await waitFor(() => {
       expect(mockRequestVerifiedGuestLink).toHaveBeenCalledWith(
@@ -51,7 +51,7 @@ describe("VerifiedRsvpGate", () => {
       target: { value: "alice@example.com" },
     });
 
-    fireEvent.click(screen.getByText("Send verification link"));
+    fireEvent.click(screen.getByText("Send sign-in link"));
 
     await waitFor(() => {
       expect(screen.getByText("Too many requests. Please try later.")).toBeInTheDocument();

@@ -1609,7 +1609,11 @@
       "securityCheckFailed": "Sicherheitsprüfung fehlgeschlagen.",
       "somethingWentWrong": "Etwas ist schiefgelaufen.",
       "signInMetadataTitle": "Anmelden",
-      "registerMetadataTitle": "Konto erstellen"
+      "registerMetadataTitle": "Konto erstellen",
+      "continueWithEmail": "Mit E-Mail fortfahren",
+      "sendSignInLink": "Anmeldelink senden",
+      "secureEmailLinkSent": "Prüfe deine E-Mails auf einen sicheren Link zum Fortfahren.",
+      "secureSmsLinkSent": "Prüfe deine SMS auf einen sicheren Link zum Fortfahren."
     },
     "Home": {
       "rsvpToMe": "RSVP to Me",
@@ -1619,7 +1623,8 @@
       "hostedBy": "Veranstaltet von",
       "going": "dabei",
       "signInCreateAccountMessage": "<part0> Anmelden </part0> <part1> Konto erstellen </part1>",
-      "goingMessage": "{value0, plural, one {# dabei} other {# dabei}}"
+      "goingMessage": "{value0, plural, one {# dabei} other {# dabei}}",
+      "choosePublicEvent": "Wähle unten eine öffentliche Veranstaltung, um zu antworten."
     },
     "Preview": {
       "wineNight": "Weinabend ✨",

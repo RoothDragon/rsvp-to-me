@@ -61,7 +61,7 @@ describe("admin, dashboard and auth locale rendering", () => {
       "/auth/register"
     );
   });
-  it("sends a Dutch sign-in form and renders the complete recipient confirmation", async () => {
+  it("sends a Dutch sign-in form and renders the translated continuation confirmation", async () => {
     sendMagicLink.mockResolvedValue({ success: true });
     render(<SignInForm openRegistration />, { locale: "nl-NL", messages: dutch });
     fireEvent.change(screen.getByRole("textbox"), {
@@ -71,8 +71,10 @@ describe("admin, dashboard and auth locale rendering", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Bekijk je e-mail" })).toBeInTheDocument()
     );
-    expect(screen.getByText("alex@example.com")).toBeInTheDocument();
-    expect(screen.getByText(/De link verloopt over 15 minuten/)).toBeInTheDocument();
+    expect(screen.getByText(dutch.Ui.Auth.secureEmailLinkSent)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: dutch.Ui.Auth.continueWithEmail })
+    ).toBeInTheDocument();
     expect(sendMagicLink).toHaveBeenCalledWith("alex@example.com", undefined, null);
   });
   it("shows English registration defaults and Dutch invite code labels", () => {
