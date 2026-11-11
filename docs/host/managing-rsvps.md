@@ -8,6 +8,15 @@ order: 60
 
 # Managing RSVPs
 
+For events requiring verified RSVPs, invitation and edit links ask guests to
+verify before opening the response form when they are not signed in as the RSVP
+owner. **Send sign-in link** delivers a fresh link to the email address or phone
+number saved on that RSVP. Opening it returns to the same response and selected
+attendance status, where guests can answer the questions and submit. Invited
+guests do not need to register separately. If the saved contact is missing or
+inaccessible, the guest should ask the host for help. Organizer edits and events
+without verification keep their existing behavior.
+
 Everything about how guests respond — and how you control it — lives in your event's **Settings** and on the [guest list](guest-list.md).
 
 On the guest-facing event page, the RSVP card stays at the bottom of the screen while responses are open, then docks into its normal place as the guest reaches it. After responding, the card becomes a small Going, Maybe, Can't make it, or Awaiting approval summary with an edit link when changes are allowed. It stops floating once the response window closes or the event starts.

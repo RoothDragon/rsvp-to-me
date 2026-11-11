@@ -1,5 +1,9 @@
 # Regression Tests
 
+| Case                              | Coverage                                                                                                                                                                                                                                                                                              |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rsvp-owner-verification.test.ts` | Invitation owner recovery uses current contacts, supports unlinked and phone-only invitees, preserves the response/status, and rejects ineligible or mismatched ownership. Route and UI behavior are also covered by `RsvpPageVerification.test.tsx` and `RsvpOwnerGate.test.tsx` in component tests. |
+
 Tests that reproduce specific bugs found in production or staging. Each file corresponds to a specific bug fix.
 
 ## Convention

@@ -8,6 +8,17 @@ order: 20
 
 # Configuration Reference
 
+### Verified RSVP invitation recovery
+
+Verification-required invitation/edit links verify ownership before displaying
+the questionnaire. Recovery uses the configured email or SMS delivery service,
+CAPTCHA, and existing sign-in rate limits; no new environment variables are
+required. Links return to the same RSVP token and attendance selection. Guest
+accounts are created only for the current saved contact, with no role changes
+to existing accounts. Login links current matching unowned RSVPs after contact
+verification. Missing contacts or contacts inconsistent with existing ownership
+require host assistance; the edit token alone cannot authorize a protected save.
+
 All configurable settings for **RSVP to Me** live in a single `.env` file in the same directory as your `docker-compose.yml`. This guide explains every variable, what it controls, and how to configure it.
 
 ---

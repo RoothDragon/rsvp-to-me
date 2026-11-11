@@ -9,6 +9,7 @@ import { getChannelConfig } from "@/lib/config";
 import { resolveEffectConfig } from "@/lib/effects";
 import { getSession } from "@/lib/session";
 import { VerifiedRsvpGate } from "@/components/rsvp/VerifiedRsvpGate";
+import { RsvpOwnerGate } from "@/components/rsvp/RsvpOwnerGate";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -109,6 +110,25 @@ export default async function RsvpPage({ params, searchParams }: Props) {
       },
     });
     if (!rsvp || rsvp.eventId !== event.id) notFound();
+
+    // Mirror updateRSVP's owner requirement before showing a questionnaire.
+    // Sign-in links also link previously unowned invitations by current contact.
+    if (
+      event.requireVerifiedRsvp &&
+      !isOrganizer &&
+      !eventStarted &&
+      (!session || !rsvp.userId || session.userId !== rsvp.userId)
+    ) {
+      return (
+        <RsvpOwnerGate
+          editToken={token}
+          status={
+            initialStatus ??
+            ((rsvp.status === "INVITED" ? "GOING" : rsvp.status) as "GOING" | "MAYBE" | "NO")
+          }
+        />
+      );
+    }
 
     return (
       <RsvpFlow

@@ -95,6 +95,73 @@ export async function sendMagicLinkAction(
   return { success: true };
 }
 
+// A token selects the recipient; verification still requires opening a fresh
+// magic link at the RSVP's current contact. Never accept a caller's destination.
+export async function requestRsvpOwnerLinkAction(
+  editToken: string,
+  status: string,
+  captchaToken?: string | null
+): Promise<{ success: boolean; error?: string }> {
+  const invalid = { success: false, error: "Unable to verify this RSVP. Please contact the host." };
+  if (
+    !z.string().min(1).max(128).safeParse(editToken).success ||
+    !["GOING", "MAYBE", "NO"].includes(status)
+  )
+    return invalid;
+  await assertCaptcha("signin", captchaToken);
+  if (isTrustedIpConfigured()) {
+    const ip = await getClientIp();
+    if (!(await rateLimit(`ip:${ip}:magic-link`, 20, 600)).success)
+      return { success: false, error: "Too many requests. Please try later." };
+  }
+  const rsvp = await db.rSVP.findUnique({
+    where: { editToken },
+    include: {
+      user: { select: { id: true, email: true, phone: true } },
+      event: { select: { slug: true, status: true, startAt: true, requireVerifiedRsvp: true } },
+    },
+  });
+  if (
+    !rsvp ||
+    !rsvp.event.requireVerifiedRsvp ||
+    rsvp.event.status !== "PUBLISHED" ||
+    rsvp.event.startAt <= new Date()
+  )
+    return invalid;
+
+  const email = rsvp.guestEmail?.trim().toLowerCase();
+  const phone = rsvp.guestPhone?.trim().replace(/[\s\-().]/g, "");
+  // Existing ownership is authoritative; a stale/mismatched contact must not
+  // send a link that could never authorize this response.
+  const useEmail = !!email && (!rsvp.userId || rsvp.user?.email?.trim().toLowerCase() === email);
+  const usePhone =
+    !!phone && (!rsvp.userId || rsvp.user?.phone?.trim().replace(/[\s\-().]/g, "") === phone);
+  const identifier = useEmail ? email : usePhone ? phone : undefined;
+  if (!identifier) return invalid;
+  if (!(await rateLimit(`id:${identifier}:magic-link`, 5, 600)).success)
+    return { success: false, error: "Too many requests. Please try later." };
+
+  const contact = useEmail ? { email: identifier } : { phone: identifier };
+  const user = await db.user.upsert({
+    where: contact,
+    create: { ...contact, role: "GUEST" },
+    update: {},
+    select: { preferredLocale: true },
+  });
+  const query = new URLSearchParams({ token: editToken, status });
+  const destination = `/e/${encodeURIComponent(rsvp.event.slug)}/rsvp?${query}`;
+  const link = await createMagicLink(identifier, destination);
+  if (!link) return invalid;
+  const locale = resolveLocale(user.preferredLocale ?? (await cookies()).get(LOCALE_COOKIE)?.value);
+  try {
+    if (useEmail) await sendMagicLinkEmail(identifier, link, locale);
+    else await sendMagicLinkSms(identifier, link, locale);
+  } catch {
+    return { success: false, error: "Unable to send a sign-in link. Please try again." };
+  }
+  return { success: true };
+}
+
 export async function registerHostAction(
   rawEmail: string,
   rawName: string,

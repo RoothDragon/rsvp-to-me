@@ -3,6 +3,8 @@ import { render, screen } from "@/tests/components/render";
 
 const mocks = vi.hoisted(() => ({
   findEvent: vi.fn(),
+  findRsvp: vi.fn(),
+  ownerGate: vi.fn(() => null),
   getSessionUser: vi.fn(),
   getSession: vi.fn(),
   access: vi.fn(),
@@ -14,6 +16,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/db", () => ({
   db: {
     event: { findUnique: mocks.findEvent },
+    rSVP: { findUnique: mocks.findRsvp },
   },
 }));
 
@@ -64,6 +67,8 @@ vi.mock("@/i18n/server", () => ({
 }));
 
 import RsvpPage from "@/app/e/[slug]/rsvp/page";
+
+vi.mock("@/components/rsvp/RsvpOwnerGate", () => ({ RsvpOwnerGate: mocks.ownerGate }));
 
 const baseEvent = {
   id: "event-1",
@@ -129,6 +134,70 @@ async function renderPage() {
 }
 
 describe("RSVP page verification gate", () => {
+  const invitation = {
+    id: "rsvp-1",
+    eventId: "event-1",
+    editToken: "invite-token",
+    userId: null,
+    guestName: "Alice",
+    guestEmail: "alice@example.com",
+    status: "INVITED",
+    plusOneGuests: [],
+    answers: [],
+    responded: false,
+  };
+  async function renderInvitation() {
+    render(
+      await RsvpPage({
+        params: Promise.resolve({ slug: "test-party" }),
+        searchParams: Promise.resolve({ token: "invite-token", status: "MAYBE" }),
+      })
+    );
+  }
+  it.each([null, { userId: "other" }, { userId: "alice-id" }])(
+    "gates unlinked invitations before questionnaire entry (%#)",
+    async (session) => {
+      mocks.findRsvp.mockResolvedValue(invitation);
+      mocks.getSession.mockResolvedValue(session);
+      await renderInvitation();
+      expect(mocks.ownerGate).toHaveBeenCalledWith(
+        expect.objectContaining({ editToken: "invite-token", status: "MAYBE" }),
+        undefined
+      );
+      expect(mocks.flow).not.toHaveBeenCalled();
+    }
+  );
+  it("gates a linked response when signed in as a different account", async () => {
+    mocks.findRsvp.mockResolvedValue({ ...invitation, userId: "alice-id" });
+    mocks.getSession.mockResolvedValue({ userId: "other" });
+    await renderInvitation();
+    expect(mocks.ownerGate).toHaveBeenCalled();
+    expect(mocks.flow).not.toHaveBeenCalled();
+  });
+  it("lets the signed-in RSVP owner answer questions", async () => {
+    mocks.findRsvp.mockResolvedValue({ ...invitation, userId: "alice-id" });
+    mocks.getSession.mockResolvedValue({ userId: "alice-id" });
+    await renderInvitation();
+    expect(mocks.flow).toHaveBeenCalled();
+    expect(mocks.ownerGate).not.toHaveBeenCalled();
+  });
+  it("preserves token-only edits for events without verification", async () => {
+    mocks.findRsvp.mockResolvedValue(invitation);
+    mocks.findEvent.mockResolvedValue({ ...baseEvent, requireVerifiedRsvp: false });
+    await renderInvitation();
+    expect(mocks.flow).toHaveBeenCalled();
+    expect(mocks.ownerGate).not.toHaveBeenCalled();
+  });
+  it("preserves organizer edits", async () => {
+    mocks.findRsvp.mockResolvedValue(invitation);
+    mocks.getSessionUser.mockResolvedValue({ id: "host-1", role: "HOST" });
+    await renderInvitation();
+    expect(mocks.flow).toHaveBeenCalledWith(
+      expect.objectContaining({ organizerOverride: true }),
+      undefined
+    );
+    expect(mocks.ownerGate).not.toHaveBeenCalled();
+  });
   it("preserves the ordinary RSVP flow when verification is disabled", async () => {
     mocks.findEvent.mockResolvedValue({
       ...baseEvent,

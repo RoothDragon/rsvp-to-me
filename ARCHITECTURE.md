@@ -133,6 +133,13 @@ metadata use the plain-text conversion. Images and embedded content are excluded
 
 ### Authentication and access control
 
+- Verification-required RSVP token routes show `RsvpOwnerGate` before the form
+  unless the viewer is its signed-in owner or an organizer.
+  `requestRsvpOwnerLinkAction` sends a fresh magic link only to a current saved
+  RSVP contact matching existing ownership. Unlinked invitees receive a guest
+  account; existing login contact-linking assigns ownership after sign-in.
+  `updateRSVP` remains the mutation authorization gate.
+
 1. `app/actions/auth.ts` validates sign-in/registration input and calls
    `lib/auth.ts` to create or verify magic-link tokens.
 2. Verification route handlers under `app/auth/` create encrypted session
