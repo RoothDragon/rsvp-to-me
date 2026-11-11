@@ -41,11 +41,58 @@ export async function GET(request: NextRequest) {
     return redirectWithNoReferrer(`${origin}/auth/sign-in?error=invalid-token`);
   }
 
-  await db.magicToken.update({ where: { id: record.id }, data: { used: true } });
+  // Atomically consume the token. Only one concurrent request may succeed.
+  const consumed = await db.magicToken.updateMany({
+    where: {
+      id: record.id,
+      used: false,
+      type: "LOGIN",
+      expiresAt: { gt: new Date() },
+    },
+    data: { used: true },
+  });
+
+  if (consumed.count !== 1) {
+    return redirectWithNoReferrer(`${origin}/auth/sign-in?error=invalid-token`);
+  }
 
   const user = await db.user.findUnique({ where: { id: record.userId } });
   if (!user) {
     return redirectWithNoReferrer(`${origin}/auth/sign-in?error=invalid-token`);
+  }
+  // The token records the contact to which the magic link was sent.
+  // Legacy tokens without metadata still permit ordinary sign-in,
+  // but cannot establish verified contact ownership.
+  let verifiedContact: { verifiedMethod: "EMAIL" | "SMS"; verifiedIdentifier: string } | undefined;
+
+  if (record.metadata) {
+    try {
+      const metadata: unknown = JSON.parse(record.metadata);
+
+      if (metadata && typeof metadata === "object") {
+        const value = metadata as Record<string, unknown>;
+
+        if (
+          (value.verifiedMethod === "EMAIL" || value.verifiedMethod === "SMS") &&
+          typeof value.verifiedIdentifier === "string"
+        ) {
+          const identifier = value.verifiedIdentifier;
+
+          // Confirm the recorded delivery contact still belongs
+          // to the authenticated user.
+          const currentContact = value.verifiedMethod === "EMAIL" ? user.email : user.phone;
+
+          if (currentContact && identifier.toLowerCase() === currentContact.trim().toLowerCase()) {
+            verifiedContact = {
+              verifiedMethod: value.verifiedMethod,
+              verifiedIdentifier: identifier,
+            };
+          }
+        }
+      }
+    } catch {
+      // Invalid legacy metadata must never establish verification.
+    }
   }
 
   let role = user.role;
@@ -86,7 +133,8 @@ export async function GET(request: NextRequest) {
     userId: user.id,
     email: user.email ?? user.phone ?? "",
     role: role as "HOST" | "ADMIN" | "GUEST",
-    sessionId, // Crucial: Include sessionId so getSession() validates it successfully
+    sessionId,
+    ...verifiedContact,
   });
 
   // Validate redirect at the point of use — defence in depth against encoded payloads

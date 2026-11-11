@@ -37,12 +37,18 @@ export async function createMagicLink(
   redirect?: string
 ): Promise<string | null> {
   let user;
+  let verifiedMethod: "EMAIL" | "SMS";
+  let verifiedIdentifier: string;
 
   if (looksLikePhone(identifier)) {
     const phone = normalizePhone(identifier);
+    verifiedMethod = "SMS";
+    verifiedIdentifier = phone;
     user = await db.user.findUnique({ where: { phone } });
   } else {
     const email = identifier.toLowerCase().trim();
+    verifiedMethod = "EMAIL";
+    verifiedIdentifier = email;
     user = await db.user.findUnique({ where: { email } });
   }
 
@@ -59,7 +65,15 @@ export async function createMagicLink(
   const hashedToken = hashToken(token);
 
   await db.magicToken.create({
-    data: { userId: user.id, token: hashedToken, expiresAt },
+    data: {
+      userId: user.id,
+      token: hashedToken,
+      expiresAt,
+      metadata: JSON.stringify({
+        verifiedMethod,
+        verifiedIdentifier,
+      }),
+    },
   });
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -105,15 +119,10 @@ export async function linkRsvpsToUser(userId: string) {
 
   await db.rSVP.updateMany({
     where: {
-      AND: [
-        { OR: conditions },
-        {
-          OR: [{ userId: { not: userId } }, { userId: null }],
-        },
-      ],
+      AND: [{ OR: conditions }, { userId: null }],
     },
     data: {
-      userId: userId,
+      userId,
     },
   });
 }
@@ -129,7 +138,17 @@ export async function verifyMagicToken(token: string): Promise<boolean> {
     return false;
   }
 
-  await db.magicToken.update({ where: { id: record.id }, data: { used: true } });
+  const consumed = await db.magicToken.updateMany({
+    where: {
+      id: record.id,
+      used: false,
+      type: "LOGIN",
+      expiresAt: { gt: new Date() },
+    },
+    data: { used: true },
+  });
+
+  if (consumed.count !== 1) return false;
 
   const user = await db.user.findUnique({ where: { id: record.userId } });
   if (!user) return false;

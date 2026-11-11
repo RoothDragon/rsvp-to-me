@@ -100,6 +100,7 @@ export const SaveEventSettingsSchema = z.object({
   plusOneMax: z.number().int().min(0).max(100).optional(),
   plusOneNamesRequired: z.boolean().optional(),
   approvalRequired: z.boolean().optional(),
+  requireVerifiedRsvp: z.boolean().optional(),
   rsvpDeadline: z.string().trim().nullable().optional(),
   allowEditAfterDeadline: z.boolean().optional(),
   capacity: z.number().int().min(0).nullable().optional(),

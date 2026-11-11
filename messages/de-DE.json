@@ -1,5 +1,15 @@
 {
   "Ui": {
+    "EventDescription": {
+      "label": "Beschreibung",
+      "help": "Einfaches HTML wird unterstützt: Absätze, Listen, Fettschrift, Kursivschrift, Überschriften, Trennlinien und Links. Bilder werden nicht unterstützt.",
+      "preview": "Vorschau",
+      "editText": "Text bearbeiten",
+      "expand": "Mehr anzeigen",
+      "collapse": "Weniger anzeigen",
+      "edit": "Beschreibung bearbeiten",
+      "empty": "Beschreibung hinzufügen"
+    },
     "Common": {
       "save": "Speichern",
       "cancel": "Abbrechen",
@@ -591,6 +601,7 @@
         "description": "Beschreibung",
         "addDescription": "Beschreibung hinzufügen…",
         "coverAlt": "Titelbild für {title}",
+        "openCover": "Vollständiges Titelbild für {title} öffnen (in einem neuen Tab)",
         "organizer": "Veranstaltet von {name}"
       },
       "DateEdit": {

@@ -15,11 +15,12 @@ import {
 import { logActivity } from "@/lib/activity";
 import { logSafe } from "@/lib/logger";
 import { tzLocalToUtc } from "@/lib/utils";
-import { SaveEventSettingsSchema, HttpUrlSchema } from "@/lib/schemas";
+import { SaveEventSettingsSchema, HttpUrlSchema, CreateEventSchema } from "@/lib/schemas";
 import bcrypt from "bcryptjs";
 import { getSession } from "@/lib/session";
 import { assertHost, assertHostOrCohost } from "./shared";
 import { assertCaptcha } from "@/lib/captcha";
+import { sanitizeEventDescription } from "@/lib/event-description";
 import type { GuestRsvpDisplayFields } from "@/lib/guestRsvpDisplay";
 
 // ── Inline field edits ─────────────────────────────────────────────────────────
@@ -44,6 +45,8 @@ export async function saveEventField(
   if (field === "virtualUrl" && value) value = HttpUrlSchema.parse(value);
   const event = await assertHostOrCohost(eventId);
   await assertCaptcha("event_edit", captchaToken);
+  if (field === "description")
+    value = sanitizeEventDescription(CreateEventSchema.shape.description.parse(value));
   await db.event.update({ where: { id: eventId }, data: { [field]: value || null } });
   const fieldTypes: Record<string, string> = {
     title: "event_title",
@@ -179,6 +182,7 @@ export async function saveEventSettings(
     plusOneMax?: number;
     plusOneNamesRequired?: boolean;
     approvalRequired?: boolean;
+    requireVerifiedRsvp?: boolean;
     rsvpDeadline?: string | null;
     allowEditAfterDeadline?: boolean;
     capacity?: number | null;
@@ -214,6 +218,24 @@ export async function saveEventSettings(
   // SEC-20: validate against an explicit allow-list before spreading into the
   // update, so unknown keys (status, slug, hostId, …) can't be mass-assigned.
   const { password, rsvpDeadline, ...rest } = SaveEventSettingsSchema.parse(settings);
+  // Verified guest RSVP currently supports only PUBLIC and UNLISTED
+  // events without a password. Evaluate the resulting configuration,
+  // including existing values when a field was omitted.
+  const currentVerificationSettings = event;
+
+  const effectiveVisibility = rest.visibility ?? currentVerificationSettings.visibility;
+
+  const effectiveVerifiedRsvp =
+    rest.requireVerifiedRsvp ?? currentVerificationSettings.requireVerifiedRsvp;
+
+  const effectivePasswordProtected =
+    password === undefined
+      ? !!currentVerificationSettings.passwordHash
+      : password !== null && password !== "";
+
+  if (effectiveVerifiedRsvp && (effectiveVisibility === "PRIVATE" || effectivePasswordProtected)) {
+    throw new Error("Verified RSVP requires a public or unlisted event without a password.");
+  }
   const passwordHash =
     password === undefined
       ? undefined

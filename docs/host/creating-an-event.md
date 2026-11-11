@@ -24,6 +24,32 @@ Fill in the basics:
 
 ---
 
+## Description formatting
+
+Drag the description editor’s corner to resize its width and height within the
+available page space. Enter plain text, or use basic HTML:
+
+```html
+<h2>Schedule</h2>
+<p>Bring <strong>comfortable shoes</strong> and a drink.</p>
+<ul>
+  <li>Meet at noon</li>
+  <li>Lunch at 1 pm</li>
+</ul>
+<hr />
+<p><a href="https://example.com">More details</a></p>
+```
+
+Paragraphs, line breaks, headings, lists, bold, italics, underline, strikethrough,
+quotes, horizontal rules, and regular web links are supported. Use **Preview** to
+check the result. Images and embedded content are not supported.
+
+Long descriptions show up to approximately 1,200 characters or 16 logical lines
+in the event-page preview. HTML formatting works in both views. Guests can choose
+**Show more** and **Show less**. Hosts use **Edit description**, then **Save** or
+**Cancel**; clicking outside the editor does not publish changes. Calendar exports
+and social previews show readable text rather than HTML source.
+
 ## Location Type
 
 Pick the kind of location that fits your event:

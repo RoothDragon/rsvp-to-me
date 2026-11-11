@@ -1,5 +1,15 @@
 {
   "Ui": {
+    "EventDescription": {
+      "label": "Descripción",
+      "help": "Se admite HTML básico: párrafos, listas, negrita, cursiva, encabezados, líneas horizontales y enlaces. No se admiten imágenes.",
+      "preview": "Vista previa",
+      "editText": "Editar texto",
+      "expand": "Mostrar más",
+      "collapse": "Mostrar menos",
+      "edit": "Editar descripción",
+      "empty": "Añadir una descripción"
+    },
     "Common": {
       "save": "Guardar",
       "cancel": "Cancelar",
@@ -591,6 +601,7 @@
         "description": "Descripción",
         "addDescription": "Añade una descripción…",
         "coverAlt": "Portada de {title}",
+        "openCover": "Abrir imagen de portada completa de {title} (en una pestaña nueva)",
         "organizer": "Organizado por {name}"
       },
       "DateEdit": {

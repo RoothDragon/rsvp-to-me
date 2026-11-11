@@ -37,12 +37,13 @@ FAST=0
 [ "${1:-}" = "--fast" ] && FAST=1
 
 # ---- Ephemeral CI-parity services (non-default ports to avoid dev clashes) ----
-PG_NAME=preflight-pg
-REDIS_NAME=preflight-redis
+PG_ID=""
+REDIS_ID=""
 PG_PORT=55432
 REDIS_PORT=56399
 E2E_PORT=3001
-E2E_OUTPUT_DIR="${TMPDIR}/rsvp-preflight-playwright"
+PREFLIGHT_OUTPUT=$(mktemp -d /tmp/rsvp-preflight.XXXXXXXX)
+E2E_OUTPUT_DIR="$PREFLIGHT_OUTPUT/playwright"
 SERVER_PID=""
 SERVER_PGID=""
 
@@ -52,7 +53,8 @@ cleanup() {
   if [ -n "$SERVER_PID" ] && [ -n "$SERVER_PGID" ]; then
     preflight_terminate_process_group "$SERVER_PID" "$SERVER_PGID" || true
   fi
-  docker rm -f "$PG_NAME" "$REDIS_NAME" >/dev/null 2>&1 || true
+  [ -z "$PG_ID" ] || docker rm -fv "$PG_ID" >/dev/null 2>&1 || true
+  [ -z "$REDIS_ID" ] || docker rm -fv "$REDIS_ID" >/dev/null 2>&1 || true
   exit "$ec"
 }
 trap cleanup EXIT
@@ -74,14 +76,16 @@ step() { printf '\n\033[1;36m▶ %s\033[0m\n' "$*"; }
 ok()   { printf '\033[1;32m✓ %s\033[0m\n' "$*"; }
 
 step "Starting ephemeral Postgres + Redis (ports ${PG_PORT}/${REDIS_PORT})"
-docker rm -f "$PG_NAME" "$REDIS_NAME" >/dev/null 2>&1 || true
-docker run -d --name "$PG_NAME" \
+# Capture IDs before starting services; never remove resources by shared names.
+PG_ID=$(docker create --label rsvp.validation=preflight \
   -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=rsvp_test -e POSTGRES_USER=postgres \
-  -p "${PG_PORT}:5432" postgres:18-alpine >/dev/null
-docker run -d --name "$REDIS_NAME" -p "${REDIS_PORT}:6379" redis:7-alpine >/dev/null
+  -p "127.0.0.1:${PG_PORT}:5432" postgres:18-alpine)
+REDIS_ID=$(docker create --label rsvp.validation=preflight \
+  -p "127.0.0.1:${REDIS_PORT}:6379" redis:7-alpine)
+docker start "$PG_ID" "$REDIS_ID" >/dev/null
 db_ready=0
 for _ in $(seq 1 30); do
-  if docker exec "$PG_NAME" pg_isready -U postgres >/dev/null 2>&1; then
+  if docker exec "$PG_ID" pg_isready -U postgres >/dev/null 2>&1; then
     db_ready=1
     break
   fi
@@ -112,7 +116,7 @@ npm audit --prefix worker --omit=dev --audit-level=high
 step "Dry-run email worker bundle"
 (
   cd worker
-  npx wrangler deploy --dry-run --outdir /tmp/rsvp-worker-dist
+  npx wrangler deploy --dry-run --outdir "$PREFLIGHT_OUTPUT/worker"
 )
 
 # The root tsconfig excludes worker/, and the bundle dry run does not type-check,
@@ -191,7 +195,7 @@ command -v setsid >/dev/null 2>&1 || {
   echo "✗ Cannot isolate the E2E server because the 'setsid' command is unavailable." >&2
   exit 1
 }
-setsid npm start >/tmp/preflight-server.log 2>&1 &
+setsid npm exec -- next start --hostname 127.0.0.1 >"$PREFLIGHT_OUTPUT/server.log" 2>&1 &
 SERVER_PID=$!
 SERVER_PGID="$SERVER_PID"
 if ! captured_pgid="$(preflight_capture_process_group "$SERVER_PID")"; then
@@ -200,12 +204,12 @@ fi
 SERVER_PGID="$captured_pgid"
 if ! npx wait-on "http://localhost:${E2E_PORT}/api/health" --timeout 120000; then
   echo "✗ E2E server failed to become healthy. Server log:" >&2
-  tail -n 50 /tmp/preflight-server.log >&2 || true
+  tail -n 50 "$PREFLIGHT_OUTPUT/server.log" >&2 || true
   exit 1
 fi
 if ! preflight_process_group_alive "$SERVER_PGID"; then
   echo "✗ E2E server process group exited during startup. Server log:" >&2
-  tail -n 50 /tmp/preflight-server.log >&2 || true
+  tail -n 50 "$PREFLIGHT_OUTPUT/server.log" >&2 || true
   exit 1
 fi
 

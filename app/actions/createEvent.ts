@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { sanitizeEventDescription } from "@/lib/event-description";
 import { getSession, destroySession } from "@/lib/session";
 import { getSessionUser } from "@/lib/session-user";
 import { generateUniqueSlug } from "@/lib/slug";
@@ -44,7 +45,10 @@ export async function createEvent(formData: FormData) {
   const event = await db.event.create({
     data: {
       title: parsed.title,
-      description: parsed.description,
+      description:
+        parsed.description == null
+          ? parsed.description
+          : sanitizeEventDescription(parsed.description),
       slug,
       startAt,
       timezone: parsed.timezone,

@@ -3,9 +3,10 @@
 import { useTranslations } from "next-intl";
 
 import { useEffect, useState } from "react";
-import NextImage from "next/image";
+import { EventCoverImage } from "./EventCoverImage";
 import { FileText, Pencil, Settings } from "lucide-react";
 import { InlineEdit } from "./InlineEdit";
+import { EventDescription } from "./EventDescription";
 import { DateEdit } from "./DateEdit";
 import { LocationEdit } from "./LocationEdit";
 import type { EventData } from "./types";
@@ -330,13 +331,10 @@ export function EventHero({
           }}
         >
           {event.theme?.coverImageUrl && (
-            <NextImage
-              src={event.theme.coverImageUrl}
+            <EventCoverImage
+              url={event.theme.coverImageUrl}
               alt={translate("coverAlt", { title: event.title })}
-              fill
-              priority
-              sizes="(max-width: 600px) calc(100vw - 32px), 568px"
-              style={{ objectFit: "cover" }}
+              label={translate("openCover", { title: event.title })}
             />
           )}
           {!event.theme?.coverImageUrl && <span style={{ fontSize: "72px" }}>🎉</span>}
@@ -457,27 +455,12 @@ export function EventHero({
               {translate("description")}
             </h2>
           </div>
-          {isHost && (
-            <Pencil
-              size={12}
-              style={{ color: t.textMuted, cursor: "pointer" }}
-              onClick={() => detailsRef.current?.click()}
-            />
-          )}
         </div>
-        <InlineEdit
+        <EventDescription
+          key={event.id}
           outerRef={detailsRef}
           value={event.description ?? ""}
           onSave={(v) => save("description", v)}
-          placeholder={translate("addDescription")}
-          multiline
-          style={{
-            color: t.textSecondary,
-            lineHeight: "1.7",
-            fontSize: "16px",
-            whiteSpace: "pre-wrap",
-            display: "block",
-          }}
           isHost={isHost}
         />
       </EventCard>

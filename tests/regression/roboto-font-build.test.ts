@@ -2,6 +2,8 @@
 // '&' parameters. Next 16.3's Google loader misparsed them as multiple queries,
 // failing the AMD64 Turbopack image build. Exercise the actual theme-font module
 // with that response shape and verify the bundled font reaches production CSS.
+// November 2026, 01a18e04: all remaining Google families also broke isolated
+// builds. Build every real font with an empty Google-response map (fail closed).
 
 import { spawnSync } from "node:child_process";
 import {
@@ -13,14 +15,14 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { createRequire } from "node:module";
 import { expect, it } from "vitest";
 
 const ROOT = join(__dirname, "..", "..");
 const requireFromRoot = createRequire(join(ROOT, "package.json"));
 
-it("builds the theme fonts despite Google's extensionless Roboto response", () => {
+it("builds every theme and UI font without Google responses", () => {
   const scratch = join(ROOT, ".vitest");
   mkdirSync(scratch, { recursive: true });
   const fixture = mkdtempSync(join(scratch, "roboto-font-"));
@@ -28,7 +30,12 @@ it("builds the theme fonts despite Google's extensionless Roboto response", () =
     mkdirSync(join(fixture, "app", "font-files"), { recursive: true });
     copyFileSync(join(ROOT, "app", "fonts.ts"), join(fixture, "app", "fonts.ts"));
     const asset = readFileSync(join(ROOT, "app", "font-files", "roboto-normal.woff2"));
-    writeFileSync(join(fixture, "app", "font-files", "roboto-normal.woff2"), asset);
+    const fontFiles = readdirSync(join(ROOT, "app", "font-files")).filter((name) =>
+      name.endsWith(".woff2")
+    );
+    for (const name of fontFiles) {
+      copyFileSync(join(ROOT, "app", "font-files", name), join(fixture, "app", "font-files", name));
+    }
     writeFileSync(join(fixture, "package.json"), JSON.stringify({ private: true }));
     writeFileSync(
       join(fixture, "next.config.js"),
@@ -41,9 +48,9 @@ it("builds the theme fonts despite Google's extensionless Roboto response", () =
       join(fixture, "app", "layout.tsx"),
       `
       import type { ReactNode } from "react";
-      import { themeFontVariables } from "./fonts";
+      import { geistSans, geistMono, themeFontVariables } from "./fonts";
       export default function Layout({ children }: { children: ReactNode }) {
-        return <html className={themeFontVariables}><body>{children}</body></html>;
+        return <html className={[geistSans.variable, geistMono.variable, themeFontVariables].join(" ")}><body>{children}</body></html>;
       }
     `
     );
@@ -56,26 +63,8 @@ it("builds the theme fonts despite Google's extensionless Roboto response", () =
     `
     );
     const mockedResponses = join(fixture, "google-responses.cjs");
-    writeFileSync(
-      mockedResponses,
-      `
-      const families = [
-        ["Playfair Display", "400..900"], ["DM Serif Display", "400"],
-        ["Lora", "400..700"], ["Bebas Neue", "400"], ["Righteous", "400"],
-        ["Fredoka", "300..700"], ["Pacifico", "400"], ["Dancing Script", "400..700"],
-        ["Caveat", "400..700"], ["Space Grotesk", "300..700"], ["Outfit", "100..900"],
-        ["Roboto", "400;700"]
-      ];
-      module.exports = Object.fromEntries(families.map(([family, weights]) => [
-        "https://fonts.googleapis.com/css2?family=" + family.replace(/ /g, "+") + ":wght@" + weights + "&display=swap",
-        family === "Roboto"
-          ? "@font-face { font-family: 'Roboto'; font-style: normal; font-weight: 400; src: url(https://fonts.gstatic.com/l/font?kit=regression&skey=regression&v=v50) format('woff2'); }"
-          // Unrelated families need only CSS for this font-build regression.
-          // No remote font files or network requests are needed by the fixture.
-          : "@font-face { font-family: '" + family + "'; font-style: normal; font-weight: 400; }"
-      ]));
-    `
-    );
+    // An unexpected next/font/google request has no canned response and fails.
+    writeFileSync(mockedResponses, "module.exports = {};\n");
 
     const build = spawnSync(
       process.execPath,
@@ -112,8 +101,29 @@ it("builds the theme fonts despite Google's extensionless Roboto response", () =
         .some((path) => readFileSync(path).equals(asset))
     ).toBe(true);
     const html = readFileSync(join(fixture, ".next", "server", "app", "index.html"), "utf8");
-    expect(html).not.toMatch(/<link[^>]+as="font"/);
+    const preloads = html.match(/<link[^>]+as="font"[^>]*>/g) ?? [];
+    expect(preloads).toHaveLength(2);
+    for (const id of ["geist-sans", "geist-mono"]) {
+      const bytes = readFileSync(join(ROOT, "app", "font-files", id + "-normal.woff2"));
+      const emittedPath = emitted.find(
+        (path) => path.endsWith(".woff2") && readFileSync(path).equals(bytes)
+      );
+      expect(emittedPath).toBeDefined();
+      expect(preloads.some((link) => link.includes(basename(emittedPath!)))).toBe(true);
+    }
+    for (const name of fontFiles) {
+      const bytes = readFileSync(join(ROOT, "app", "font-files", name));
+      expect(
+        emitted.some((path) => path.endsWith(".woff2") && readFileSync(path).equals(bytes)),
+        name
+      ).toBe(true);
+    }
+    const manifest = JSON.parse(
+      readFileSync(join(ROOT, "app", "font-files", "manifest.json"), "utf8")
+    ) as { fonts: { id: string }[] };
+    for (const font of manifest.fonts) expect(styles).toContain("--font-" + font.id);
   } finally {
-    rmSync(fixture, { recursive: true, force: true });
+    // Windows can retain brief build-file locks after the Next subprocess exits.
+    rmSync(fixture, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 }, 75000);

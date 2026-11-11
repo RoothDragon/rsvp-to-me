@@ -7,6 +7,8 @@ vi.mock("@/i18n/server", async (importOriginal) => {
 });
 
 const mocks = vi.hoisted(() => ({
+  mockEventFindUnique: vi.fn(),
+  mockUserUpsert: vi.fn(),
   mockCreateMagicLink: vi.fn(),
   mockRegisterHost: vi.fn(),
   mockIsOpenRegistrationActive: vi.fn().mockResolvedValue(false),
@@ -18,7 +20,17 @@ const mocks = vi.hoisted(() => ({
   mockHeadersGet: vi.fn().mockReturnValue("127.0.0.1"),
 }));
 
-vi.mock("@/lib/db", () => ({ db: { user: { findUnique: mocks.mockRecipient } } }));
+vi.mock("@/lib/db", () => ({
+  db: {
+    user: {
+      findUnique: mocks.mockRecipient,
+      upsert: mocks.mockUserUpsert,
+    },
+    event: {
+      findUnique: mocks.mockEventFindUnique,
+    },
+  },
+}));
 vi.mock("@/lib/auth", () => ({
   createMagicLink: mocks.mockCreateMagicLink,
   registerHost: mocks.mockRegisterHost,
@@ -44,7 +56,11 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-import { sendMagicLinkAction, registerHostAction } from "@/app/actions/auth";
+import {
+  sendMagicLinkAction,
+  registerHostAction,
+  requestVerifiedGuestLinkAction,
+} from "@/app/actions/auth";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -273,5 +289,217 @@ describe("magic-link recipient language", () => {
       expect.any(String),
       "en-US"
     );
+  });
+});
+
+describe("requestVerifiedGuestLinkAction", () => {
+  beforeEach(() => {
+    // Don't inherit a mocked locale cookie from earlier tests.
+    mocks.mockCookieGet.mockReturnValue(undefined);
+    mocks.mockEventFindUnique.mockResolvedValue({
+      slug: "testing-public-event",
+      status: "PUBLISHED",
+      startAt: new Date("2027-12-19T21:00:00Z"),
+      visibility: "UNLISTED",
+      passwordHash: null,
+      requireVerifiedRsvp: true,
+    });
+
+    mocks.mockUserUpsert.mockResolvedValue({
+      preferredLocale: null,
+    });
+
+    mocks.mockCreateMagicLink.mockResolvedValue(
+      "http://localhost:3000/auth/verify?token=test-token&redirect=%2Fe%2Ftesting-public-event"
+    );
+  });
+
+  it("creates a GUEST account and emails a magic link for an eligible event", async () => {
+    const result = await requestVerifiedGuestLinkAction(
+      " NewGuest@Example.com ",
+      "testing-public-event",
+      "GOING"
+    );
+
+    expect(result.success).toBe(true);
+
+    expect(mocks.mockEventFindUnique).toHaveBeenCalledWith({
+      where: { slug: "testing-public-event" },
+      select: {
+        slug: true,
+        status: true,
+        startAt: true,
+        visibility: true,
+        passwordHash: true,
+        requireVerifiedRsvp: true,
+      },
+    });
+
+    expect(mocks.mockUserUpsert).toHaveBeenCalledWith({
+      where: { email: "newguest@example.com" },
+      create: {
+        email: "newguest@example.com",
+        role: "GUEST",
+      },
+      update: {},
+      select: { preferredLocale: true },
+    });
+
+    expect(mocks.mockCreateMagicLink).toHaveBeenCalledWith(
+      "newguest@example.com",
+      "/e/testing-public-event/rsvp?status=GOING"
+    );
+
+    expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledWith(
+      "newguest@example.com",
+      expect.stringContaining("/auth/verify?token="),
+      "en-US"
+    );
+  });
+  it("rejects an invalid RSVP status before creating a guest", async () => {
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event",
+      "ADMIN"
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Invalid RSVP status.");
+    expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
+    expect(mocks.mockCreateMagicLink).not.toHaveBeenCalled();
+    expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
+  });
+  ///----------------
+
+  it("rejects registration when verification is disabled", async () => {
+    mocks.mockEventFindUnique.mockResolvedValue({
+      slug: "testing-public-event",
+      status: "PUBLISHED",
+      startAt: new Date("2027-12-19T21:00:00Z"),
+      visibility: "UNLISTED",
+      passwordHash: null,
+      requireVerifiedRsvp: false,
+    });
+
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event",
+      "GOING"
+    );
+
+    expect(result.success).toBe(false);
+    expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
+    expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects registration for an unpublished event", async () => {
+    mocks.mockEventFindUnique.mockResolvedValue({
+      slug: "testing-public-event",
+      status: "DRAFT",
+      startAt: new Date("2027-12-19T21:00:00Z"),
+      visibility: "UNLISTED",
+      passwordHash: null,
+      requireVerifiedRsvp: true,
+    });
+
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event",
+      "GOING"
+    );
+
+    expect(result.success).toBe(false);
+    expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
+    expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects registration after the event has started", async () => {
+    mocks.mockEventFindUnique.mockResolvedValue({
+      slug: "testing-public-event",
+      status: "PUBLISHED",
+      startAt: new Date("2020-01-01T00:00:00Z"),
+      visibility: "UNLISTED",
+      passwordHash: null,
+      requireVerifiedRsvp: true,
+    });
+
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event",
+      "GOING"
+    );
+
+    expect(result.success).toBe(false);
+    expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
+    expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
+  });
+
+  it("blocks registration when the IP rate limit is exceeded", async () => {
+    mocks.mockRateLimit.mockResolvedValueOnce({ success: false });
+
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event",
+      "GOING"
+    );
+
+    expect(result.success).toBe(false);
+    expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
+    expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when verification email delivery fails", async () => {
+    mocks.mockSendMagicLinkEmail.mockRejectedValueOnce(new Error("Simulated SMTP failure"));
+
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event",
+      "GOING"
+    );
+
+    expect(result.success).toBe(false);
+    expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledOnce();
+  });
+  ////
+  it("rejects self-registration for PRIVATE events", async () => {
+    mocks.mockEventFindUnique.mockResolvedValue({
+      slug: "testing-public-event",
+      status: "PUBLISHED",
+      startAt: new Date("2027-12-19T21:00:00Z"),
+      visibility: "PRIVATE",
+      passwordHash: null,
+      requireVerifiedRsvp: true,
+    });
+
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event",
+      "GOING"
+    );
+
+    expect(result.success).toBe(false);
+    expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
+    expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects self-registration for password-protected events", async () => {
+    mocks.mockEventFindUnique.mockResolvedValue({
+      slug: "testing-public-event",
+      status: "PUBLISHED",
+      startAt: new Date("2027-12-19T21:00:00Z"),
+      visibility: "UNLISTED",
+      passwordHash: "hashed-event-password",
+      requireVerifiedRsvp: true,
+    });
+
+    const result = await requestVerifiedGuestLinkAction(
+      "guest@example.com",
+      "testing-public-event",
+      "GOING"
+    );
+
+    expect(result.success).toBe(false);
+    expect(mocks.mockUserUpsert).not.toHaveBeenCalled();
+    expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
   });
 });

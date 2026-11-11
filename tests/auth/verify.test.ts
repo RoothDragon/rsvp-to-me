@@ -1,19 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-const { mockFindUniqueMagicToken, mockUpdateMagicToken, mockFindUniqueUser, mockCreateSession } =
-  vi.hoisted(() => ({
-    mockFindUniqueMagicToken: vi.fn(),
-    mockUpdateMagicToken: vi.fn(),
-    mockFindUniqueUser: vi.fn(),
-    mockCreateSession: vi.fn(),
-  }));
+const {
+  mockFindUniqueMagicToken,
+  mockUpdateMagicToken,
+  mockUpdateManyMagicToken,
+  mockFindUniqueUser,
+  mockCreateSession,
+} = vi.hoisted(() => ({
+  mockFindUniqueMagicToken: vi.fn(),
+  mockUpdateMagicToken: vi.fn(),
+  mockUpdateManyMagicToken: vi.fn(),
+  mockFindUniqueUser: vi.fn(),
+  mockCreateSession: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {
     magicToken: {
       findUnique: mockFindUniqueMagicToken,
       update: mockUpdateMagicToken,
+      updateMany: mockUpdateManyMagicToken,
     },
     user: {
       findUnique: mockFindUniqueUser,
@@ -36,6 +43,7 @@ vi.mock("@/lib/redis", () => ({
 }));
 
 import { GET } from "@/app/auth/verify/route";
+import { sealSession } from "@/lib/session";
 
 function makeRequest(token?: string, redirect?: string): NextRequest {
   let url = token
@@ -51,7 +59,12 @@ describe("GET /auth/verify", () => {
   beforeEach(() => {
     mockFindUniqueMagicToken.mockReset();
     mockUpdateMagicToken.mockReset();
+    mockUpdateManyMagicToken.mockReset();
+    mockUpdateManyMagicToken.mockResolvedValue({ count: 1 });
     mockFindUniqueUser.mockReset();
+    mockCreateSession.mockReset();
+    vi.mocked(sealSession).mockClear();
+
     process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
   });
 
@@ -135,12 +148,172 @@ describe("GET /auth/verify", () => {
     mockFindUniqueUser.mockResolvedValue({ id: "user1", email: "host@example.com" });
 
     await GET(makeRequest("valid-token"));
-    expect(mockUpdateMagicToken).toHaveBeenCalledWith({
-      where: { id: "tok-id" },
+    expect(mockUpdateManyMagicToken).toHaveBeenCalledWith({
+      where: {
+        id: "tok-id",
+        used: false,
+        type: "LOGIN",
+        expiresAt: { gt: expect.any(Date) },
+      },
       data: { used: true },
     });
   });
 
+  it("rejects a token consumed by a concurrent request", async () => {
+    mockFindUniqueMagicToken.mockResolvedValue({
+      id: "tok-id",
+      token: "valid-token",
+      used: false,
+      expiresAt: futureDate,
+      userId: "user1",
+      type: "LOGIN",
+    });
+
+    // Another request consumed the token after our initial lookup.
+    mockUpdateManyMagicToken.mockResolvedValue({ count: 0 });
+    mockUpdateMagicToken.mockResolvedValue({});
+
+    mockFindUniqueUser.mockResolvedValue({
+      id: "user1",
+      email: "host@example.com",
+      role: "HOST",
+    });
+
+    const res = await GET(makeRequest("valid-token"));
+
+    expect(res.headers.get("location")).toContain("error=invalid-token");
+
+    expect(mockUpdateManyMagicToken).toHaveBeenCalledWith({
+      where: {
+        id: "tok-id",
+        used: false,
+        type: "LOGIN",
+        expiresAt: { gt: expect.any(Date) },
+      },
+      data: { used: true },
+    });
+
+    expect(mockCreateSession).not.toHaveBeenCalled();
+    expect(res.headers.get("set-cookie") ?? "").not.toContain("rsvp-session=");
+  });
+  ///////////////////////////////////////////////
+  it("seals verified email provenance from a redeemed login token", async () => {
+    mockFindUniqueMagicToken.mockResolvedValue({
+      id: "email-token",
+      userId: "user1",
+      used: false,
+      expiresAt: futureDate,
+      type: "LOGIN",
+      metadata: JSON.stringify({
+        verifiedMethod: "EMAIL",
+        verifiedIdentifier: "host@example.com",
+      }),
+    });
+
+    mockFindUniqueUser.mockResolvedValue({
+      id: "user1",
+      email: "host@example.com",
+      role: "HOST",
+    });
+
+    const res = await GET(makeRequest("valid-token"));
+
+    expect(res.headers.get("location")).toBe("http://localhost:3000/dashboard");
+
+    expect(sealSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user1",
+        verifiedMethod: "EMAIL",
+        verifiedIdentifier: "host@example.com",
+      })
+    );
+  });
+
+  it("does not trust a token claiming a different email address", async () => {
+    mockFindUniqueMagicToken.mockResolvedValue({
+      id: "email-token",
+      userId: "user1",
+      used: false,
+      expiresAt: futureDate,
+      type: "LOGIN",
+      metadata: JSON.stringify({
+        verifiedMethod: "EMAIL",
+        verifiedIdentifier: "attacker@example.com",
+      }),
+    });
+
+    mockFindUniqueUser.mockResolvedValue({
+      id: "user1",
+      email: "host@example.com",
+      role: "HOST",
+    });
+
+    await GET(makeRequest("valid-token"));
+
+    expect(sealSession).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        verifiedMethod: "EMAIL",
+        verifiedIdentifier: "attacker@example.com",
+      })
+    );
+  });
+
+  ///////////////////////////////////////////////
+  it("allows legacy login tokens without granting verified contact", async () => {
+    mockFindUniqueMagicToken.mockResolvedValue({
+      id: "legacy-token",
+      userId: "user1",
+      used: false,
+      expiresAt: futureDate,
+      type: "LOGIN",
+      metadata: null,
+    });
+
+    mockFindUniqueUser.mockResolvedValue({
+      id: "user1",
+      email: "host@example.com",
+      role: "HOST",
+    });
+
+    const res = await GET(makeRequest("valid-token"));
+
+    expect(res.headers.get("location")).toBe("http://localhost:3000/dashboard");
+
+    expect(sealSession).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        verifiedMethod: expect.anything(),
+      })
+    );
+  });
+
+  it("allows login with malformed metadata without granting verified contact", async () => {
+    mockFindUniqueMagicToken.mockResolvedValue({
+      id: "malformed-token",
+      userId: "user1",
+      used: false,
+      expiresAt: futureDate,
+      type: "LOGIN",
+      metadata: "{invalid-json",
+    });
+
+    mockFindUniqueUser.mockResolvedValue({
+      id: "user1",
+      email: "host@example.com",
+      role: "HOST",
+    });
+
+    const res = await GET(makeRequest("valid-token"));
+
+    expect(res.headers.get("location")).toBe("http://localhost:3000/dashboard");
+
+    expect(sealSession).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        verifiedMethod: expect.anything(),
+      })
+    );
+  });
+
+  ///////////////////////////////////////////////
   // SEC-41: the configured canonical origin wins over the request Host header;
   // the header is only a fallback for installs without NEXT_PUBLIC_APP_URL.
   it("uses NEXT_PUBLIC_APP_URL for redirect destination, ignoring the Host header", async () => {

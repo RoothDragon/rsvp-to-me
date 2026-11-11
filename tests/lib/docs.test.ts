@@ -19,12 +19,14 @@ describe("lib/docs.ts", () => {
       "admin",
       "configuration",
       "email",
+      "event-description-formatting",
       "installation",
       "local-development",
       "localization",
       "sample-data",
       "sms",
       "upgrading",
+      "verified-rsvp-validation",
     ]);
     for (const doc of docs) {
       expect(doc.audience).toBe("admin");

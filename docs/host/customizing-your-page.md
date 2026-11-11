@@ -19,13 +19,13 @@ Event pages use a responsive, single-column layout that grows to 600px on larger
 When you view your own event, you can click directly on certain details to edit them in place — changes save automatically. You can edit these inline:
 
 - **Title**
-- **Description**
+- **Description** — choose **Edit description**, then **Save** or **Cancel**.
 - **Location name** and **address**
 - **Virtual event link**
 
 Everything else — date and time, theme, RSVP rules, visibility, polls, and potluck — is changed from the event's **Settings** page.
 
-The description editor expands with your text while you type. It starts at a comfortable multi-line height and grows until it reaches a mobile-friendly portion of the viewport, then scrolls internally so a long description never takes over the whole screen.
+Drag the description editor’s corner to resize its width and height within the page. Use **Preview** to check basic HTML formatting. Long descriptions retain formatting in the collapsed preview; choose **Show more** to read the rest.
 
 > **Tip:** Add `?preview=1` to the end of your event's web address to see the page exactly as a guest sees it, without losing your host controls.
 
@@ -57,7 +57,7 @@ A color picker sets the accent color used for buttons, links, and highlights.
 
 On the **Font** tab under **Settings → Theme** you can pick a font for your event's main title. Section headings and body text stay in the standard font for readability. Twelve fonts are available across four moods — elegant serifs (Playfair Display, DM Serif Display, Lora), poster styles (Bebas Neue, Righteous, Fredoka), scripts (Pacifico, Dancing Script, Caveat), and modern sans-serifs (Roboto, Space Grotesk, Outfit) — plus **Theme default**, which keeps each base look's built-in title typography. Some presets apply a matching font automatically; you can always override it.
 
-Fonts are bundled with the app — nothing is loaded from external services, and guests only download a font if your event actually uses it.
+All twelve event-title fonts are bundled with RSVP to Me and served by the site. Guests only download an event-title font when the event uses it; they do not need to install fonts or connect to a separate font service.
 
 ### Effects (Animated Backgrounds)
 
@@ -77,6 +77,9 @@ Your theme isn't just for the event page — the **emails** your guests receive 
 ---
 
 ## Cover Image
+
+Click the cover image on an event page to open the full uploaded image in a new
+tab. Hosts can still use the separate cover upload and remove controls.
 
 Upload a cover photo to set the mood:
 

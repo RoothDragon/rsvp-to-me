@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 
 const {
   mockFindUniqueMagicToken,
-  mockUpdateMagicToken,
+  mockUpdateManyMagicToken,
   mockFindUniqueUser,
   mockFindFirstUser,
   mockUpdateUser,
@@ -11,9 +11,10 @@ const {
   mockLinkRsvpsToUser,
   mockSealSession,
   mockCreateSession,
+  mockTransaction,
 } = vi.hoisted(() => ({
   mockFindUniqueMagicToken: vi.fn(),
-  mockUpdateMagicToken: vi.fn(),
+  mockUpdateManyMagicToken: vi.fn(),
   mockFindUniqueUser: vi.fn(),
   mockFindFirstUser: vi.fn(),
   mockUpdateUser: vi.fn(),
@@ -21,21 +22,18 @@ const {
   mockLinkRsvpsToUser: vi.fn(),
   mockSealSession: vi.fn(),
   mockCreateSession: vi.fn(),
+  mockTransaction: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
   db: {
+    $transaction: mockTransaction,
     magicToken: {
       findUnique: mockFindUniqueMagicToken,
-      update: mockUpdateMagicToken,
     },
     user: {
       findUnique: mockFindUniqueUser,
       findFirst: mockFindFirstUser,
-      update: mockUpdateUser,
-    },
-    rSVP: {
-      updateMany: mockUpdateManyRsvps,
     },
     session: {
       create: mockCreateSession,
@@ -70,7 +68,16 @@ function makeRequest(token?: string): NextRequest {
 const futureDate = new Date(Date.now() + 60 * 60 * 1000);
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
+
+  mockTransaction.mockImplementation(async (callback) =>
+    callback({
+      magicToken: { updateMany: mockUpdateManyMagicToken },
+      user: { update: mockUpdateUser },
+      rSVP: { updateMany: mockUpdateManyRsvps },
+    })
+  );
+
   process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
 });
 
@@ -96,6 +103,27 @@ describe("GET /auth/verify-change", () => {
     expect(mockFindUniqueMagicToken).not.toHaveBeenCalled();
   });
 
+  it("rejects a token already consumed by a competing request", async () => {
+    mockFindUniqueMagicToken.mockResolvedValue({
+      id: "tok-id",
+      used: false,
+      expiresAt: futureDate,
+      userId: "user1",
+      type: "EMAIL_CHANGE",
+      metadata: "new@example.com",
+    });
+    mockFindUniqueUser.mockResolvedValue({ id: "user1", role: "HOST" });
+    mockFindFirstUser.mockResolvedValue(null);
+    mockUpdateManyMagicToken.mockResolvedValue({ count: 0 });
+
+    const res = await GET(makeRequest("valid-token"));
+
+    expect(res.headers.get("location")).toContain("error=invalid-token");
+    expect(mockUpdateUser).not.toHaveBeenCalled();
+    expect(mockUpdateManyRsvps).not.toHaveBeenCalled();
+    expect(mockCreateSession).not.toHaveBeenCalled();
+  });
+
   it("updates token, updates email/phone, links RSVPs, sets cookie and redirects on success", async () => {
     mockFindUniqueMagicToken.mockResolvedValue({
       id: "tok-id",
@@ -106,7 +134,7 @@ describe("GET /auth/verify-change", () => {
       type: "EMAIL_CHANGE",
       metadata: "new@example.com",
     });
-    mockUpdateMagicToken.mockResolvedValue({});
+    mockUpdateManyMagicToken.mockResolvedValue({ count: 1 });
     mockFindUniqueUser.mockResolvedValue({ id: "user1", role: "HOST" });
     mockFindFirstUser.mockResolvedValue(null); // not taken
     mockUpdateUser.mockResolvedValue({});

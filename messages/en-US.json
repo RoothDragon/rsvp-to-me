@@ -1,5 +1,15 @@
 {
   "Ui": {
+    "EventDescription": {
+      "label": "Description",
+      "help": "Basic HTML is supported: paragraphs, lists, bold, italics, headings, horizontal rules, and links. Images are not supported.",
+      "preview": "Preview",
+      "editText": "Edit text",
+      "expand": "Show more",
+      "collapse": "Show less",
+      "edit": "Edit description",
+      "empty": "Add a description"
+    },
     "Common": {
       "save": "Save",
       "cancel": "Cancel",
@@ -591,6 +601,7 @@
         "description": "Description",
         "addDescription": "Add a description…",
         "coverAlt": "{title} cover",
+        "openCover": "Open full cover image for {title} (opens in a new tab)",
         "organizer": "Hosted by {name}"
       },
       "DateEdit": {

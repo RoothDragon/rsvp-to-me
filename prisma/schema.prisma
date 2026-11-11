@@ -115,6 +115,7 @@ model Event {
   rsvpDeadline           DateTime?
   allowEditAfterDeadline Boolean      @default(false)
   approvalRequired       Boolean      @default(false)
+  requireVerifiedRsvp    Boolean      @default(false)
   plusOneAllowed         Boolean      @default(false)
   plusOneMax             Int          @default(1)
   plusOneNamesRequired   Boolean      @default(false)

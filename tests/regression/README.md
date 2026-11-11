@@ -1,5 +1,9 @@
 # Regression Tests
 
+| Case                              | Coverage                                                                                                                                                                                                                                                                                              |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rsvp-owner-verification.test.ts` | Invitation owner recovery uses current contacts, supports unlinked and phone-only invitees, preserves the response/status, and rejects ineligible or mismatched ownership. Route and UI behavior are also covered by `RsvpPageVerification.test.tsx` and `RsvpOwnerGate.test.tsx` in component tests. |
+
 Tests that reproduce specific bugs found in production or staging. Each file corresponds to a specific bug fix.
 
 ## Convention
@@ -22,6 +26,11 @@ October 2026 (`8a8fb7bf`) extends `dependency-security-baseline.test.ts` with up
 
 | File                                                 | Bug description                                                                                                                                                                                                                                     | Fixed in                       |
 | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `event-description-preview.test.ts`                  | Collapsed descriptions lost HTML formatting and truncated too early                                                                                                                                                                                 | 01a18e04                       |
+| `event-cover-link.test.tsx`                          | Cropped cover images could not open the full upload                                                                                                                                                                                                 | 01a18e04                       |
+| `event-description-html.test.ts`                     | Unsafe HTML and markup leaking into calendar/social text                                                                                                                                                                                            | 01a18e04                       |
+| `event-description-ui.test.tsx`                      | Vertical-only editing and unbounded descriptions on event pages                                                                                                                                                                                     | 01a18e04                       |
+| `event-description-save.test.ts`                     | HTML sanitization and description limits missing from inline writes                                                                                                                                                                                 | 01a18e04                       |
 | `language-selector-focus.test.tsx`                   | Closed language menus stole focus on Escape, including from the other selector on profile pages                                                                                                                                                     | 01a150ee                       |
 | `issue-712-invite-details-token.test.ts`             | Invitation details links dropped recipient RSVP tokens in rendered HTML and plain text                                                                                                                                                              | #712                           |
 | `issue-606-docs-images.test.tsx`                     | Repository-relative screenshot URLs did not resolve to local assets in the in-app guides                                                                                                                                                            | #606                           |
@@ -94,3 +103,13 @@ October 2026 (`8a8fb7bf`) extends `dependency-security-baseline.test.ts` with up
 | `invitation-composer-qa.test.tsx`                    | Invite composer dropped focus on Tab after a name edit, discarded the draft on close, and hid why disabled-channel rows failed; typing bypassed the 200-recipient cap; imports dropped an invalid first guest or moved names onto the wrong contact | cb58e723 / de78391d            |
 | `guest-list-stale-resend.test.tsx`                   | Guest-list Resend used unreviewed `inviteGuest`, so a stale card resent silently after a reply, rename, or conflict; then a "responded" refusal advised a refresh that could not clear it                                                           | 8be23944 / de78391d            |
 | `preflight-worker-typecheck.test.ts`                 | Local preflight skipped CI's standalone email-worker type-check, so worker type errors passed the local CI-parity gate                                                                                                                              | de78391d                       |
+
+`contact-change-atomicity.test.ts` (`01a18e04`): single-use contact-change claims, transactional failure/retry, token-type validation, and phone-change session email.
+
+`session-identity-binding.test.ts` (`01a18e04`): reject backing database/cache sessions with a different user or session id from the sealed cookie.
+
+`preflight-loopback-services.test.ts` (`01a18e04`): capture service startup arguments and require loopback-only PostgreSQL/Redis exposure on shared validation hosts.
+
+`contact-change-db-target.test.ts` (`01a18e04`): reject remote, default-development, wrong-database, and unmarked targets before integration schema setup.
+
+`offline-font-assets.test.ts` and the expanded `roboto-font-build.test.ts` (`01a18e04`): isolated production builds previously failed on thirteen Google Fonts downloads. Verify all licensed local assets and build every theme/UI font with no Google responses, preserving CSS variables and preload behavior.

@@ -10,6 +10,10 @@ export interface SessionData {
   email: string;
   role: "HOST" | "ADMIN" | "GUEST";
   sessionId?: string;
+
+  // Populated only when a login magic link proves contact ownership.
+  verifiedMethod?: "EMAIL" | "SMS";
+  verifiedIdentifier?: string;
 }
 
 export const COOKIE_NAME = "rsvp-session";
@@ -129,7 +133,7 @@ export async function getSession(): Promise<SessionData | null> {
       }
     }
 
-    if (!dbSession) {
+    if (!dbSession || dbSession.id !== session.sessionId || dbSession.userId !== session.userId) {
       return null;
     }
 

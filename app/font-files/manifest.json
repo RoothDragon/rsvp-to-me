@@ -1,0 +1,335 @@
+{
+  "repository": "https://github.com/google/fonts",
+  "commit": "6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43",
+  "conversion": {
+    "fontTools": "4.66.1",
+    "brotli": "1.2.0",
+    "format": "woff2",
+    "subset": false,
+    "recalcTimestamp": false,
+    "preservedAssets": ["roboto-normal.woff2"]
+  },
+  "fonts": [
+    {
+      "id": "bebas",
+      "family": "Bebas Neue",
+      "asset": "bebas-normal.woff2",
+      "license": "OFL-bebas.txt",
+      "sourceFile": "ofl/bebasneue/BebasNeue-Regular.ttf",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43/ofl/bebasneue/BebasNeue-Regular.ttf",
+      "sourceSha256": "08e4623805102d819f58601e46e345648846075e363b2ceb23313c2d1c83ec73",
+      "sha256": "975022976f660a12a8e2f5c274affffe5f0cb3b6fe124fca5ab70d03bf72fdce",
+      "licenseSha256": "72082f6cb4d04be2ecf7cc7d9e1e7d73787f0af8a5a278a47cade70c16b78341",
+      "weight": "400",
+      "style": "normal",
+      "fallback": "Arial",
+      "glyphCount": 508,
+      "axes": [],
+      "sourceLicenseSha256": "72082f6cb4d04be2ecf7cc7d9e1e7d73787f0af8a5a278a47cade70c16b78341"
+    },
+    {
+      "id": "caveat",
+      "family": "Caveat",
+      "asset": "caveat-normal.woff2",
+      "license": "OFL-caveat.txt",
+      "sourceFile": "ofl/caveat/Caveat[wght].ttf",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43/ofl/caveat/Caveat%5Bwght%5D.ttf",
+      "sourceSha256": "0bdb6b660482d31531b3945849fba5916b3ef8695da7024a9e6b9ee3c4157988",
+      "sha256": "c7d6a0ad1cbe120518b64ca8c5dac3c064bdfdb3cdc62f472c571f4a769ace9f",
+      "licenseSha256": "1f9d81d094273d82f3898a1ee8b598a717d050ecbf5ff7bede105b704880157b",
+      "weight": "400 700",
+      "style": "normal",
+      "fallback": "Arial",
+      "glyphCount": 1034,
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 400.0,
+          "default": 400.0,
+          "max": 700.0
+        }
+      ],
+      "sourceLicenseSha256": "1f9d81d094273d82f3898a1ee8b598a717d050ecbf5ff7bede105b704880157b"
+    },
+    {
+      "id": "dancing-script",
+      "family": "Dancing Script",
+      "asset": "dancing-script-normal.woff2",
+      "license": "OFL-dancing-script.txt",
+      "sourceFile": "ofl/dancingscript/DancingScript[wght].ttf",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43/ofl/dancingscript/DancingScript%5Bwght%5D.ttf",
+      "sourceSha256": "21808625578fe8d8cd10cb684be546dca077b27cd03a53a2f1ec11dc743c924c",
+      "sha256": "7641e43dcbe5ba3217a3f12080621a041978249b8a6dacaf3d7ff10a7517f8e9",
+      "licenseSha256": "6f090277c00af96651ce6dbcc38ff1591047a3bffef486e80b6a32e8276a8201",
+      "weight": "400 700",
+      "style": "normal",
+      "fallback": "Arial",
+      "glyphCount": 643,
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 400.0,
+          "default": 400.0,
+          "max": 700.0
+        }
+      ],
+      "sourceLicenseSha256": "6f090277c00af96651ce6dbcc38ff1591047a3bffef486e80b6a32e8276a8201"
+    },
+    {
+      "id": "dm-serif",
+      "family": "DM Serif Display",
+      "asset": "dm-serif-normal.woff2",
+      "license": "OFL-dm-serif.txt",
+      "sourceFile": "ofl/dmserifdisplay/DMSerifDisplay-Regular.ttf",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43/ofl/dmserifdisplay/DMSerifDisplay-Regular.ttf",
+      "sourceSha256": "8cc3643535edf039aa5d95440a8542735e9197e4f4b8d9303e980fefbf5ab616",
+      "sha256": "7e6679d41e35437090560e0367e6546f10b71c5792fa168b177e302cf009b66c",
+      "licenseSha256": "aa49c876a28d8c0b0a3027d6c25b9c607eee8c0fb96165011d42a6ace1408fe1",
+      "weight": "400",
+      "style": "normal",
+      "fallback": "Times New Roman",
+      "glyphCount": 355,
+      "axes": [],
+      "sourceLicenseSha256": "a3e5cdd67d4571dd0a24fcc968de0efde7ae97ef752daf0906e4767619dd7231"
+    },
+    {
+      "id": "fredoka",
+      "family": "Fredoka",
+      "asset": "fredoka-normal.woff2",
+      "license": "OFL-fredoka.txt",
+      "sourceFile": "ofl/fredoka/Fredoka[wdth,wght].ttf",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43/ofl/fredoka/Fredoka%5Bwdth%2Cwght%5D.ttf",
+      "sourceSha256": "2ba02e68b152868aef9ba28e24b3648c7d457fe6f25c761f2c2c53fb61a73fc8",
+      "sha256": "23a171c4d595d134261436637f2c7e7e614264577a54779dbaccfd228eb289ad",
+      "licenseSha256": "5c9e7eee5c6b25f4b05b8d53b2e470ea4962f9ced742d044a98f7d95d1375bab",
+      "weight": "300 700",
+      "style": "normal",
+      "fallback": "Arial",
+      "glyphCount": 335,
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 300.0,
+          "default": 300.0,
+          "max": 700.0
+        },
+        {
+          "tag": "wdth",
+          "min": 75.0,
+          "default": 100.0,
+          "max": 125.0
+        }
+      ],
+      "sourceLicenseSha256": "5c9e7eee5c6b25f4b05b8d53b2e470ea4962f9ced742d044a98f7d95d1375bab"
+    },
+    {
+      "id": "geist-mono",
+      "family": "Geist Mono",
+      "asset": "geist-mono-normal.woff2",
+      "license": "OFL-geist-mono.txt",
+      "sourceFile": "ofl/geistmono/GeistMono[wght].ttf",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43/ofl/geistmono/GeistMono%5Bwght%5D.ttf",
+      "sourceSha256": "2386ddac2c72b6e0c126561e91486b7284412f303d8d9513da9ffec789e63338",
+      "sha256": "2361fdef96e5e4df0605e25b5e31292fb765ea61a68cce24af7aff79f1a7411b",
+      "licenseSha256": "1781d2806a07d91c4edf4740b88449fab7d0eadad53f7c351b94cd4d4eb8c00f",
+      "weight": "100 900",
+      "style": "normal",
+      "fallback": "Arial",
+      "glyphCount": 849,
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 100.0,
+          "default": 400.0,
+          "max": 900.0
+        }
+      ],
+      "sourceLicenseSha256": "1781d2806a07d91c4edf4740b88449fab7d0eadad53f7c351b94cd4d4eb8c00f"
+    },
+    {
+      "id": "geist-sans",
+      "family": "Geist",
+      "asset": "geist-sans-normal.woff2",
+      "license": "OFL-geist-sans.txt",
+      "sourceFile": "ofl/geist/Geist[wght].ttf",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43/ofl/geist/Geist%5Bwght%5D.ttf",
+      "sourceSha256": "611e93a8401ee574c9fb3250bdaf5c52262aee3231015e9336359c1b2242cb13",
+      "sha256": "aa4879375f4c1cd8f182a6275a9c9d1f51ee4033a49c75e3943148bb7a6dd28e",
+      "licenseSha256": "1781d2806a07d91c4edf4740b88449fab7d0eadad53f7c351b94cd4d4eb8c00f",
+      "weight": "100 900",
+      "style": "normal",
+      "fallback": "Arial",
+      "glyphCount": 825,
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 100.0,
+          "default": 400.0,
+          "max": 900.0
+        }
+      ],
+      "sourceLicenseSha256": "1781d2806a07d91c4edf4740b88449fab7d0eadad53f7c351b94cd4d4eb8c00f"
+    },
+    {
+      "id": "lora",
+      "family": "Lora",
+      "asset": "lora-normal.woff2",
+      "license": "OFL-lora.txt",
+      "sourceFile": "ofl/lora/Lora[wght].ttf",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43/ofl/lora/Lora%5Bwght%5D.ttf",
+      "sourceSha256": "822a6621ccbe8d97d20ac88c1c41f5615c9c2c202eaa75f272cd452aac6475a7",
+      "sha256": "7c514f026f03de1b0fc344c0c0f0df141fcf16b6f9ab672db191908ba740dab6",
+      "licenseSha256": "1d9a970809ac804b582a6ce7f0ebc4e7fefcbfd7ff6299cad35ee656a21be716",
+      "weight": "400 700",
+      "style": "normal",
+      "fallback": "Times New Roman",
+      "glyphCount": 892,
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 400.0,
+          "default": 400.0,
+          "max": 700.0
+        }
+      ],
+      "sourceLicenseSha256": "1d9a970809ac804b582a6ce7f0ebc4e7fefcbfd7ff6299cad35ee656a21be716"
+    },
+    {
+      "id": "outfit",
+      "family": "Outfit",
+      "asset": "outfit-normal.woff2",
+      "license": "OFL-outfit.txt",
+      "sourceFile": "ofl/outfit/Outfit[wght].ttf",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43/ofl/outfit/Outfit%5Bwght%5D.ttf",
+      "sourceSha256": "fc7287273e66929776e2ba54f144fe699080bec29f61bf649d70d871468aeade",
+      "sha256": "ed629d88c2db8ace1b3ac85fbf1fe0223d7272defaa817d1955100101966f0fb",
+      "licenseSha256": "c676351bf8576b9aba743cd5eaa8c0e7ee0d51f805d720447b4df4ddb6a2e416",
+      "weight": "100 900",
+      "style": "normal",
+      "fallback": "Arial",
+      "glyphCount": 416,
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 100.0,
+          "default": 100.0,
+          "max": 900.0
+        }
+      ],
+      "sourceLicenseSha256": "c676351bf8576b9aba743cd5eaa8c0e7ee0d51f805d720447b4df4ddb6a2e416"
+    },
+    {
+      "id": "pacifico",
+      "family": "Pacifico",
+      "asset": "pacifico-normal.woff2",
+      "license": "OFL-pacifico.txt",
+      "sourceFile": "ofl/pacifico/Pacifico-Regular.ttf",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43/ofl/pacifico/Pacifico-Regular.ttf",
+      "sourceSha256": "5b6c0d5334a7bf77dea52b975c5a0c408878c0f7115ed5b6fb151f634b7bf701",
+      "sha256": "4b6238e16e5f3f98571954de8d994de79d6cbfaca26f562bba52af44595ff060",
+      "licenseSha256": "a47e5daeda73568969395c656823102678f2eefb0d7d7ecb47aac4cc17e42204",
+      "weight": "400",
+      "style": "normal",
+      "fallback": "Arial",
+      "glyphCount": 1533,
+      "axes": [],
+      "sourceLicenseSha256": "a47e5daeda73568969395c656823102678f2eefb0d7d7ecb47aac4cc17e42204"
+    },
+    {
+      "id": "playfair",
+      "family": "Playfair Display",
+      "asset": "playfair-normal.woff2",
+      "license": "OFL-playfair.txt",
+      "sourceFile": "ofl/playfairdisplay/PlayfairDisplay[wght].ttf",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf",
+      "sourceSha256": "c40f2293766a503bc70cce9e512ef844a4ccb7cbcde792fe2ea31d191917d8d6",
+      "sha256": "4297e9ec39f1b8157623d048fb99eab03c90e482669599e8fc662ee178994c49",
+      "licenseSha256": "566be814f8e96e93dfa16101331557eb6b5467e9e03f627c0910fe93ca12300e",
+      "weight": "400 900",
+      "style": "normal",
+      "fallback": "Times New Roman",
+      "glyphCount": 1103,
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 400.0,
+          "default": 400.0,
+          "max": 900.0
+        }
+      ],
+      "sourceLicenseSha256": "566be814f8e96e93dfa16101331557eb6b5467e9e03f627c0910fe93ca12300e"
+    },
+    {
+      "id": "righteous",
+      "family": "Righteous",
+      "asset": "righteous-normal.woff2",
+      "license": "OFL-righteous.txt",
+      "sourceFile": "ofl/righteous/Righteous-Regular.ttf",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43/ofl/righteous/Righteous-Regular.ttf",
+      "sourceSha256": "2ffb3fe5c27d7e6571210b800448c4e234e651b46c6b4426c1bb567e5341348a",
+      "sha256": "4724c4a71f6b4c9c4f76aa29780ae083d54c688992109e4bf11b506f918e9f8f",
+      "licenseSha256": "1c5bc055869d5e9151ec7774082727db720ec4293c65be67f91a4bdcaeb02998",
+      "weight": "400",
+      "style": "normal",
+      "fallback": "Arial",
+      "glyphCount": 372,
+      "axes": [],
+      "sourceLicenseSha256": "1c5bc055869d5e9151ec7774082727db720ec4293c65be67f91a4bdcaeb02998"
+    },
+    {
+      "id": "roboto",
+      "family": "Roboto",
+      "asset": "roboto-normal.woff2",
+      "license": "OFL-Roboto.txt",
+      "sourceFile": "ofl/roboto/Roboto[wdth,wght].ttf",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43/ofl/roboto/Roboto%5Bwdth%2Cwght%5D.ttf",
+      "sourceSha256": "d7598e12c5dbef095ff8272cfc55da0250bd07fbdecbac8a530b9b277872a134",
+      "sha256": "f2c9dbf532e554141e3940e974a90cc07f931e20ece062882ae1eb5358f19b94",
+      "licenseSha256": "ee94f8704aa81e9a3bf4271e8320e99d975a3ee08ea45a088b494b918476ec12",
+      "weight": "400 700",
+      "style": "normal",
+      "fallback": "Arial",
+      "glyphCount": 1326,
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 100.0,
+          "default": 400.0,
+          "max": 900.0
+        },
+        {
+          "tag": "wdth",
+          "min": 75.0,
+          "default": 100.0,
+          "max": 100.0
+        }
+      ],
+      "sourceLicenseSha256": "061402327a96aadb0bfb694a960ed289ecd38d383e396243831ab81feb109c41"
+    },
+    {
+      "id": "space-grotesk",
+      "family": "Space Grotesk",
+      "asset": "space-grotesk-normal.woff2",
+      "license": "OFL-space-grotesk.txt",
+      "sourceFile": "ofl/spacegrotesk/SpaceGrotesk[wght].ttf",
+      "sourceUrl": "https://raw.githubusercontent.com/google/fonts/6183fc0d26361f6ddfd6f6b7a736e1467c6d8a43/ofl/spacegrotesk/SpaceGrotesk%5Bwght%5D.ttf",
+      "sourceSha256": "acad6de1fc93436f5c0f1f4137751ef04f1aea3063e7036535970ffcfbd79f72",
+      "sha256": "8e085aa438094f11487a836652edd5c054fa6a96f63fc7c282105ee3a4b08c07",
+      "licenseSha256": "c6dec685825f73b18c20926fddc65e8315642e12986f15db0699170940a09efc",
+      "weight": "300 700",
+      "style": "normal",
+      "fallback": "Arial",
+      "glyphCount": 1001,
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 300.0,
+          "default": 300.0,
+          "max": 700.0
+        }
+      ],
+      "sourceLicenseSha256": "564ce565c371c5e5bbf286006565a7c9aa55a9f56e7ca58d56e05d649dd61a72"
+    }
+  ],
+  "licenseNormalization": "CRLF to LF only; upstream trailing spaces, copyright notices and license text retained"
+}

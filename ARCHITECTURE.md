@@ -56,6 +56,17 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
 
 ## Entry points and shared boundaries
 
+### Event descriptions
+
+`lib/event-description.ts` owns the shared, strict HTML allowlist and plain-text
+conversion for event descriptions. Creation and inline edits sanitize on the
+server; `components/event/DescriptionEditor.tsx` also sanitizes previews and
+rendering, including legacy values. `event-page/EventDescription.tsx` owns
+collapse/expand and explicit save/cancel behavior. The shared description helper
+provides a balanced HTML preview; `event-page/EventCoverImage.tsx` links the cover
+to its original upload with a safe HTTP/HTTPS navigation boundary. Calendar exports and social
+metadata use the plain-text conversion. Images and embedded content are excluded.
+
 ### Application shell and pages
 
 - `app/layout.tsx` is the root HTML/layout boundary. It resolves the request's UI
@@ -122,6 +133,13 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
 
 ### Authentication and access control
 
+- Verification-required RSVP token routes show `RsvpOwnerGate` before the form
+  unless the viewer is its signed-in owner or an organizer.
+  `requestRsvpOwnerLinkAction` sends a fresh magic link only to a current saved
+  RSVP contact matching existing ownership. Unlinked invitees receive a guest
+  account; existing login contact-linking assigns ownership after sign-in.
+  `updateRSVP` remains the mutation authorization gate.
+
 1. `app/actions/auth.ts` validates sign-in/registration input and calls
    `lib/auth.ts` to create or verify magic-link tokens.
 2. Verification route handlers under `app/auth/` create encrypted session
@@ -134,9 +152,17 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
 4. Host and administrator mutations must use guards from `lib/auth-guards.ts`.
 5. Public event visibility/password/token decisions belong in
    `lib/eventAccess.ts`.
-6. Guests edit an RSVP through its edit token; do not substitute host sessions
-   or publicly visible RSVP fields for that authority.
-7. User-content create/edit mutations call `assertCaptcha()` from `lib/captcha.ts`.
+6. Guests edit an RSVP through its edit token. With `Event.requireVerifiedRsvp`,
+   the token also requires a live session for the linked RSVP owner. New responses
+   require email-login provenance matching the submitted and current account email.
+   `lib/session.ts` binds the backing session id/user to the encrypted cookie.
+   Host/co-host/admin settings changes can disable this event-wide requirement.
+   Do not substitute publicly visible RSVP fields for edit authority.
+7. `app/auth/verify-change/route.ts` conditionally consumes only unexpired
+   EMAIL_CHANGE/PHONE_CHANGE tokens in the same Prisma transaction as account
+   and linked-RSVP contact updates; session creation and unclaimed-RSVP linking
+   follow the commit.
+8. User-content create/edit mutations call `assertCaptcha()` from `lib/captcha.ts`.
    Turnstile tokens are action-bound, passed directly with the protected mutation,
    and verified server-side. Never route them through shared browser state such as
    a cookie. Only administrators bypass this boundary; authenticated hosts and
@@ -203,8 +229,11 @@ Redis. See `docs/admin/local-development.md` and `WORKFLOW.md`.
 ### Themes, effects, and email
 
 - `lib/theme.ts`, `lib/fonts.ts`, and `lib/effects.ts` define web theme options.
-- `app/fonts.ts` builds the theme fonts. Roboto uses the licensed local asset in
-  `app/font-files/`; the other families use `next/font/google` at build time.
+- `app/fonts.ts` defines all theme and Geist UI fonts with `next/font/local`.
+  `app/font-files/manifest.json` owns pinned source provenance, licenses, asset
+  checksums, glyph coverage, and axes for the repository-owned WOFF2 files.
+  `lib/fonts.ts` owns picker IDs and email-safe fallbacks; only the UI faces
+  preload. Font loading requires no build-time or visitor Google requests.
 - `lib/email-theme.ts` is the only web-theme-to-email degradation boundary.
 - `emails/registry.tsx` defines template metadata/defaults and assembles sample
   previews; `emails/templates/` contains the renderable templates.
@@ -324,3 +353,8 @@ load nvm, and select `.nvmrc` so they work from noninteractive Codex shells.
 - Treat unreferenced files as review candidates, not automatically safe
   deletions; direct public URLs, deployment downloads, and external automation
   may not appear in static imports.
+
+The contact-change PostgreSQL suite also has `vitest.contact-change.config.ts`,
+whose global setup requires an explicitly marked disposable loopback database on
+port 55432 before running schema setup. It exercises real transaction rollback
+and simultaneous token redemption. See `docs/admin/verified-rsvp-validation.md`.

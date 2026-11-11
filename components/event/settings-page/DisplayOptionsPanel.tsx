@@ -21,6 +21,8 @@ export function DisplayOptionsPanel({
   onGuestRsvpDisplayChange,
   visibility,
   setVisibility,
+  requireVerifiedRsvp,
+  setRequireVerifiedRsvp,
   guestsCanInvite,
   setGuestsCanInvite,
   password,
@@ -45,6 +47,8 @@ export function DisplayOptionsPanel({
   onGuestRsvpDisplayChange: (update: Partial<GuestRsvpDisplayFields>) => void;
   visibility: EventInput["visibility"];
   setVisibility: React.Dispatch<React.SetStateAction<EventInput["visibility"]>>;
+  requireVerifiedRsvp: boolean;
+  setRequireVerifiedRsvp: React.Dispatch<React.SetStateAction<boolean>>;
   guestsCanInvite: boolean;
   setGuestsCanInvite: React.Dispatch<React.SetStateAction<boolean>>;
   password: string;
@@ -60,6 +64,14 @@ export function DisplayOptionsPanel({
   S: SettingsPageStyles;
 }) {
   const translate = useTranslations("Ui.Event.DisplayOptionsPanel");
+  const verifiedRsvpUnavailable = visibility === "PRIVATE" || !!effectivePasswordHash;
+
+  const verifiedRsvpExplanation =
+    visibility === "PRIVATE"
+      ? "Verified RSVP is currently available only for public and unlisted events."
+      : effectivePasswordHash
+        ? "Remove the event password before enabling verified RSVP."
+        : null;
 
   return (
     <Section title={translate("displayOptions")} t={t}>
@@ -79,13 +91,16 @@ export function DisplayOptionsPanel({
                 display: "flex",
                 alignItems: "center",
                 gap: "10px",
-                cursor: "pointer",
+                cursor: val === "PRIVATE" && requireVerifiedRsvp ? "not-allowed" : "pointer",
               }}
             >
               <input
                 type="radio"
                 checked={visibility === val}
+                disabled={val === "PRIVATE" && requireVerifiedRsvp}
                 onChange={() => {
+                  if (val === "PRIVATE" && requireVerifiedRsvp) return;
+
                   setVisibility(val);
                   triggerSaveSettings({ visibility: val });
                 }}
@@ -95,7 +110,44 @@ export function DisplayOptionsPanel({
             </label>
           ))}
         </div>
+
+        {/* Explain why PRIVATE is disabled */}
+        {requireVerifiedRsvp && (
+          <p
+            style={{
+              fontSize: "12px",
+              color: t.textMuted,
+              marginTop: "8px",
+            }}
+          >
+            Disable verified RSVP before switching to a private event.
+          </p>
+        )}
       </div>
+
+      {/* Verified RSVP toggle goes here */}
+      <Toggle
+        label="Require verified RSVP contact"
+        value={requireVerifiedRsvp}
+        disabled={verifiedRsvpUnavailable && !requireVerifiedRsvp}
+        onChange={(val) => {
+          setRequireVerifiedRsvp(val);
+          triggerSaveSettings({ requireVerifiedRsvp: val });
+        }}
+        t={t}
+      />
+      {verifiedRsvpExplanation && (
+        <p
+          style={{
+            fontSize: "12px",
+            color: t.textMuted,
+            marginTop: "-4px",
+            marginBottom: "16px",
+          }}
+        >
+          {verifiedRsvpExplanation}
+        </p>
+      )}
       {visibility === "PRIVATE" && (
         <Toggle
           label={translate("allowGuestsInviteFriends")}

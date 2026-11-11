@@ -25,6 +25,7 @@ vi.mock("@/lib/db", () => ({
         type: state.type,
       })),
       update: vi.fn(),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     rSVP: { updateMany: vi.fn() },
     session: { create: vi.fn() },

@@ -216,6 +216,9 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
       slug: true,
       title: true,
       approvalRequired: true,
+      requireVerifiedRsvp: true,
+      visibility: true,
+      passwordHash: true,
       rsvpDeadline: true,
       capacity: true,
       startAt: true,
@@ -236,6 +239,61 @@ export async function addRSVP(rawInput: unknown, captchaToken?: string | null) {
     },
   });
   if (!event) return { success: false, error: await eventActionMessage("eventNotFound") };
+  // Verified RSVP events require an authenticated guest session.
+  // Further checks will bind the RSVP contact to the session owner.
+  if (event.requireVerifiedRsvp) {
+    // Initial verified-guest flow supports PUBLIC and UNLISTED
+    // events without passwords. Private and password-protected
+    // events require a separate authorized invitation flow.
+    if (!["PUBLIC", "UNLISTED"].includes(event.visibility) || event.passwordHash !== null) {
+      return {
+        success: false,
+        error: "Verified RSVP registration is not available for this event.",
+      };
+    }
+    const session = await getSession();
+
+    if (!session) {
+      return {
+        success: false,
+        error: "Please sign in and verify your email before RSVPing.",
+      };
+    }
+
+    const user = await db.user.findUnique({
+      where: { id: session.userId },
+      select: {
+        id: true,
+        email: true,
+        preferredLocale: true,
+      },
+    });
+
+    // Initial implementation supports email-only verified RSVPs.
+    // Do not accept a second, potentially unverified phone contact.
+    const submittedEmail = data.guestEmail?.trim().toLowerCase();
+    const accountEmail = user?.email?.trim().toLowerCase();
+    const verifiedEmail =
+      session.verifiedMethod === "EMAIL"
+        ? session.verifiedIdentifier?.trim().toLowerCase()
+        : undefined;
+
+    if (
+      !user ||
+      !accountEmail ||
+      !submittedEmail ||
+      !verifiedEmail ||
+      submittedEmail !== accountEmail ||
+      submittedEmail !== verifiedEmail ||
+      data.guestPhone
+    ) {
+      return {
+        success: false,
+        error: "RSVP email must match your signed-in account.",
+      };
+    }
+  }
+  //  end of change
   if (event.startAt <= new Date()) {
     return { success: false, error: await eventActionMessage("eventStarted") };
   }
@@ -415,6 +473,7 @@ export async function updateRSVP(
           id: true,
           slug: true,
           title: true,
+          requireVerifiedRsvp: true,
           capacity: true,
           rsvpDeadline: true,
           startAt: true,
@@ -437,6 +496,18 @@ export async function updateRSVP(
     },
   });
   if (!rsvp) return { success: false, error: await eventActionMessage("rsvpNotFound") };
+  // An edit token identifies the RSVP, but does not authorize
+  // changes to a verification-protected RSVP by itself.
+  if (rsvp.event.requireVerifiedRsvp) {
+    const session = await getSession();
+
+    if (!session || !rsvp.userId || session.userId !== rsvp.userId) {
+      return {
+        success: false,
+        error: "You must sign in as the RSVP owner to edit this response.",
+      };
+    }
+  }
 
   if (rsvp.event.startAt <= new Date()) {
     return { success: false, error: await eventActionMessage("eventStarted") };

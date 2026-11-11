@@ -11,6 +11,7 @@ import { SendMagicLinkSchema, RegisterHostSchema } from "@/lib/schemas";
 import { rateLimit } from "@/lib/rateLimit";
 import { getClientIp, isTrustedIpConfigured } from "@/lib/clientIp";
 import { assertCaptcha } from "@/lib/captcha";
+import { z } from "zod";
 
 function looksLikePhone(s: string): boolean {
   return /^\+?[\d\s\-().]{7,}$/.test(s.trim()) && s.replace(/\D/g, "").length >= 7;
@@ -94,6 +95,73 @@ export async function sendMagicLinkAction(
   return { success: true };
 }
 
+// A token selects the recipient; verification still requires opening a fresh
+// magic link at the RSVP's current contact. Never accept a caller's destination.
+export async function requestRsvpOwnerLinkAction(
+  editToken: string,
+  status: string,
+  captchaToken?: string | null
+): Promise<{ success: boolean; error?: string }> {
+  const invalid = { success: false, error: "Unable to verify this RSVP. Please contact the host." };
+  if (
+    !z.string().min(1).max(128).safeParse(editToken).success ||
+    !["GOING", "MAYBE", "NO"].includes(status)
+  )
+    return invalid;
+  await assertCaptcha("signin", captchaToken);
+  if (isTrustedIpConfigured()) {
+    const ip = await getClientIp();
+    if (!(await rateLimit(`ip:${ip}:magic-link`, 20, 600)).success)
+      return { success: false, error: "Too many requests. Please try later." };
+  }
+  const rsvp = await db.rSVP.findUnique({
+    where: { editToken },
+    include: {
+      user: { select: { id: true, email: true, phone: true } },
+      event: { select: { slug: true, status: true, startAt: true, requireVerifiedRsvp: true } },
+    },
+  });
+  if (
+    !rsvp ||
+    !rsvp.event.requireVerifiedRsvp ||
+    rsvp.event.status !== "PUBLISHED" ||
+    rsvp.event.startAt <= new Date()
+  )
+    return invalid;
+
+  const email = rsvp.guestEmail?.trim().toLowerCase();
+  const phone = rsvp.guestPhone?.trim().replace(/[\s\-().]/g, "");
+  // Existing ownership is authoritative; a stale/mismatched contact must not
+  // send a link that could never authorize this response.
+  const useEmail = !!email && (!rsvp.userId || rsvp.user?.email?.trim().toLowerCase() === email);
+  const usePhone =
+    !!phone && (!rsvp.userId || rsvp.user?.phone?.trim().replace(/[\s\-().]/g, "") === phone);
+  const identifier = useEmail ? email : usePhone ? phone : undefined;
+  if (!identifier) return invalid;
+  if (!(await rateLimit(`id:${identifier}:magic-link`, 5, 600)).success)
+    return { success: false, error: "Too many requests. Please try later." };
+
+  const contact = useEmail ? { email: identifier } : { phone: identifier };
+  const user = await db.user.upsert({
+    where: contact,
+    create: { ...contact, role: "GUEST" },
+    update: {},
+    select: { preferredLocale: true },
+  });
+  const query = new URLSearchParams({ token: editToken, status });
+  const destination = `/e/${encodeURIComponent(rsvp.event.slug)}/rsvp?${query}`;
+  const link = await createMagicLink(identifier, destination);
+  if (!link) return invalid;
+  const locale = resolveLocale(user.preferredLocale ?? (await cookies()).get(LOCALE_COOKIE)?.value);
+  try {
+    if (useEmail) await sendMagicLinkEmail(identifier, link, locale);
+    else await sendMagicLinkSms(identifier, link, locale);
+  } catch {
+    return { success: false, error: "Unable to send a sign-in link. Please try again." };
+  }
+  return { success: true };
+}
+
 export async function registerHostAction(
   rawEmail: string,
   rawName: string,
@@ -147,4 +215,105 @@ export async function registerHostAction(
   }
 
   return result;
+}
+
+/**
+ * Request a magic link for a guest joining a verification-required event.
+ *
+ * Unlike HOST registration, this endpoint allows self-registration
+ * without an invitation code, but never grants elevated privileges.
+ */
+export async function requestVerifiedGuestLinkAction(
+  rawEmail: string,
+  eventSlug: string,
+  status: string,
+  captchaToken?: string | null
+): Promise<{ success: boolean; error?: string }> {
+  const parsed = z.string().trim().toLowerCase().email().max(100).safeParse(rawEmail);
+
+  if (!parsed.success) {
+    return { success: false, error: "Enter a valid email address." };
+  }
+
+  const email = parsed.data;
+  const validStatuses = ["GOING", "MAYBE", "NO"] as const;
+
+  if (!validStatuses.some((value) => value === status)) {
+    return {
+      success: false,
+      error: "Invalid RSVP status.",
+    };
+  }
+
+  await assertCaptcha("signin", captchaToken);
+
+  // Allow this workflow only for eligible published events.
+  const event = await db.event.findUnique({
+    where: { slug: eventSlug },
+    select: {
+      slug: true,
+      status: true,
+      startAt: true,
+      visibility: true,
+      passwordHash: true,
+      requireVerifiedRsvp: true,
+    },
+  });
+
+  if (
+    !event ||
+    event.status !== "PUBLISHED" ||
+    !event.requireVerifiedRsvp ||
+    !["PUBLIC", "UNLISTED"].includes(event.visibility) ||
+    event.passwordHash !== null ||
+    event.startAt <= new Date()
+  ) {
+    return {
+      success: false,
+      error: "This event is not accepting verified guest registration.",
+    };
+  }
+
+  // Preserve the same rate-limiting approach as normal sign-in.
+  if (isTrustedIpConfigured()) {
+    const ip = await getClientIp();
+    const ipLimit = await rateLimit(`ip:${ip}:magic-link`, 20, 600);
+
+    if (!ipLimit.success) {
+      return { success: false, error: "Too many requests. Please try later." };
+    }
+  }
+
+  const idLimit = await rateLimit(`id:${email}:magic-link`, 5, 600);
+
+  if (!idLimit.success) {
+    return { success: false, error: "Too many requests. Please try later." };
+  }
+
+  // Existing accounts retain their current roles.
+  // New accounts always start as GUEST.
+  const user = await db.user.upsert({
+    where: { email },
+    create: { email, role: "GUEST" },
+    update: {},
+    select: { preferredLocale: true },
+  });
+
+  const redirect = `/e/${encodeURIComponent(event.slug)}/rsvp?status=${status}`;
+  const link = await createMagicLink(email, redirect);
+
+  if (!link) {
+    return { success: false, error: "Unable to create verification link." };
+  }
+
+  const locale = resolveLocale(user.preferredLocale ?? (await cookies()).get(LOCALE_COOKIE)?.value);
+
+  try {
+    await sendMagicLinkEmail(email, link, locale);
+  } catch (err) {
+    console.error("[verified-guest] Magic link delivery failed:", err);
+    return { success: false, error: "Unable to send verification email." };
+  }
+
+  return { success: true };
 }

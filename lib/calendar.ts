@@ -2,6 +2,8 @@
 // on the Cloudflare transports, so emails link to a Google Calendar template
 // URL and to the /e/[slug]/calendar.ics route instead.
 
+import { eventDescriptionText } from "@/lib/event-description";
+
 export type CalendarEventInput = {
   id: string;
   slug: string;
@@ -35,11 +37,12 @@ function eventLocation(ev: CalendarEventInput): string {
 
 export function buildGoogleCalendarUrl(ev: CalendarEventInput): string {
   const end = ev.endAt ?? new Date(ev.startAt.getTime() + DEFAULT_DURATION_MS);
+  const description = eventDescriptionText(ev.description);
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: ev.title,
     dates: `${toUtcBasic(ev.startAt)}/${toUtcBasic(end)}`,
-    details: `${ev.description ? `${ev.description}\n\n` : ""}${APP_URL}/e/${ev.slug}`,
+    details: `${description ? `${description}\n\n` : ""}${APP_URL}/e/${ev.slug}`,
   });
   const location = eventLocation(ev);
   if (location) params.set("location", location);
@@ -77,7 +80,8 @@ export function buildIcsContent(ev: CalendarEventInput): string {
   const end = ev.endAt ?? new Date(ev.startAt.getTime() + DEFAULT_DURATION_MS);
   const eventUrl = `${APP_URL}/e/${ev.slug}`;
   const location = eventLocation(ev);
-  const description = `${ev.description ? `${ev.description}\n\n` : ""}${eventUrl}`;
+  const plainDescription = eventDescriptionText(ev.description);
+  const description = `${plainDescription ? `${plainDescription}\n\n` : ""}${eventUrl}`;
 
   const lines = [
     "BEGIN:VCALENDAR",

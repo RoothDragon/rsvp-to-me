@@ -8,6 +8,17 @@ order: 20
 
 # Configuration Reference
 
+### Verified RSVP invitation recovery
+
+Verification-required invitation/edit links verify ownership before displaying
+the questionnaire. Recovery uses the configured email or SMS delivery service,
+CAPTCHA, and existing sign-in rate limits; no new environment variables are
+required. Links return to the same RSVP token and attendance selection. Guest
+accounts are created only for the current saved contact, with no role changes
+to existing accounts. Login links current matching unowned RSVPs after contact
+verification. Missing contacts or contacts inconsistent with existing ownership
+require host assistance; the edit token alone cannot authorize a protected save.
+
 All configurable settings for **RSVP to Me** live in a single `.env` file in the same directory as your `docker-compose.yml`. This guide explains every variable, what it controls, and how to configure it.
 
 ---
@@ -552,3 +563,11 @@ _Note: This setting can also be configured and updated dynamically at runtime vi
 | `TWILIO_ACCOUNT_SID`           | Yes (if SMS)    | _(none)_            | Twilio Account identifier.                                                                                      |
 | `TWILIO_AUTH_TOKEN`            | Yes (if SMS)    | _(none)_            | Twilio API authentication token.                                                                                |
 | `TWILIO_PHONE_NUMBER`          | Yes (if SMS)    | _(none)_            | Twilio phone number in E.164 format.                                                                            |
+
+**Contact-change verification.**
+
+Email and phone changes accept only their dedicated change-verification tokens. Token redemption, the account contact update, and updates to already linked RSVPs commit together. A failed database write rolls back token redemption so the link can be retried before expiry. Replayed or expired links are rejected. Session creation and linking previously unclaimed matching RSVPs occur after this transaction; a failure in those later steps does not undo the contact change.
+
+Session reads also require the backing database or Redis session identity to match the encrypted cookie. For verification-enabled events, new responses require matching email-login provenance; edits require the edit token and a live session belonging to the linked RSVP owner. Only an authorized host, co-host, or administrator can change the verification setting. Turning it off restores ordinary edit-token access, including for previously created responses.
+
+All interface and event-title fonts are bundled as local WOFF2 assets. Application builds do not require Google Fonts access, and no fonts need installing on the host or inside deployment containers. Asset provenance, licenses, checksums, and update instructions are maintained in `app/font-files/README.md` and `app/font-files/manifest.json`.
