@@ -8,6 +8,26 @@ order: 20
 
 # Configuration Reference
 
+### Guest email sign-in
+
+The front-door **Continue with email** screen sends a verification link for
+both new and existing valid email addresses. New accounts start as **GUEST**;
+existing roles and preferences are preserved. Preparing the account creates
+neither an authenticated session nor RSVP ownership. The one-time email link
+must be opened before sign-in and contact-based RSVP linking occur. Guests
+return to public events unless a safe event return path was supplied.
+
+`OPEN_REGISTRATION` still controls host registration, not guest email sign-in.
+Guest sign-in grants no host privileges and does not bypass private-event,
+password, invitation, or RSVP-owner checks. Existing-account SMS sign-in is
+unchanged. New phone-only accounts are not created by the front-door form.
+
+CAPTCHA is **optional**, not assumed: `TURNSTILE_SITE_KEY` and
+`TURNSTILE_SECRET_KEY` must both be configured. With both absent, CAPTCHA is
+disabled; this does not indicate a missing dependency. Per-address limits remain
+active. A trusted client-IP header is required for the additional per-IP
+sign-in limit; configure it only for a proxy that reliably overwrites that header.
+
 ### Verified RSVP invitation recovery
 
 Verification-required invitation/edit links verify ownership before displaying

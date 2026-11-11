@@ -1609,7 +1609,11 @@
       "securityCheckFailed": "De beveiligingscontrole is mislukt.",
       "somethingWentWrong": "Er is iets misgegaan.",
       "signInMetadataTitle": "Inloggen",
-      "registerMetadataTitle": "Account aanmaken"
+      "registerMetadataTitle": "Account aanmaken",
+      "continueWithEmail": "Doorgaan met e-mail",
+      "sendSignInLink": "Inloglink versturen",
+      "secureEmailLinkSent": "Controleer je e-mail voor een veilige link om door te gaan.",
+      "secureSmsLinkSent": "Controleer je sms-berichten voor een veilige link om door te gaan."
     },
     "Home": {
       "rsvpToMe": "RSVP to Me",
@@ -1619,7 +1623,8 @@
       "hostedBy": "Georganiseerd door",
       "going": "gaan",
       "signInCreateAccountMessage": "<part0>Inloggen</part0> <part1>Account aanmaken</part1>",
-      "goingMessage": "{value0, plural, one {# gast gaat} other {# gasten gaan}}"
+      "goingMessage": "{value0, plural, one {# gast gaat} other {# gasten gaan}}",
+      "choosePublicEvent": "Kies hieronder een openbaar evenement om te reageren."
     },
     "Preview": {
       "wineNight": "Wijnavond ✨",

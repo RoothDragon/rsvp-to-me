@@ -72,7 +72,7 @@ export default async function Home() {
   const locale = await getRequestLocale();
 
   const session = await getSession();
-  if (session) redirect("/dashboard");
+  if (session && session.role !== "GUEST") redirect("/dashboard");
 
   const events = await db.event.findMany({
     where: {
@@ -141,43 +141,49 @@ export default async function Home() {
           >
             {tr("Ui.Home.beautifulPersonalEventPagesForWineNightsDinnerParties")}
           </p>
-          <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-            {tr.rich("Ui.Home.signInCreateAccountMessage", {
-              part0: (chunks) => (
-                <a
-                  href="/auth/sign-in"
-                  style={{
-                    padding: "14px 32px",
-                    background: APP_SHELL.accent,
-                    color: APP_SHELL.textPrimary,
-                    borderRadius: APP_SHELL.btnRadius,
-                    textDecoration: "none",
-                    fontSize: "16px",
-                    fontWeight: 700,
-                  }}
-                >
-                  {chunks}
-                </a>
-              ),
-              part1: (chunks) => (
-                <a
-                  href="/auth/register"
-                  style={{
-                    padding: "14px 32px",
-                    background: APP_SHELL.cardBg2,
-                    border: `1px solid ${APP_SHELL.cardBorder}`,
-                    color: APP_SHELL.textPrimary,
-                    borderRadius: APP_SHELL.btnRadius,
-                    textDecoration: "none",
-                    fontSize: "16px",
-                    fontWeight: 700,
-                  }}
-                >
-                  {chunks}
-                </a>
-              ),
-            })}
-          </div>
+          {session?.role === "GUEST" ? (
+            <p style={{ color: APP_SHELL.textSecondary }}>{tr("Ui.Home.choosePublicEvent")}</p>
+          ) : (
+            <div
+              style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}
+            >
+              {tr.rich("Ui.Home.signInCreateAccountMessage", {
+                part0: (chunks) => (
+                  <a
+                    href="/auth/sign-in"
+                    style={{
+                      padding: "14px 32px",
+                      background: APP_SHELL.accent,
+                      color: APP_SHELL.textPrimary,
+                      borderRadius: APP_SHELL.btnRadius,
+                      textDecoration: "none",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {chunks}
+                  </a>
+                ),
+                part1: (chunks) => (
+                  <a
+                    href="/auth/register"
+                    style={{
+                      padding: "14px 32px",
+                      background: APP_SHELL.cardBg2,
+                      border: `1px solid ${APP_SHELL.cardBorder}`,
+                      color: APP_SHELL.textPrimary,
+                      borderRadius: APP_SHELL.btnRadius,
+                      textDecoration: "none",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {chunks}
+                  </a>
+                ),
+              })}
+            </div>
+          )}
         </div>
 
         {/* Public Feed Section */}

@@ -4,10 +4,12 @@ import { PUBLIC_EVENT_SLUG } from "./fixtures";
 test.describe("Cloudflare Turnstile E2E Verification", () => {
   test("sign-in form processes submission cleanly under CaptchaProvider", async ({ page }) => {
     await page.goto("/auth/sign-in");
-    await expect(page.getByText(/sign in with a magic link/i)).toBeVisible();
+    await expect(page.getByText(/continue with email/i)).toBeVisible();
     await page.getByRole("textbox").fill("turnstile-e2e@test.internal");
     await page.getByRole("button", { name: /send/i }).click();
-    await expect(page.getByText(/check your/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: /check your email/i })).toBeVisible({
+      timeout: 10_000,
+    });
   });
 
   test("public RSVP page loads with CaptchaProvider and handles guest form navigation", async ({

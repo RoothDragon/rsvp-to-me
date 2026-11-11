@@ -1609,7 +1609,11 @@
       "securityCheckFailed": "La comprobación de seguridad ha fallado.",
       "somethingWentWrong": "Algo ha salido mal.",
       "signInMetadataTitle": "Iniciar sesión",
-      "registerMetadataTitle": "Crear cuenta"
+      "registerMetadataTitle": "Crear cuenta",
+      "continueWithEmail": "Continuar con el correo electrónico",
+      "sendSignInLink": "Enviar enlace de acceso",
+      "secureEmailLinkSent": "Revisa tu correo para encontrar un enlace seguro y continuar.",
+      "secureSmsLinkSent": "Revisa tus mensajes de texto para encontrar un enlace seguro y continuar."
     },
     "Home": {
       "rsvpToMe": "RSVP to Me",
@@ -1619,7 +1623,8 @@
       "hostedBy": "Organizado por",
       "going": "asistirán",
       "signInCreateAccountMessage": "<part0> Iniciar sesión </part0> <part1> Crear cuenta </part1>",
-      "goingMessage": "{value0, plural, one {# asistente} other {# asistentes}}"
+      "goingMessage": "{value0, plural, one {# asistente} other {# asistentes}}",
+      "choosePublicEvent": "Elige un evento público a continuación para confirmar tu asistencia."
     },
     "Preview": {
       "wineNight": "Noche de vino ✨",

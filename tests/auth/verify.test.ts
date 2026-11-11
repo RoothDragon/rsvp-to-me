@@ -345,6 +345,29 @@ describe("GET /auth/verify", () => {
       type: "LOGIN",
     };
 
+    it("returns verified guests to public events without granting host privileges", async () => {
+      mockFindUniqueMagicToken.mockResolvedValue(validRecord);
+      mockFindUniqueUser.mockResolvedValue({
+        id: "user1",
+        email: "guest@example.com",
+        role: "GUEST",
+      });
+      const res = await GET(makeRequest("valid-token"));
+      expect(res.headers.get("location")).toBe("http://localhost:3000/");
+      expect(sealSession).toHaveBeenCalledWith(expect.objectContaining({ role: "GUEST" }));
+    });
+
+    it("keeps the requested event path for a verified guest", async () => {
+      mockFindUniqueMagicToken.mockResolvedValue(validRecord);
+      mockFindUniqueUser.mockResolvedValue({
+        id: "user1",
+        email: "guest@example.com",
+        role: "GUEST",
+      });
+      const res = await GET(makeRequest("valid-token", "/e/party/rsvp?status=MAYBE"));
+      expect(res.headers.get("location")).toBe("http://localhost:3000/e/party/rsvp?status=MAYBE");
+    });
+
     it("redirects to ?redirect= path when it is a safe relative path", async () => {
       mockFindUniqueMagicToken.mockResolvedValue(validRecord);
       mockUpdateMagicToken.mockResolvedValue({});

@@ -14,7 +14,8 @@
 //      default). That made `ip:127.0.0.1:magic-link` a single global bucket —
 //      20 sign-in attempts anywhere locked out EVERY user for 10 minutes.
 //
-// Fix: return the same success response for unknown identifiers (send nothing),
+// Fix: return the same success response for unknown identifiers. Email signup
+// now sends to both new and existing accounts; unknown phone sign-in stays silent.
 // and only apply the per-IP limiter when a trusted proxy IP is configured,
 // relying on the per-identifier limiter otherwise.
 
@@ -25,7 +26,12 @@ vi.mock("@/i18n/server", async (importOriginal) => {
   return { ...actual, getRequestTranslator: () => actual.getTranslator("en-US") };
 });
 vi.mock("@/lib/db", () => ({
-  db: { user: { findUnique: vi.fn(async () => ({ preferredLocale: null })) } },
+  db: {
+    user: {
+      findUnique: vi.fn(async () => ({ preferredLocale: null })),
+      upsert: vi.fn(async () => ({ id: "guest" })),
+    },
+  },
 }));
 const mocks = vi.hoisted(() => ({
   mockCreateMagicLink: vi.fn(),
@@ -61,10 +67,10 @@ afterEach(() => {
 });
 
 describe("SEC-40: no account enumeration on sign-in", () => {
-  it("returns the same success response for an unknown identifier and sends nothing", async () => {
+  it("returns the same success response for an unknown phone and sends nothing", async () => {
     mocks.mockCreateMagicLink.mockResolvedValue(null); // no user
 
-    const unknown = await sendMagicLinkAction("nobody@example.com");
+    const unknown = await sendMagicLinkAction("+15559876543");
 
     expect(unknown).toEqual({ success: true });
     expect(mocks.mockSendMagicLinkEmail).not.toHaveBeenCalled();
@@ -72,7 +78,7 @@ describe("SEC-40: no account enumeration on sign-in", () => {
   });
 
   it("is indistinguishable from a real send to a registered identifier", async () => {
-    mocks.mockCreateMagicLink.mockResolvedValueOnce(null); // unknown
+    mocks.mockCreateMagicLink.mockResolvedValueOnce("http://localhost:3000/auth/verify?token=new");
     const unknown = await sendMagicLinkAction("nobody@example.com");
 
     mocks.mockCreateMagicLink.mockResolvedValueOnce("http://localhost:3000/auth/verify?token=abc"); // known
@@ -81,6 +87,7 @@ describe("SEC-40: no account enumeration on sign-in", () => {
     // The client cannot tell the two apart: identical response shape.
     expect(unknown).toEqual(known);
     expect(unknown).toEqual({ success: true });
+    expect(mocks.mockSendMagicLinkEmail).toHaveBeenCalledTimes(2);
   });
 });
 

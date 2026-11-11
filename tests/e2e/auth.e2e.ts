@@ -29,10 +29,12 @@ test.describe("Auth flow", () => {
 
   test("sign-in page renders and accepts email input", async ({ page }) => {
     await page.goto("/auth/sign-in");
-    await expect(page.getByText(/sign in with a magic link/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /continue with email/i })).toBeVisible();
     await page.getByRole("textbox").fill("e2e-host@test.internal");
     await page.getByRole("button", { name: /send/i }).click();
     // Should show a "check your email/phone" confirmation state
-    await expect(page.getByText(/check your/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: /check your email/i })).toBeVisible({
+      timeout: 10_000,
+    });
   });
 });

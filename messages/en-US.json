@@ -1609,7 +1609,11 @@
       "securityCheckFailed": "Security check failed.",
       "somethingWentWrong": "Something went wrong.",
       "signInMetadataTitle": "Sign In",
-      "registerMetadataTitle": "Create Account"
+      "registerMetadataTitle": "Create Account",
+      "continueWithEmail": "Continue with email",
+      "sendSignInLink": "Send sign-in link",
+      "secureEmailLinkSent": "Check your email for a secure link to continue.",
+      "secureSmsLinkSent": "Check your texts for a secure link to continue."
     },
     "Home": {
       "rsvpToMe": "RSVP to Me",
@@ -1619,7 +1623,8 @@
       "hostedBy": "Hosted by",
       "going": "going",
       "signInCreateAccountMessage": "<part0> Sign in </part0> <part1> Create account </part1>",
-      "goingMessage": "{value0, plural, one {# going} other {# going}}"
+      "goingMessage": "{value0, plural, one {# going} other {# going}}",
+      "choosePublicEvent": "Choose a public event below to RSVP."
     },
     "Preview": {
       "wineNight": "Wine Night ✨",

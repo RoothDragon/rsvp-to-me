@@ -255,7 +255,9 @@ test.describe("CSP nonce enforcement", () => {
     await textbox.fill("csp-e2e@test.internal");
     await expect(textbox).toHaveValue("csp-e2e@test.internal");
     await page.getByRole("button", { name: /send/i }).click();
-    await expect(page.getByText(/check your/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: /check your email/i })).toBeVisible({
+      timeout: 10_000,
+    });
     expect(await cspViolations(page)).toEqual([]);
   });
 

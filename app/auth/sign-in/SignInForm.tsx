@@ -87,11 +87,8 @@ export default function SignInForm({
               marginBottom: "8px",
             }}
           >
-            {tr("rsvp")}
+            {tr("continueWithEmail")}
           </h1>
-          <p style={{ color: APP_SHELL.textSecondary, fontSize: "15px" }}>
-            {tr("signInWithAMagicLink")}
-          </p>
         </div>
 
         <AppCard style={{ borderRadius: APP_SHELL.authCardRadius, padding: "32px" }}>
@@ -112,12 +109,7 @@ export default function SignInForm({
                 {isPhone ? tr("checkYourTexts") : tr("checkYourEmail")}
               </h2>
               <p style={{ color: APP_SHELL.textSecondary, fontSize: "14px", lineHeight: 1.6 }}>
-                {tr.rich("weSentAMagicLinkToClickItMessage", {
-                  part0: (chunks) => (
-                    <strong style={{ color: "rgba(255,255,255,0.8)" }}>{chunks}</strong>
-                  ),
-                  value0: identifier,
-                })}
+                {tr(isPhone ? "secureSmsLinkSent" : "secureEmailLinkSent")}
               </p>
             </div>
           ) : authFailed ? (
@@ -201,7 +193,7 @@ export default function SignInForm({
                   fontSize: "15px",
                 }}
               >
-                {loading ? tr("sending") : tr("sendMagicLink")}
+                {loading ? tr("sending") : tr("sendSignInLink")}
               </AppButton>
 
               <div style={{ textAlign: "center", marginTop: "20px" }}>

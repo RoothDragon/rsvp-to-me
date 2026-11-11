@@ -29,6 +29,10 @@ export async function sendMagicLinkAction(
     return { success: false, error: t("Ui.Errors.Auth.invalidIdentifier") };
   }
   const identifier = parseResult.data.identifier;
+  const isPhone = looksLikePhone(identifier);
+  if (!isPhone && !z.string().email().max(100).safeParse(identifier).success) {
+    return { success: false, error: t("Ui.Errors.Auth.invalidIdentifier") };
+  }
   await assertCaptcha("signin", captchaToken);
 
   // SEC-45: only apply the per-IP limiter when a trusted proxy IP is configured.
@@ -57,15 +61,23 @@ export async function sendMagicLinkAction(
     };
   }
 
-  const isPhone = looksLikePhone(identifier);
+  // Email sign-in also registers guests. This creates no session and claims no
+  // RSVP: those require opening the verified LOGIN link. Empty updates preserve
+  // existing HOST/ADMIN roles and account preferences, including concurrent sends.
+  if (!isPhone) {
+    const email = identifier.toLowerCase().trim();
+    await db.user.upsert({
+      where: { email },
+      create: { email, role: "GUEST" },
+      update: {},
+      select: { id: true },
+    });
+  }
   const link = await createMagicLink(identifier, redirect);
 
-  // SEC-40: never reveal whether an account exists. When createMagicLink returns
-  // null (no user for this identifier) we send nothing but return the SAME
-  // success response as a real send — otherwise the sign-in screen renders a
-  // distinct "sign-in failed" state for unknown identifiers, letting an attacker
-  // enumerate registered emails/phones. This refines SEC-14a, which unified the
-  // error CODE but still branched success vs. failure on account existence.
+  // SEC-40: existing-account phone sign-in still uses the same public response
+  // for an unknown phone. Valid emails above always get the same registration
+  // and delivery path, without revealing whether an account already existed.
   if (!link) {
     return { success: true };
   }

@@ -14,6 +14,14 @@ order: 10
 
 ## Signing In
 
+Anyone can use **Continue with email**, including guests who have not yet chosen
+an event or received an invitation. New email addresses receive a secure link
+and a guest account. Opening the link verifies the email and signs them in;
+guests then return to their selected event or the public event list. Existing
+hosts keep their host access. Becoming a guest does not grant host privileges
+or access to a private event, and host registration still follows its existing
+invitation/open-registration rules.
+
 RSVP to Me is **passwordless** — you sign in with a magic link instead of a password.
 
 1. On the Sign In page, enter your email address (or phone number, if texting is enabled).

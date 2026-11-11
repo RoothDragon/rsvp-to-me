@@ -1,5 +1,10 @@
 # Regression Tests
 
+`guest-email-signin.test.ts` covers the former silent no-send for new email
+addresses: guest-only account preparation, role preservation, validation,
+CAPTCHA/rate-limit ordering, and delivery failures. Component and E2E tests
+exercise verification, the public guest landing page, and event return paths.
+
 | Case                              | Coverage                                                                                                                                                                                                                                                                                              |
 | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `rsvp-owner-verification.test.ts` | Invitation owner recovery uses current contacts, supports unlinked and phone-only invitees, preserves the response/status, and rejects ineligible or mismatched ownership. Route and UI behavior are also covered by `RsvpPageVerification.test.tsx` and `RsvpOwnerGate.test.tsx` in component tests. |
